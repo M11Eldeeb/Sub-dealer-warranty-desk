@@ -68,20 +68,25 @@ export default function ClaimDetailPage() {
     const { data: attData } = await supabase.from("claim_attachments").select("*").eq("claim_id", params.id).order("uploaded_at");
     setAttachments(attData || []);
 
-    if (attData?.length) {
-      const urlEntries = await Promise.all(
-        attData.map(async (a) => {
-          const { data } = await supabase.storage.from("evidence").createSignedUrl(a.file_path, 3600);
-          return [a.id, data?.signedUrl];
-        })
-      );
-      setFileUrls(Object.fromEntries(urlEntries));
-    }
-
     const { data: logData } = await supabase.from("claim_status_log").select("*").eq("claim_id", params.id).order("at", { ascending: false });
     setLog(logData || []);
 
+    // Render the page now — evidence thumbnails can pop in a moment later,
+    // no need to hold up VIN/parts/labor/history on file-signing round trips.
     setLoading(false);
+
+    if (attData?.length) {
+      const { data: signedUrls } = await supabase.storage
+        .from("evidence")
+        .createSignedUrls(attData.map((a) => a.file_path), 3600);
+      const urlMap = {};
+      attData.forEach((a, i) => {
+        urlMap[a.id] = signedUrls?.[i]?.signedUrl;
+      });
+      setFileUrls(urlMap);
+    } else {
+      setFileUrls({});
+    }
   };
 
   useEffect(() => {
