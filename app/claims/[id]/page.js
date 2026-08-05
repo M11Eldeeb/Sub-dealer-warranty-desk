@@ -2,20 +2,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt } from "@/components/ui";
+import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS } from "@/components/ui";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
-  FileText, History, Paperclip, Plus, Truck, AlertTriangle, XCircle, RefreshCw, CheckCircle2,
+  FileText, History, Paperclip, Plus, CheckCircle2,
 } from "lucide-react";
-
-const PART_STATUS = {
-  "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
-  ICT: { label: "ICT", color: "#5B4FB0", icon: RefreshCw },
-  "Shipped to branch": { label: "Shipped to Branch", color: "#1E7A6B", icon: Truck },
-  VOR: { label: "VOR", color: "#C77700", icon: AlertTriangle },
-  Cancelled: { label: "Cancelled", color: "#B23A32", icon: XCircle },
-};
-const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Shipped to branch", "VOR", "Cancelled"];
 
 export default function ClaimDetailPage() {
   const router = useRouter();

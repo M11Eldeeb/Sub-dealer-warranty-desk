@@ -1,5 +1,14 @@
 "use client";
-import { Wrench } from "lucide-react";
+import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle } from "lucide-react";
+
+export const PART_STATUS = {
+  "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
+  ICT: { label: "ICT", color: "#5B4FB0", icon: RefreshCw },
+  "Shipped to branch": { label: "Shipped to Branch", color: "#1E7A6B", icon: Truck },
+  VOR: { label: "VOR", color: "#C77700", icon: AlertTriangle },
+  Cancelled: { label: "Cancelled", color: "#B23A32", icon: XCircle },
+};
+export const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Shipped to branch", "VOR", "Cancelled"];
 
 export const STATUS = {
   draft: { label: "Draft", color: "#8A8F98", bg: "#F1F2F4" },
