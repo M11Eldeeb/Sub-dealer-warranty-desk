@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: #f4f4f4;
+  color: #111111;
+}
+
+@layer components {
+  .input {
+    width: 100%;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: #ffffff;
+    outline: none;
+  }
+  .input:focus {
+    border-color: #e4002b;
+  }
+}
