@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt } from "@/components/ui";
-import { Paperclip, Package, Search, AlertCircle } from "lucide-react";
+import { Paperclip, Package, Search, AlertCircle, UserPlus } from "lucide-react";
 
 export default function DealerDashboard() {
   const router = useRouter();
@@ -81,14 +81,22 @@ export default function DealerDashboard() {
               </button>
             ))}
           </div>
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search claims or branches..."
-              className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
-            />
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search claims or branches..."
+                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
+              />
+            </div>
+            <Link
+              href="/dashboard/dealer/create-account"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors shrink-0"
+            >
+              <UserPlus size={14} /> Create Account
+            </Link>
           </div>
         </div>
 
