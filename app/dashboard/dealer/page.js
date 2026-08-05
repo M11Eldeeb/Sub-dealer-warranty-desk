@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
+import DownloadAllButton from "@/components/DownloadAllButton";
 import { Paperclip, Package, Search, AlertCircle, UserPlus } from "lucide-react";
 
 export default function DealerDashboard() {
@@ -91,6 +92,7 @@ export default function DealerDashboard() {
                 className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
               />
             </div>
+            <DownloadAllButton />
             <Link
               href="/dashboard/dealer/create-account"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors shrink-0"
