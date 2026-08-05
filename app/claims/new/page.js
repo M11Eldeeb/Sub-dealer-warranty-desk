@@ -14,6 +14,7 @@ export default function NewClaimPage() {
   const [mileage, setMileage] = useState("");
   const [plate, setPlate] = useState("");
   const [workOrderNumber, setWorkOrderNumber] = useState("");
+  const [branchAbbreviation, setBranchAbbreviation] = useState(null);
   const [receptionDate, setReceptionDate] = useState(today());
   const [customerComplaint, setCustomerComplaint] = useState("");
   const [causeOfDefect, setCauseOfDefect] = useState("");
@@ -24,6 +25,20 @@ export default function NewClaimPage() {
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prof } = await supabase.from("profiles").select("branch_id").eq("id", user.id).single();
+      if (!prof?.branch_id) return;
+      const { data: branch } = await supabase.from("branches").select("abbreviation").eq("id", prof.branch_id).single();
+      if (branch?.abbreviation) setBranchAbbreviation(branch.abbreviation);
+    })();
+  }, []);
+
 
   const validParts = parts.filter((p) => p.name.trim());
   const validLabor = labor.filter((l) => l.name.trim());
@@ -98,7 +113,7 @@ export default function NewClaimPage() {
         vin,
         mileage: parseInt(mileage, 10),
         plate,
-        work_order_number: workOrderNumber,
+        work_order_number: branchAbbreviation ? `${branchAbbreviation}-${workOrderNumber}` : workOrderNumber,
         reception_date: receptionDate,
         customer_complaint: customerComplaint,
         cause_of_defect: causeOfDefect,
@@ -179,7 +194,21 @@ export default function NewClaimPage() {
               <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="ABC 1234" className="input" />
             </Field>
             <Field label="Work Order Number (Sub-Dealer)">
-              <input value={workOrderNumber} onChange={(e) => setWorkOrderNumber(e.target.value)} placeholder="WO-2026-0451" className="input" />
+              {branchAbbreviation ? (
+                <div className="flex">
+                  <span className="flex items-center px-3 rounded-l border border-r-0 border-[#E0E0E0] bg-[#F1F2F4] text-sm font-mono font-bold text-[#4D4D4D]">
+                    {branchAbbreviation}-
+                  </span>
+                  <input
+                    value={workOrderNumber}
+                    onChange={(e) => setWorkOrderNumber(e.target.value)}
+                    placeholder="12345"
+                    className="input rounded-l-none"
+                  />
+                </div>
+              ) : (
+                <input value={workOrderNumber} onChange={(e) => setWorkOrderNumber(e.target.value)} placeholder="WO-2026-0451" className="input" />
+              )}
             </Field>
           </div>
           <Field label="Reception Date">

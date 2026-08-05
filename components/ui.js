@@ -22,6 +22,11 @@ export const STATUS = {
   closed: { label: "Closed", color: "#2E7D46", bg: "#E5F3E8" },
 };
 
+export function firstPartName(parts) {
+  if (!parts || parts.length === 0) return null;
+  return [...parts].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.name;
+}
+
 export function fmt(ts) {
   return new Date(ts).toLocaleString("en-US", {
     month: "short",

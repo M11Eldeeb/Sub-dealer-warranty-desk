@@ -17,7 +17,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Only dealer accounts can create new accounts." }, { status: 403 });
   }
 
-  const { fullName, email, password, role, branchId, newBranchName } = await request.json();
+  const { fullName, email, password, role, branchId, newBranchName, newBranchAbbreviation } = await request.json();
 
   if (!fullName || !email || !password || !role) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -28,13 +28,20 @@ export async function POST(request) {
   if (password.length < 6) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
+  if (role === "sub_dealer" && newBranchName && (!newBranchAbbreviation || newBranchAbbreviation.length !== 3)) {
+    return NextResponse.json({ error: "A 3-letter branch abbreviation is required for a new branch." }, { status: 400 });
+  }
 
   const admin = createAdminClient();
 
   let finalBranchId = null;
   if (role === "sub_dealer") {
     if (newBranchName) {
-      const { data: branch, error: branchError } = await admin.from("branches").insert({ name: newBranchName }).select().single();
+      const { data: branch, error: branchError } = await admin
+        .from("branches")
+        .insert({ name: newBranchName, abbreviation: newBranchAbbreviation })
+        .select()
+        .single();
       if (branchError) return NextResponse.json({ error: branchError.message }, { status: 400 });
       finalBranchId = branch.id;
     } else if (branchId) {

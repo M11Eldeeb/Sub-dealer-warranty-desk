@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt } from "@/components/ui";
+import { StatusTag, Header, fmt, firstPartName } from "@/components/ui";
 import { Paperclip, Package, Search, AlertCircle, UserPlus } from "lucide-react";
 
 export default function DealerDashboard() {
@@ -29,7 +29,7 @@ export default function DealerDashboard() {
 
       const { data: claimsData } = await supabase
         .from("claims")
-        .select("*, branches(name), claim_attachments(count), claim_parts(status)")
+        .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at)")
         .order("created_at", { ascending: false });
 
       setClaims(claimsData || []);
@@ -124,7 +124,7 @@ export default function DealerDashboard() {
                   </div>
                   <StatusTag status={c.status} parts={c.claim_parts} />
                 </div>
-                <div className="text-sm text-[#262626] mt-3 line-clamp-2">{c.customer_complaint}</div>
+                <div className="text-sm text-[#262626] mt-3 line-clamp-2">{firstPartName(c.claim_parts)}</div>
                 <div className="flex items-center gap-4 mt-3 text-xs text-[#6E6E6E]">
                   <span className="flex items-center gap-1">
                     <Paperclip size={12} />

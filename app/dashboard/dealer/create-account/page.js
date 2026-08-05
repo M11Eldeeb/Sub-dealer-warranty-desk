@@ -23,6 +23,7 @@ export default function CreateAccountPage() {
   const [branchMode, setBranchMode] = useState("existing"); // existing | new
   const [branchId, setBranchId] = useState("");
   const [newBranchName, setNewBranchName] = useState("");
+  const [newBranchAbbreviation, setNewBranchAbbreviation] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -56,7 +57,8 @@ export default function CreateAccountPage() {
     fullName &&
     email &&
     password.length >= 6 &&
-    (role !== "sub_dealer" || (branchMode === "existing" ? branchId : newBranchName.trim())) &&
+    (role !== "sub_dealer" ||
+      (branchMode === "existing" ? branchId : newBranchName.trim() && newBranchAbbreviation.trim().length === 3)) &&
     !saving;
 
   const handleSubmit = async () => {
@@ -74,6 +76,7 @@ export default function CreateAccountPage() {
         role,
         branchId: role === "sub_dealer" && branchMode === "existing" ? branchId : null,
         newBranchName: role === "sub_dealer" && branchMode === "new" ? newBranchName.trim() : null,
+        newBranchAbbreviation: role === "sub_dealer" && branchMode === "new" ? newBranchAbbreviation.trim().toUpperCase() : null,
       }),
     });
     const data = await res.json();
@@ -86,6 +89,7 @@ export default function CreateAccountPage() {
     setEmail("");
     setPassword("");
     setNewBranchName("");
+    setNewBranchAbbreviation("");
 
     if (role === "sub_dealer" && branchMode === "new") {
       const { data: branchData } = await supabase.from("branches").select("*").order("name");
@@ -193,6 +197,15 @@ export default function CreateAccountPage() {
                 )
               ) : (
                 <input value={newBranchName} onChange={(e) => setNewBranchName(e.target.value)} placeholder="Branch / shop name" className="input" />
+              )}
+              {branchMode === "new" && (
+                <input
+                  value={newBranchAbbreviation}
+                  onChange={(e) => setNewBranchAbbreviation(e.target.value.toUpperCase().slice(0, 3))}
+                  placeholder="3-letter abbreviation (e.g. NAG)"
+                  maxLength={3}
+                  className="input font-mono mt-2"
+                />
               )}
             </Field>
           )}
