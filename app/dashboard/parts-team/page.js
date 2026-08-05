@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS } from "@/components/ui";
-import DownloadAllButton from "@/components/DownloadAllButton";
 import { Search, AlertCircle, ExternalLink } from "lucide-react";
 
 export default function PartsTeamDashboard() {
@@ -165,7 +164,6 @@ export default function PartsTeamDashboard() {
                 className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
               />
             </div>
-            <DownloadAllButton />
           </div>
         </div>
 

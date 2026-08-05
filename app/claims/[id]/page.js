@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS } from "@/components/ui";
+import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
   FileText, History, Paperclip, Plus, CheckCircle2,
@@ -503,7 +504,10 @@ export default function ClaimDetailPage() {
           </div>
 
           <div className="mt-4">
-            <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Evidence</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E]">Evidence</div>
+              <DownloadAttachmentsButton claimNumber={claim.claim_number} attachments={attachments} />
+            </div>
             <div className="flex flex-wrap gap-2">
               {attachments.map((a) => {
                 const canDelete = role === "sub_dealer" && claim.status === "returned" && a.stage === "evidence_before";
