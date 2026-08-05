@@ -800,7 +800,7 @@ export default function ClaimDetailPage() {
                 )}
 
                 {editParts && (
-                  <Field label="Part Number and Name">
+                  <Field label="Part Number and Name (optional — leave empty for labor-only claims)">
                     <div className="space-y-2">
                       {editParts.map((p, i) => (
                         <div key={p.id ?? `new-${i}`} className="flex gap-2">
@@ -826,9 +826,8 @@ export default function ClaimDetailPage() {
                           <button
                             type="button"
                             onClick={() => removeEditPart(i)}
-                            disabled={editParts.length === 1}
                             title="Remove part"
-                            className="text-[#B23A32] hover:bg-[#FAE4E2] rounded p-2 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                            className="text-[#B23A32] hover:bg-[#FAE4E2] rounded p-2 shrink-0"
                           >
                             <X size={14} />
                           </button>
@@ -839,7 +838,7 @@ export default function ClaimDetailPage() {
                         onClick={addEditPart}
                         className="flex items-center gap-1 text-xs font-bold text-[#E4002B] hover:underline"
                       >
-                        <Plus size={13} /> Add another part
+                        <Plus size={13} /> {editParts.length === 0 ? "Add a part" : "Add another part"}
                       </button>
                     </div>
                   </Field>

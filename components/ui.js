@@ -27,6 +27,13 @@ export function firstPartName(parts) {
   return [...parts].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.name;
 }
 
+export function cardSubtitle(parts, labor) {
+  const partName = firstPartName(parts);
+  if (partName) return partName;
+  if (!labor || labor.length === 0) return null;
+  return [...labor].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.name;
+}
+
 export function fmt(ts) {
   return new Date(ts).toLocaleString("en-US", {
     month: "short",
