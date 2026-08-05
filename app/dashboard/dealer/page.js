@@ -30,7 +30,7 @@ export default function DealerDashboard() {
 
     const { data: claimsData } = await supabase
       .from("claims")
-      .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name, created_at)")
+      .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name:labor_name, created_at)")
       .order("created_at", { ascending: false });
 
     setClaims(claimsData || []);

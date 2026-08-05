@@ -30,7 +30,7 @@ export default function SubDealerDashboard() {
 
     const { data: claimsData } = await supabase
       .from("claims")
-      .select("*, claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name, created_at)")
+      .select("*, claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name:labor_name, created_at)")
       .eq("branch_id", prof.branch_id)
       .order("created_at", { ascending: false });
 
