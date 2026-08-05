@@ -16,26 +16,33 @@ export default function DealerDashboard() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const load = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return router.push("/login");
+
+    const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    if (!prof) return router.push("/login?setup=1");
+    if (prof.role !== "dealer") return router.push("/dashboard/sub-dealer");
+    setProfile(prof);
+
+    const { data: claimsData } = await supabase
+      .from("claims")
+      .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name, created_at)")
+      .order("created_at", { ascending: false });
+
+    setClaims(claimsData || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return router.push("/login");
-
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof) return router.push("/login?setup=1");
-      if (prof.role !== "dealer") return router.push("/dashboard/sub-dealer");
-      setProfile(prof);
-
-      const { data: claimsData } = await supabase
-        .from("claims")
-        .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name, created_at)")
-        .order("created_at", { ascending: false });
-
-      setClaims(claimsData || []);
-      setLoading(false);
-    })();
+    load();
+    const onPopState = () => load(false);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const signOut = async () => {

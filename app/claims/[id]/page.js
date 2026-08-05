@@ -446,7 +446,13 @@ export default function ClaimDetailPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] px-6 py-8">
       <div className="max-w-3xl mx-auto">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4">
+        <button
+          onClick={() => {
+            router.refresh();
+            router.back();
+          }}
+          className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4"
+        >
           <ChevronLeft size={16} /> Back to claims
         </button>
 

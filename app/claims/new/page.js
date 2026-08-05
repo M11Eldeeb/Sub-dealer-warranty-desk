@@ -168,12 +168,19 @@ export default function NewClaimPage() {
 
     setSaving(false);
     router.push(`/claims/${claim.id}`);
+    router.refresh();
   };
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] px-6 py-8">
       <div className="max-w-2xl mx-auto">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4">
+        <button
+          onClick={() => {
+            router.refresh();
+            router.back();
+          }}
+          className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4"
+        >
           <ChevronLeft size={16} /> Back
         </button>
         <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">New Warranty Claim</h2>

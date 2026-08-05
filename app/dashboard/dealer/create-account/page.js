@@ -103,7 +103,13 @@ export default function CreateAccountPage() {
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-2xl mx-auto px-6 py-8">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
+        <button
+          onClick={() => {
+            router.refresh();
+            router.back();
+          }}
+          className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4"
+        >
           <ChevronLeft size={16} /> Back
         </button>
         <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Create Account</h2>

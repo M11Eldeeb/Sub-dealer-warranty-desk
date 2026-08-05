@@ -19,7 +19,9 @@ export default function PartsTeamDashboard() {
   const [etaDrafts, setEtaDrafts] = useState({});
   const [rowError, setRowError] = useState("");
 
-  const load = async () => {
+  const load = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -51,6 +53,9 @@ export default function PartsTeamDashboard() {
 
   useEffect(() => {
     load();
+    const onPopState = () => load(false);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const signOut = async () => {

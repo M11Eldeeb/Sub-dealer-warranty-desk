@@ -16,27 +16,37 @@ export default function SubDealerDashboard() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const load = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return router.push("/login");
+
+    const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    if (!prof) return router.push("/login?setup=1");
+    if (prof.role !== "sub_dealer") return router.push("/dashboard/dealer");
+    setProfile(prof);
+
+    const { data: claimsData } = await supabase
+      .from("claims")
+      .select("*, claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name, created_at)")
+      .eq("branch_id", prof.branch_id)
+      .order("created_at", { ascending: false });
+
+    setClaims(claimsData || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return router.push("/login");
-
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof) return router.push("/login?setup=1");
-      if (prof.role !== "sub_dealer") return router.push("/dashboard/dealer");
-      setProfile(prof);
-
-      const { data: claimsData } = await supabase
-        .from("claims")
-        .select("*, claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name, created_at)")
-        .eq("branch_id", prof.branch_id)
-        .order("created_at", { ascending: false });
-
-      setClaims(claimsData || []);
-      setLoading(false);
-    })();
+    load();
+    // Browser back/forward navigation doesn't remount this page or re-run this
+    // effect, so without this it can show a stale list from before a claim
+    // was created. Refetch (quietly, no spinner) whenever that happens.
+    const onPopState = () => load(false);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const signOut = async () => {
