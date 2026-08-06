@@ -168,7 +168,7 @@ export default function DealerDashboard() {
                   {c.claim_parts?.length > 0 && (
                     <span className="flex items-center gap-1">
                       <Package size={12} />
-                      {c.claim_parts.filter((p) => p.status === "Shipped to branch" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
+                      {c.claim_parts.filter((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
                     </span>
                   )}
                   <span className="ml-auto">{fmt(c.created_at)}</span>

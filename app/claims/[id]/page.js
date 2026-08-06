@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS } from "@/components/ui";
+import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
@@ -31,6 +31,8 @@ export default function ClaimDetailPage() {
   const [removedLaborIds, setRemovedLaborIds] = useState([]);
   const [trackingDrafts, setTrackingDrafts] = useState({});
   const [etaDrafts, setEtaDrafts] = useState({});
+  const [locationDrafts, setLocationDrafts] = useState({});
+  const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [dealerWorkOrder, setDealerWorkOrder] = useState("");
   const [partsError, setPartsError] = useState("");
   const [newFiles, setNewFiles] = useState([]);
@@ -38,6 +40,10 @@ export default function ClaimDetailPage() {
   const [saving, setSaving] = useState(false);
   const [fileUrls, setFileUrls] = useState({});
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [returnRequests, setReturnRequests] = useState([]);
+  const [showReturnPartBox, setShowReturnPartBox] = useState(false);
+  const [selectedReturnParts, setSelectedReturnParts] = useState([]);
+  const [returnPartReason, setReturnPartReason] = useState("");
 
   const load = async () => {
     const {
@@ -53,6 +59,9 @@ export default function ClaimDetailPage() {
 
     const { data: partsData } = await supabase.from("claim_parts").select("*").eq("claim_id", params.id);
     setParts(partsData || []);
+
+    const { data: returnData } = await supabase.from("part_return_requests").select("*").eq("claim_id", params.id);
+    setReturnRequests(returnData || []);
 
     const { data: laborData } = await supabase.from("claim_labor").select("*").eq("claim_id", params.id);
     setLabor(laborData || []);
@@ -132,12 +141,18 @@ export default function ClaimDetailPage() {
   useEffect(() => {
     const tracking = {};
     const eta = {};
+    const location = {};
+    const superseding = {};
     parts.forEach((p) => {
       tracking[p.id] = p.tracking_number || "";
       eta[p.id] = p.eta || "";
+      location[p.id] = p.supplying_location || "";
+      superseding[p.id] = p.superseding_part_number || "";
     });
     setTrackingDrafts(tracking);
     setEtaDrafts(eta);
+    setLocationDrafts(location);
+    setSupersedingDrafts(superseding);
   }, [parts]);
 
   const addLog = async (from_status, to_status, note) => {
@@ -354,6 +369,53 @@ export default function ClaimDetailPage() {
     }
     setPartsError("");
     await addLog(claim.status, claim.status, `ETA set for '${part.name}': ${value || "(cleared)"}`);
+    load();
+  };
+
+  const saveLocation = async (part, value) => {
+    if ((part.supplying_location || "") === value) return;
+    const { error } = await supabase.from("claim_parts").update({ supplying_location: value || null }).eq("id", part.id);
+    if (error) {
+      setPartsError(error.message);
+      return;
+    }
+    setPartsError("");
+    await addLog(claim.status, claim.status, `Supplying location set for '${part.name}': ${value || "(cleared)"}`);
+    load();
+  };
+
+  const saveSuperseding = async (part) => {
+    const value = supersedingDrafts[part.id] ?? "";
+    if ((part.superseding_part_number || "") === value) return;
+    const { error } = await supabase.from("claim_parts").update({ superseding_part_number: value || null }).eq("id", part.id);
+    if (error) {
+      setPartsError(error.message);
+      return;
+    }
+    setPartsError("");
+    await addLog(claim.status, claim.status, `Superseding part number set for '${part.name}': ${value || "(cleared)"}`);
+    load();
+  };
+
+  const toggleReturnPart = (partId) => {
+    setSelectedReturnParts((prev) => (prev.includes(partId) ? prev.filter((id) => id !== partId) : [...prev, partId]));
+  };
+
+  const submitReturnParts = async () => {
+    if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
+    for (const partId of selectedReturnParts) {
+      const part = parts.find((p) => p.id === partId);
+      await supabase.from("part_return_requests").insert({
+        claim_id: claim.id,
+        claim_part_id: partId,
+        reason: returnPartReason.trim(),
+        requested_by: profile.id,
+      });
+      await addLog(claim.status, claim.status, `Return requested for part '${part?.name}': ${returnPartReason.trim()}`);
+    }
+    setSelectedReturnParts([]);
+    setReturnPartReason("");
+    setShowReturnPartBox(false);
     load();
   };
 
@@ -588,19 +650,41 @@ export default function ClaimDetailPage() {
               <div className="space-y-1.5">
                 {parts.map((p) => {
                   const partStatus = PART_STATUS[p.status] || PART_STATUS["Waiting Action"];
+                  const hasReturnRequest = returnRequests.some((r) => r.claim_part_id === p.id);
                   return (
-                    <div key={p.id} className="flex items-center justify-between text-sm bg-white border border-[#E0E0E0] rounded px-3 py-2">
-                      <div>
-                        <span className="font-medium text-[#111111]">{p.name}</span>
-                        <span className="text-[#6E6E6E] font-mono text-xs ml-2">
-                          {p.part_number} × {p.qty}
+                    <div key={p.id} className="text-sm bg-white border border-[#E0E0E0] rounded px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-[#111111]">{p.name}</span>
+                          <span className="text-[#6E6E6E] font-mono text-xs ml-2">
+                            {p.part_number} × {p.qty}
+                          </span>
+                          {p.tracking_number && <span className="text-[#6E6E6E] font-mono text-xs ml-2">· #{p.tracking_number}</span>}
+                          {p.eta && <span className="text-[#6E6E6E] font-mono text-xs ml-2">· ETA {p.eta}</span>}
+                        </div>
+                        <span className="text-xs font-bold flex items-center gap-1" style={{ color: partStatus.color }}>
+                          <partStatus.icon size={13} /> {partStatus.label}
                         </span>
-                        {p.tracking_number && <span className="text-[#6E6E6E] font-mono text-xs ml-2">· #{p.tracking_number}</span>}
-                        {p.eta && <span className="text-[#6E6E6E] font-mono text-xs ml-2">· ETA {p.eta}</span>}
                       </div>
-                      <span className="text-xs font-bold flex items-center gap-1" style={{ color: partStatus.color }}>
-                        <partStatus.icon size={13} /> {partStatus.label}
-                      </span>
+                      {(p.supplying_location || p.superseding_part_number || hasReturnRequest) && (
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {p.supplying_location && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-[#5B4FB0] bg-[#EAE7FA] px-2 py-0.5 rounded-full">
+                              From {p.supplying_location}
+                            </span>
+                          )}
+                          {p.superseding_part_number && (
+                            <span className="text-[10px] font-mono text-[#6E6E6E] bg-[#F1F2F4] px-2 py-0.5 rounded-full">
+                              Superseded by {p.superseding_part_number}
+                            </span>
+                          )}
+                          {hasReturnRequest && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2] px-2 py-0.5 rounded-full">
+                              Return Requested
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -610,6 +694,65 @@ export default function ClaimDetailPage() {
         </div>
 
         <div className="mt-5">
+          {role === "sub_dealer" &&
+            !["closed", "rejected"].includes(claim.status) &&
+            parts.some((p) => p.status === "Supplied to Sub-Dealer") &&
+            (!showReturnPartBox ? (
+              <button
+                onClick={() => setShowReturnPartBox(true)}
+                className="mb-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-[#B23A32] bg-white border border-[#B23A32] hover:bg-[#FAE4E2]"
+              >
+                <RotateCcw size={14} /> Return Part
+              </button>
+            ) : (
+              <div className="bg-white border border-[#E0E0E0] rounded-lg p-4 mb-3">
+                <div className="text-sm font-bold text-[#111111] mb-2">Select the part(s) to return</div>
+                <div className="space-y-1.5 mb-3">
+                  {parts
+                    .filter((p) => p.status === "Supplied to Sub-Dealer")
+                    .map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedReturnParts.includes(p.id)}
+                          onChange={() => toggleReturnPart(p.id)}
+                          className="accent-[#E4002B]"
+                        />
+                        {p.name} <span className="text-[#6E6E6E] font-mono text-xs">{p.part_number}</span>
+                      </label>
+                    ))}
+                </div>
+                {selectedReturnParts.length > 0 && (
+                  <textarea
+                    value={returnPartReason}
+                    onChange={(e) => setReturnPartReason(e.target.value)}
+                    rows={2}
+                    placeholder="Why are you returning this part?"
+                    className="input resize-none text-sm mb-2"
+                  />
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={submitReturnParts}
+                    disabled={selectedReturnParts.length === 0 || !returnPartReason.trim()}
+                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#B23A32] hover:bg-[#9A2E28] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Confirm Return
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowReturnPartBox(false);
+                      setSelectedReturnParts([]);
+                      setReturnPartReason("");
+                    }}
+                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-[#6E6E6E] hover:bg-[#F4F4F4]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ))}
+
           {role === "dealer" && claim.status === "submitted" && (
             <div className="space-y-3">
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
@@ -691,9 +834,35 @@ export default function ClaimDetailPage() {
                         className="input text-xs flex-1"
                       />
                     </div>
+                    <div className="flex gap-2">
+                      <select
+                        value={locationDrafts[p.id] ?? ""}
+                        onChange={(e) => {
+                          setLocationDrafts((prev) => ({ ...prev, [p.id]: e.target.value }));
+                          saveLocation(p, e.target.value);
+                        }}
+                        className="input text-xs flex-1"
+                      >
+                        <option value="">Supplying location…</option>
+                        {SUPPLYING_LOCATIONS.map((loc) => (
+                          <option key={loc} value={loc}>
+                            {loc}
+                          </option>
+                        ))}
+                      </select>
+                      {p.status === "VOR" && (
+                        <input
+                          value={supersedingDrafts[p.id] ?? ""}
+                          onChange={(e) => setSupersedingDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                          onBlur={() => saveSuperseding(p)}
+                          placeholder="Superseding part # (optional)"
+                          className="input text-xs flex-1 font-mono"
+                        />
+                      )}
+                    </div>
                   </div>
                 ))}
-                {parts.every((p) => p.status === "Shipped to branch" || p.status === "Cancelled") && (
+                {parts.every((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled") && (
                   <div className="text-xs text-[#5B4FB0]">All parts shipped or cancelled — waiting on sub-dealer to confirm receipt.</div>
                 )}
               </div>
@@ -888,9 +1057,9 @@ export default function ClaimDetailPage() {
               {parts.length > 0 && parts.every((p) => p.status === "Cancelled") ? (
                 <>All parts on this claim were cancelled — no repair needed.</>
               ) : (
-                <>{parts.filter((p) => p.status === "Shipped to branch").length}/{parts.length} parts shipped to your branch.</>
+                <>{parts.filter((p) => p.status === "Supplied to Sub-Dealer").length}/{parts.length} parts supplied to your branch.</>
               )}
-              {parts.length > 0 && parts.every((p) => p.status === "Shipped to branch" || p.status === "Cancelled") && (
+              {parts.length > 0 && parts.every((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled") && (
                 <button
                   onClick={handleConfirmPartsReceived}
                   className="mt-3 block w-fit px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A]"

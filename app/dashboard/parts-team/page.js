@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS } from "@/components/ui";
+import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
 import { Search, AlertCircle, ExternalLink } from "lucide-react";
 
@@ -24,6 +24,8 @@ export default function PartsTeamDashboard() {
   const [loading, setLoading] = useState(true);
   const [trackingDrafts, setTrackingDrafts] = useState({});
   const [etaDrafts, setEtaDrafts] = useState({});
+  const [locationDrafts, setLocationDrafts] = useState({});
+  const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [rowError, setRowError] = useState("");
   const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
@@ -49,12 +51,18 @@ export default function PartsTeamDashboard() {
 
     const tracking = {};
     const eta = {};
+    const location = {};
+    const superseding = {};
     (partsData || []).forEach((p) => {
       tracking[p.id] = p.tracking_number || "";
       eta[p.id] = p.eta || "";
+      location[p.id] = p.supplying_location || "";
+      superseding[p.id] = p.superseding_part_number || "";
     });
     setTrackingDrafts(tracking);
     setEtaDrafts(eta);
+    setLocationDrafts(location);
+    setSupersedingDrafts(superseding);
 
     setLoading(false);
   };
@@ -115,6 +123,31 @@ export default function PartsTeamDashboard() {
     }
     setRowError("");
     await addLog(part.claim_id, part.claims.status, `ETA set for '${part.name}': ${value || "(cleared)"}`);
+    load();
+  };
+
+  const saveLocation = async (part, value) => {
+    if ((part.supplying_location || "") === value) return;
+    const { error } = await supabase.from("claim_parts").update({ supplying_location: value || null }).eq("id", part.id);
+    if (error) {
+      setRowError(error.message);
+      return;
+    }
+    setRowError("");
+    await addLog(part.claim_id, part.claims.status, `Supplying location set for '${part.name}': ${value || "(cleared)"}`);
+    load();
+  };
+
+  const saveSuperseding = async (part) => {
+    const value = supersedingDrafts[part.id] ?? "";
+    if ((part.superseding_part_number || "") === value) return;
+    const { error } = await supabase.from("claim_parts").update({ superseding_part_number: value || null }).eq("id", part.id);
+    if (error) {
+      setRowError(error.message);
+      return;
+    }
+    setRowError("");
+    await addLog(part.claim_id, part.claims.status, `Superseding part number set for '${part.name}': ${value || "(cleared)"}`);
     load();
   };
 
@@ -242,6 +275,32 @@ export default function PartsTeamDashboard() {
                     title="ETA"
                     className="input text-xs flex-1"
                   />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <select
+                    value={locationDrafts[p.id] ?? ""}
+                    onChange={(e) => {
+                      setLocationDrafts((prev) => ({ ...prev, [p.id]: e.target.value }));
+                      saveLocation(p, e.target.value);
+                    }}
+                    className="input text-xs flex-1"
+                  >
+                    <option value="">Supplying location…</option>
+                    {SUPPLYING_LOCATIONS.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                  {p.status === "VOR" && (
+                    <input
+                      value={supersedingDrafts[p.id] ?? ""}
+                      onChange={(e) => setSupersedingDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                      onBlur={() => saveSuperseding(p)}
+                      placeholder="Superseding part # (optional)"
+                      className="input text-xs flex-1 font-mono"
+                    />
+                  )}
                 </div>
 
                 <div className="text-[10px] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>

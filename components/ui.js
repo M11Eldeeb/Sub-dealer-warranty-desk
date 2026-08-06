@@ -1,14 +1,16 @@
 "use client";
-import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle } from "lucide-react";
+import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
   ICT: { label: "ICT", color: "#5B4FB0", icon: RefreshCw },
-  "Shipped to branch": { label: "Shipped to Branch", color: "#1E7A6B", icon: Truck },
+  Shipped: { label: "Shipped", color: "#1D6FBD", icon: Truck },
+  "Supplied to Sub-Dealer": { label: "Supplied to Sub-Dealer", color: "#1E7A6B", icon: CheckCircle2 },
   VOR: { label: "VOR", color: "#C77700", icon: AlertTriangle },
   Cancelled: { label: "Cancelled", color: "#B23A32", icon: XCircle },
 };
-export const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Shipped to branch", "VOR", "Cancelled"];
+export const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Shipped", "Supplied to Sub-Dealer", "VOR", "Cancelled"];
+export const SUPPLYING_LOCATIONS = ["Heraa Jeddah", "Al Qassim", "Jizan", "Riyadh"];
 
 export const STATUS = {
   draft: { label: "Draft", color: "#8A8F98", bg: "#F1F2F4" },
@@ -46,14 +48,14 @@ export function fmt(ts) {
 export function getPartsSummary(parts) {
   if (!parts || parts.length === 0) return null;
   const total = parts.length;
-  const shipped = parts.filter((p) => p.status === "Shipped to branch").length;
+  const supplied = parts.filter((p) => p.status === "Supplied to Sub-Dealer").length;
   const cancelled = parts.filter((p) => p.status === "Cancelled").length;
-  const resolved = shipped + cancelled;
+  const resolved = supplied + cancelled;
 
   if (cancelled === total) return { label: "Parts Cancelled", color: "#B23A32", bg: "#FAE4E2" };
-  if (resolved === total) return { label: "All Parts Shipped", color: "#1E7A6B", bg: "#E1F2EE" };
+  if (resolved === total) return { label: "All Parts Supplied", color: "#1E7A6B", bg: "#E1F2EE" };
   if (resolved === 0) return { label: "Waiting Shipment", color: "#C77700", bg: "#FCF1DA" };
-  return { label: `Partially Shipped (${resolved}/${total})`, color: "#5B4FB0", bg: "#EAE7FA" };
+  return { label: `Partially Supplied (${resolved}/${total})`, color: "#5B4FB0", bg: "#EAE7FA" };
 }
 
 export function StatusTag({ status, parts }) {
