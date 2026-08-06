@@ -5,7 +5,20 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
 import ExportDataButton from "@/components/ExportDataButton";
+import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Paperclip, Package, Search, AlertCircle, UserPlus } from "lucide-react";
+
+const STATUS_OPTIONS = [
+  "submitted", "returned", "rejected", "approved", "awaiting_parts",
+  "parts_arrived", "repair_submitted", "closed",
+];
+const SORT_OPTIONS = [
+  { value: "created_at", label: "Creation Date" },
+  { value: "reception_date", label: "Reception Date" },
+  { value: "status", label: "Status" },
+  { value: "claim_number", label: "Claim Number" },
+  { value: "branch", label: "Branch" },
+];
 
 export default function DealerDashboard() {
   const router = useRouter();
@@ -15,6 +28,7 @@ export default function DealerDashboard() {
   const [filter, setFilter] = useState("needs_review");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -56,13 +70,18 @@ export default function DealerDashboard() {
     history: claims.filter((c) => ["closed", "rejected"].includes(c.status)).length,
   };
 
-  const filtered = claims.filter((c) => {
+  const branchList = Array.from(
+    new Map(claims.filter((c) => c.branches).map((c) => [c.branch_id, { id: c.branch_id, name: c.branches.name }])).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  const tabFiltered = claims.filter((c) => {
     if (filter === "needs_review" && c.status !== "submitted") return false;
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
     if (query && !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
+  const filtered = applyClaimsFilterSort(tabFiltered, toolbar);
 
   if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
 
@@ -70,7 +89,7 @@ export default function DealerDashboard() {
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-5xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm">
             {[
               ["needs_review", "Needs Review"],
@@ -89,7 +108,7 @@ export default function DealerDashboard() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
               <input
@@ -99,6 +118,13 @@ export default function DealerDashboard() {
                 className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
               />
             </div>
+            <ClaimsToolbar
+              state={toolbar}
+              onChange={setToolbar}
+              statusOptions={STATUS_OPTIONS}
+              branches={branchList}
+              sortOptions={SORT_OPTIONS}
+            />
             <ExportDataButton />
             <Link
               href="/dashboard/dealer/create-account"

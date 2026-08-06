@@ -4,7 +4,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
+import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Plus, Paperclip, Package, Search, AlertCircle } from "lucide-react";
+
+const STATUS_OPTIONS = [
+  "submitted", "returned", "rejected", "approved", "awaiting_parts",
+  "parts_arrived", "repair_submitted", "closed",
+];
+const SORT_OPTIONS = [
+  { value: "created_at", label: "Creation Date" },
+  { value: "reception_date", label: "Reception Date" },
+  { value: "status", label: "Status" },
+  { value: "claim_number", label: "Claim Number" },
+];
 
 export default function SubDealerDashboard() {
   const router = useRouter();
@@ -14,6 +26,7 @@ export default function SubDealerDashboard() {
   const [filter, setFilter] = useState("active");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -53,12 +66,13 @@ export default function SubDealerDashboard() {
     router.push("/login");
   };
 
-  const filtered = claims.filter((c) => {
+  const tabFiltered = claims.filter((c) => {
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
     if (query && !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
+  const filtered = applyClaimsFilterSort(tabFiltered, toolbar);
 
   if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
 
@@ -66,7 +80,7 @@ export default function SubDealerDashboard() {
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-5xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm">
             <button
               onClick={() => setFilter("active")}
@@ -85,7 +99,7 @@ export default function SubDealerDashboard() {
               History
             </button>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
               <input
@@ -95,6 +109,13 @@ export default function SubDealerDashboard() {
                 className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B]"
               />
             </div>
+            <ClaimsToolbar
+              state={toolbar}
+              onChange={setToolbar}
+              statusOptions={STATUS_OPTIONS}
+              branches={null}
+              sortOptions={SORT_OPTIONS}
+            />
             <Link
               href="/claims/new"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors"

@@ -4,7 +4,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS } from "@/components/ui";
+import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
 import { Search, AlertCircle, ExternalLink } from "lucide-react";
+
+const SORT_OPTIONS = [
+  { value: "created_at", label: "Creation Date" },
+  { value: "reception_date", label: "Reception Date" },
+  { value: "claim_number", label: "Claim Number" },
+  { value: "branch", label: "Branch" },
+];
 
 export default function PartsTeamDashboard() {
   const router = useRouter();
@@ -17,6 +25,7 @@ export default function PartsTeamDashboard() {
   const [trackingDrafts, setTrackingDrafts] = useState({});
   const [etaDrafts, setEtaDrafts] = useState({});
   const [rowError, setRowError] = useState("");
+  const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -33,7 +42,7 @@ export default function PartsTeamDashboard() {
     // RLS already restricts this to parts on approved claims (awaiting_parts, parts_arrived, closed).
     const { data: partsData } = await supabase
       .from("claim_parts")
-      .select("*, claims(claim_number, dealer_work_order_number, status, branches(name))")
+      .select("*, claims(claim_number, dealer_work_order_number, status, branch_id, reception_date, branches(name))")
       .order("created_at", { ascending: true });
 
     setParts(partsData || []);
@@ -114,7 +123,13 @@ export default function PartsTeamDashboard() {
     counts[s] = parts.filter((p) => p.status === s).length;
   });
 
-  const filtered = parts.filter((p) => {
+  const branchList = Array.from(
+    new Map(
+      parts.filter((p) => p.claims?.branches).map((p) => [p.claims.branch_id, { id: p.claims.branch_id, name: p.claims.branches.name }])
+    ).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  const tabFiltered = parts.filter((p) => {
     if (p.status !== filter) return false;
     if (
       query &&
@@ -125,6 +140,7 @@ export default function PartsTeamDashboard() {
       return false;
     return true;
   });
+  const filtered = applyPartsFilterSort(tabFiltered, toolbar);
 
   if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
 
@@ -147,7 +163,7 @@ export default function PartsTeamDashboard() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
               <input
@@ -157,6 +173,13 @@ export default function PartsTeamDashboard() {
                 className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
               />
             </div>
+            <ClaimsToolbar
+              state={toolbar}
+              onChange={setToolbar}
+              statusOptions={null}
+              branches={branchList}
+              sortOptions={SORT_OPTIONS}
+            />
           </div>
         </div>
 
