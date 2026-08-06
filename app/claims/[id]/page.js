@@ -45,6 +45,7 @@ export default function ClaimDetailPage() {
   const [selectedReturnParts, setSelectedReturnParts] = useState([]);
   const [returnQtyDrafts, setReturnQtyDrafts] = useState({});
   const [returnPartReason, setReturnPartReason] = useState("");
+  const [returnPartError, setReturnPartError] = useState("");
 
   const load = async () => {
     const {
@@ -167,7 +168,9 @@ export default function ClaimDetailPage() {
   };
 
   const setStatus = async (status) => {
-    await supabase.from("claims").update({ status }).eq("id", claim.id);
+    const { error } = await supabase.from("claims").update({ status }).eq("id", claim.id);
+    if (error) console.error("Failed to update claim status:", error.message);
+    return error;
   };
 
   const handleApprove = async () => {
@@ -415,6 +418,7 @@ export default function ClaimDetailPage() {
 
   const submitReturnParts = async () => {
     if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
+    setReturnPartError("");
     let anyFullReturn = false;
     for (const partId of selectedReturnParts) {
       const part = parts.find((p) => p.id === partId);
@@ -422,16 +426,24 @@ export default function ClaimDetailPage() {
       const isFullReturn = returnQty >= (part?.qty || 1);
 
       if (isFullReturn) {
-        await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
+        const { error: partError } = await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
+        if (partError) {
+          setReturnPartError(partError.message);
+          return;
+        }
         anyFullReturn = true;
       }
-      await supabase.from("part_return_requests").insert({
+      const { error: reqError } = await supabase.from("part_return_requests").insert({
         claim_id: claim.id,
         claim_part_id: partId,
         reason: returnPartReason.trim(),
         requested_by: profile.id,
         qty: returnQty,
       });
+      if (reqError) {
+        setReturnPartError(reqError.message);
+        return;
+      }
       await addLog(
         claim.status,
         claim.status,
@@ -440,7 +452,12 @@ export default function ClaimDetailPage() {
     }
     if (anyFullReturn && claim.status !== "parts_return") {
       await addLog(claim.status, "parts_return", "Claim moved to Parts Return — awaiting resolution.");
-      await setStatus("parts_return");
+      const statusError = await setStatus("parts_return");
+      if (statusError) {
+        setReturnPartError(`Part(s) marked for return, but the claim status update failed: ${statusError.message}`);
+        load();
+        return;
+      }
     }
     setSelectedReturnParts([]);
     setReturnQtyDrafts({});
@@ -738,6 +755,9 @@ export default function ClaimDetailPage() {
             ) : (
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-4 mb-3">
                 <div className="text-sm font-bold text-[#111111] mb-2">Select the part(s) to return</div>
+                {returnPartError && (
+                  <div className="text-xs text-[#B23A32] bg-[#FAE4E2] border border-[#F2C9A8] rounded p-2 mb-2">{returnPartError}</div>
+                )}
                 <div className="space-y-1.5 mb-3">
                   {parts
                     .filter((p) => p.status === "Supplied to Sub-Dealer")
