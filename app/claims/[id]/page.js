@@ -43,6 +43,7 @@ export default function ClaimDetailPage() {
   const [returnRequests, setReturnRequests] = useState([]);
   const [showReturnPartBox, setShowReturnPartBox] = useState(false);
   const [selectedReturnParts, setSelectedReturnParts] = useState([]);
+  const [returnQtyDrafts, setReturnQtyDrafts] = useState({});
   const [returnPartReason, setReturnPartReason] = useState("");
 
   const load = async () => {
@@ -399,22 +400,34 @@ export default function ClaimDetailPage() {
 
   const toggleReturnPart = (partId) => {
     setSelectedReturnParts((prev) => (prev.includes(partId) ? prev.filter((id) => id !== partId) : [...prev, partId]));
+    setReturnQtyDrafts((prev) => (prev[partId] ? prev : { ...prev, [partId]: 1 }));
   };
 
   const submitReturnParts = async () => {
     if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
     for (const partId of selectedReturnParts) {
       const part = parts.find((p) => p.id === partId);
-      await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
+      const returnQty = Math.min(Math.max(1, parseInt(returnQtyDrafts[partId], 10) || 1), part?.qty || 1);
+      const isFullReturn = returnQty >= (part?.qty || 1);
+
+      if (isFullReturn) {
+        await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
+      }
       await supabase.from("part_return_requests").insert({
         claim_id: claim.id,
         claim_part_id: partId,
         reason: returnPartReason.trim(),
         requested_by: profile.id,
+        qty: returnQty,
       });
-      await addLog(claim.status, claim.status, `Return requested for part '${part?.name}': ${returnPartReason.trim()}`);
+      await addLog(
+        claim.status,
+        claim.status,
+        `Return requested for part '${part?.name}' (${returnQty} of ${part?.qty}): ${returnPartReason.trim()}`
+      );
     }
     setSelectedReturnParts([]);
+    setReturnQtyDrafts({});
     setReturnPartReason("");
     setShowReturnPartBox(false);
     load();
@@ -651,7 +664,7 @@ export default function ClaimDetailPage() {
               <div className="space-y-1.5">
                 {parts.map((p) => {
                   const partStatus = PART_STATUS[p.status] || PART_STATUS["Waiting Action"];
-                  const returnRequest = returnRequests.find((r) => r.claim_part_id === p.id);
+                  const returnRequestsForPart = returnRequests.filter((r) => r.claim_part_id === p.id);
                   return (
                     <div key={p.id} className="text-sm bg-white border border-[#E0E0E0] rounded px-3 py-2">
                       <div className="flex items-center justify-between">
@@ -681,12 +694,12 @@ export default function ClaimDetailPage() {
                           )}
                         </div>
                       )}
-                      {returnRequest && (
-                        <div className="mt-1.5 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
-                          <span className="font-bold">Return reason: </span>
-                          {returnRequest.reason}
+                      {returnRequestsForPart.map((r) => (
+                        <div key={r.id} className="mt-1.5 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
+                          <span className="font-bold">Return requested ({r.qty || 1} of {p.qty}): </span>
+                          {r.reason}
                         </div>
-                      )}
+                      ))}
                     </div>
                   );
                 })}
@@ -713,15 +726,31 @@ export default function ClaimDetailPage() {
                   {parts
                     .filter((p) => p.status === "Supplied to Sub-Dealer")
                     .map((p) => (
-                      <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedReturnParts.includes(p.id)}
-                          onChange={() => toggleReturnPart(p.id)}
-                          className="accent-[#E4002B]"
-                        />
-                        {p.name} <span className="text-[#6E6E6E] font-mono text-xs">{p.part_number}</span>
-                      </label>
+                      <div key={p.id} className="flex items-center justify-between gap-2">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedReturnParts.includes(p.id)}
+                            onChange={() => toggleReturnPart(p.id)}
+                            className="accent-[#E4002B]"
+                          />
+                          {p.name} <span className="text-[#6E6E6E] font-mono text-xs">{p.part_number}</span>
+                        </label>
+                        {selectedReturnParts.includes(p.id) && p.qty > 1 && (
+                          <div className="flex items-center gap-1.5 text-xs text-[#6E6E6E]">
+                            Qty
+                            <input
+                              type="number"
+                              min="1"
+                              max={p.qty}
+                              value={returnQtyDrafts[p.id] ?? 1}
+                              onChange={(e) => setReturnQtyDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                              className="input text-xs w-16"
+                            />
+                            of {p.qty}
+                          </div>
+                        )}
+                      </div>
                     ))}
                 </div>
                 {selectedReturnParts.length > 0 && (
