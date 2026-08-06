@@ -344,6 +344,16 @@ export default function ClaimDetailPage() {
     }
     setPartsError("");
     await addLog(claim.status, claim.status, `Part '${part.name}' status changed to ${status}`);
+
+    if (claim.status === "parts_return") {
+      const { data: freshParts } = await supabase.from("claim_parts").select("status").eq("claim_id", claim.id);
+      const stillReturning = freshParts?.some((p) => p.status === "Parts Return");
+      if (!stillReturning) {
+        await setStatus("awaiting_parts");
+        await addLog("parts_return", "awaiting_parts", "All returned parts resolved — claim back to Awaiting Parts.");
+      }
+    }
+
     load();
   };
 
@@ -405,6 +415,7 @@ export default function ClaimDetailPage() {
 
   const submitReturnParts = async () => {
     if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
+    let anyFullReturn = false;
     for (const partId of selectedReturnParts) {
       const part = parts.find((p) => p.id === partId);
       const returnQty = Math.min(Math.max(1, parseInt(returnQtyDrafts[partId], 10) || 1), part?.qty || 1);
@@ -412,6 +423,7 @@ export default function ClaimDetailPage() {
 
       if (isFullReturn) {
         await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
+        anyFullReturn = true;
       }
       await supabase.from("part_return_requests").insert({
         claim_id: claim.id,
@@ -425,6 +437,10 @@ export default function ClaimDetailPage() {
         claim.status,
         `Return requested for part '${part?.name}' (${returnQty} of ${part?.qty}): ${returnPartReason.trim()}`
       );
+    }
+    if (anyFullReturn && claim.status !== "parts_return") {
+      await addLog(claim.status, "parts_return", "Claim moved to Parts Return — awaiting resolution.");
+      await setStatus("parts_return");
     }
     setSelectedReturnParts([]);
     setReturnQtyDrafts({});
@@ -694,7 +710,7 @@ export default function ClaimDetailPage() {
                           )}
                         </div>
                       )}
-                      {returnRequestsForPart.map((r) => (
+                      {p.status === "Parts Return" && returnRequestsForPart.map((r) => (
                         <div key={r.id} className="mt-1.5 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
                           <span className="font-bold">Return requested ({r.qty || 1} of {p.qty}): </span>
                           {r.reason}
@@ -823,7 +839,7 @@ export default function ClaimDetailPage() {
           )}
 
           {(role === "dealer" || role === "parts_team") &&
-            (claim.status === "awaiting_parts" || parts.some((p) => p.status === "Parts Return")) && (
+            (["awaiting_parts", "parts_return"].includes(claim.status) || parts.some((p) => p.status === "Parts Return")) && (
             <div className="bg-[#EAE7FA] border border-[#D3CDF2] rounded-lg p-4">
               <div className="text-sm font-bold text-[#5B4FB0] mb-2 flex items-center gap-2">
                 <Package size={15} /> Update parts shipment
@@ -1099,6 +1115,12 @@ export default function ClaimDetailPage() {
                   {parts.every((p) => p.status === "Cancelled") ? "Confirm — Close Claim" : "Confirm all parts received"}
                 </button>
               )}
+            </div>
+          )}
+
+          {role === "sub_dealer" && claim.status === "parts_return" && (
+            <div className="bg-[#FDEBE0] border border-[#F2C9A8] rounded-lg p-4 text-sm text-[#C4551B] flex items-center gap-2">
+              <RotateCcw size={15} /> Return in progress — waiting on the dealer/parts team to resolve the returned part(s) above.
             </div>
           )}
 

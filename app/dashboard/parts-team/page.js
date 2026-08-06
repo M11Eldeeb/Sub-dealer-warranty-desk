@@ -101,6 +101,22 @@ export default function PartsTeamDashboard() {
     }
     setRowError("");
     await addLog(part.claim_id, part.claims.status, `Part '${part.name}' status changed to ${newStatus}`);
+
+    if (part.claims?.status === "parts_return") {
+      const { data: freshParts } = await supabase.from("claim_parts").select("status").eq("claim_id", part.claim_id);
+      const stillReturning = freshParts?.some((p) => p.status === "Parts Return");
+      if (!stillReturning) {
+        await supabase.from("claims").update({ status: "awaiting_parts" }).eq("id", part.claim_id);
+        await supabase.from("claim_status_log").insert({
+          claim_id: part.claim_id,
+          from_status: "parts_return",
+          to_status: "awaiting_parts",
+          actor_name: profile.full_name,
+          note: "All returned parts resolved — claim back to Awaiting Parts.",
+        });
+      }
+    }
+
     load();
   };
 
@@ -311,7 +327,7 @@ export default function PartsTeamDashboard() {
 
                 <div className="text-[10px] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>
 
-                {returnRequestsForPart.map((r) => (
+                {p.status === "Parts Return" && returnRequestsForPart.map((r) => (
                   <div key={r.id} className="mt-2 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
                     <span className="font-bold">Return requested ({r.qty || 1} of {p.qty}): </span>
                     {r.reason}
