@@ -822,7 +822,8 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {(role === "dealer" || role === "parts_team") && claim.status === "awaiting_parts" && (
+          {(role === "dealer" || role === "parts_team") &&
+            (claim.status === "awaiting_parts" || parts.some((p) => p.status === "Parts Return")) && (
             <div className="bg-[#EAE7FA] border border-[#D3CDF2] rounded-lg p-4">
               <div className="text-sm font-bold text-[#5B4FB0] mb-2 flex items-center gap-2">
                 <Package size={15} /> Update parts shipment
