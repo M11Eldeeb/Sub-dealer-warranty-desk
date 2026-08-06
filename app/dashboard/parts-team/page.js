@@ -27,6 +27,7 @@ export default function PartsTeamDashboard() {
   const [locationDrafts, setLocationDrafts] = useState({});
   const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [rowError, setRowError] = useState("");
+  const [returnRequests, setReturnRequests] = useState([]);
   const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
   const load = async (showSpinner = true) => {
@@ -48,6 +49,9 @@ export default function PartsTeamDashboard() {
       .order("created_at", { ascending: true });
 
     setParts(partsData || []);
+
+    const { data: returnData } = await supabase.from("part_return_requests").select("*");
+    setReturnRequests(returnData || []);
 
     const tracking = {};
     const eta = {};
@@ -225,7 +229,9 @@ export default function PartsTeamDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {filtered.map((p) => (
+            {filtered.map((p) => {
+              const returnRequest = returnRequests.find((r) => r.claim_part_id === p.id);
+              return (
               <div key={p.id} className="bg-white border border-[#E0E0E0] rounded-lg p-4" style={{ borderLeft: "4px solid #E4002B" }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-mono text-xs text-[#6E6E6E]">
@@ -304,8 +310,16 @@ export default function PartsTeamDashboard() {
                 </div>
 
                 <div className="text-[10px] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>
+
+                {returnRequest && (
+                  <div className="mt-2 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
+                    <span className="font-bold">Return reason: </span>
+                    {returnRequest.reason}
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -405,6 +405,7 @@ export default function ClaimDetailPage() {
     if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
     for (const partId of selectedReturnParts) {
       const part = parts.find((p) => p.id === partId);
+      await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
       await supabase.from("part_return_requests").insert({
         claim_id: claim.id,
         claim_part_id: partId,
@@ -650,7 +651,7 @@ export default function ClaimDetailPage() {
               <div className="space-y-1.5">
                 {parts.map((p) => {
                   const partStatus = PART_STATUS[p.status] || PART_STATUS["Waiting Action"];
-                  const hasReturnRequest = returnRequests.some((r) => r.claim_part_id === p.id);
+                  const returnRequest = returnRequests.find((r) => r.claim_part_id === p.id);
                   return (
                     <div key={p.id} className="text-sm bg-white border border-[#E0E0E0] rounded px-3 py-2">
                       <div className="flex items-center justify-between">
@@ -666,7 +667,7 @@ export default function ClaimDetailPage() {
                           <partStatus.icon size={13} /> {partStatus.label}
                         </span>
                       </div>
-                      {(p.supplying_location || p.superseding_part_number || hasReturnRequest) && (
+                      {(p.supplying_location || p.superseding_part_number) && (
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {p.supplying_location && (
                             <span className="text-[10px] font-bold uppercase tracking-wide text-[#5B4FB0] bg-[#EAE7FA] px-2 py-0.5 rounded-full">
@@ -678,11 +679,12 @@ export default function ClaimDetailPage() {
                               Superseded by {p.superseding_part_number}
                             </span>
                           )}
-                          {hasReturnRequest && (
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2] px-2 py-0.5 rounded-full">
-                              Return Requested
-                            </span>
-                          )}
+                        </div>
+                      )}
+                      {returnRequest && (
+                        <div className="mt-1.5 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
+                          <span className="font-bold">Return reason: </span>
+                          {returnRequest.reason}
                         </div>
                       )}
                     </div>

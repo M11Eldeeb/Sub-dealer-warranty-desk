@@ -1,15 +1,16 @@
 "use client";
-import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
+import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
   ICT: { label: "ICT", color: "#5B4FB0", icon: RefreshCw },
   Shipped: { label: "Shipped", color: "#1D6FBD", icon: Truck },
   "Supplied to Sub-Dealer": { label: "Supplied to Sub-Dealer", color: "#1E7A6B", icon: CheckCircle2 },
+  "Parts Return": { label: "Parts Return", color: "#C4551B", icon: RotateCcw },
   VOR: { label: "VOR", color: "#C77700", icon: AlertTriangle },
   Cancelled: { label: "Cancelled", color: "#B23A32", icon: XCircle },
 };
-export const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Shipped", "Supplied to Sub-Dealer", "VOR", "Cancelled"];
+export const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Shipped", "Supplied to Sub-Dealer", "Parts Return", "VOR", "Cancelled"];
 export const SUPPLYING_LOCATIONS = ["Heraa Jeddah", "Al Qassim", "Jizan", "Riyadh"];
 
 export const STATUS = {
