@@ -365,8 +365,14 @@ export default function ClaimDetailPage() {
   };
 
   const handleConfirmPartsReceived = async () => {
-    await setStatus("parts_arrived");
-    await addLog(claim.status, "parts_arrived", "All parts received at branch.");
+    const allCancelled = parts.length > 0 && parts.every((p) => p.status === "Cancelled");
+    if (allCancelled) {
+      await setStatus("closed");
+      await addLog(claim.status, "closed", "All parts cancelled — sub-dealer confirmed, no repair needed. Claim closed.");
+    } else {
+      await setStatus("parts_arrived");
+      await addLog(claim.status, "parts_arrived", "All parts received at branch.");
+    }
     load();
   };
 
@@ -886,13 +892,17 @@ export default function ClaimDetailPage() {
               <div className="font-bold mb-1 flex items-center gap-2">
                 <Clock size={15} /> Tracking parts
               </div>
-              {parts.filter((p) => p.status === "Shipped to branch").length}/{parts.length} parts shipped to your branch.
+              {parts.length > 0 && parts.every((p) => p.status === "Cancelled") ? (
+                <>All parts on this claim were cancelled — no repair needed.</>
+              ) : (
+                <>{parts.filter((p) => p.status === "Shipped to branch").length}/{parts.length} parts shipped to your branch.</>
+              )}
               {parts.length > 0 && parts.every((p) => p.status === "Shipped to branch" || p.status === "Cancelled") && (
                 <button
                   onClick={handleConfirmPartsReceived}
                   className="mt-3 block w-fit px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A]"
                 >
-                  Confirm all parts received
+                  {parts.every((p) => p.status === "Cancelled") ? "Confirm — Close Claim" : "Confirm all parts received"}
                 </button>
               )}
             </div>
