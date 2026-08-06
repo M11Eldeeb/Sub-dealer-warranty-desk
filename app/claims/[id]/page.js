@@ -328,13 +328,6 @@ export default function ClaimDetailPage() {
     }
     setPartsError("");
     await addLog(claim.status, claim.status, `Part '${part.name}' status changed to ${status}`);
-
-    const { data: freshParts } = await supabase.from("claim_parts").select("status").eq("claim_id", claim.id);
-    if (freshParts?.length && freshParts.every((p) => p.status === "Cancelled")) {
-      await setStatus("closed");
-      await addLog(claim.status, "closed", "All parts cancelled — job card closed automatically.");
-    }
-
     load();
   };
 

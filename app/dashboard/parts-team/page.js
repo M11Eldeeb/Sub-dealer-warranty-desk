@@ -80,13 +80,6 @@ export default function PartsTeamDashboard() {
     }
     setRowError("");
     await addLog(part.claim_id, part.claims.status, `Part '${part.name}' status changed to ${newStatus}`);
-
-    const { data: freshParts } = await supabase.from("claim_parts").select("status").eq("claim_id", part.claim_id);
-    if (freshParts?.length && freshParts.every((p) => p.status === "Cancelled")) {
-      await supabase.from("claims").update({ status: "closed" }).eq("id", part.claim_id);
-      await addLog(part.claim_id, "closed", "All parts cancelled — job card closed automatically.");
-    }
-
     load();
   };
 
