@@ -533,8 +533,8 @@ export default function ClaimDetailPage() {
 
   const handleReturnAfterRepair = async () => {
     if (!note.trim()) return;
-    await setStatus("parts_arrived");
-    await addLog(claim.status, "parts_arrived", note);
+    await setStatus("repair_returned");
+    await addLog(claim.status, "repair_returned", note);
     setNote("");
     setShowReturnBox(false);
     load();
@@ -1180,10 +1180,16 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {role === "sub_dealer" && claim.status === "parts_arrived" && (
+          {role === "sub_dealer" && ["parts_arrived", "repair_returned"].includes(claim.status) && (
             <div className="bg-[#E1F2EE] border border-[#C3E5DD] rounded-lg p-4">
+              {claim.status === "repair_returned" && log.find((l) => l.to_status === "repair_returned")?.note && (
+                <div className="text-sm bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-3 mb-3">
+                  <span className="font-bold">Dealer's note: </span>
+                  {log.find((l) => l.to_status === "repair_returned").note}
+                </div>
+              )}
               <div className="text-sm font-bold text-[#1E7A6B] mb-2 flex items-center gap-2">
-                <Wrench size={15} /> Submit after-repair evidence
+                <Wrench size={15} /> {claim.status === "repair_returned" ? "Resubmit after-repair evidence" : "Submit after-repair evidence"}
               </div>
               <label className="flex items-center gap-2 border border-dashed border-[#9BC9BE] rounded px-3 py-3 text-sm text-[#1E7A6B] cursor-pointer hover:bg-white transition-colors">
                 <Paperclip size={15} />

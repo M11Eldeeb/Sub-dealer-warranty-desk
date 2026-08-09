@@ -22,6 +22,7 @@ export const STATUS = {
   awaiting_parts: { label: "Awaiting Parts", color: "#5B4FB0", bg: "#EAE7FA" },
   parts_arrived: { label: "Parts Arrived", color: "#1E7A6B", bg: "#E1F2EE" },
   parts_return: { label: "Parts Return", color: "#C4551B", bg: "#FDEBE0" },
+  repair_returned: { label: "After Repair Returned", color: "#C4551B", bg: "#FDEBE0" },
   repair_submitted: { label: "After Repair Submitted", color: "#0E7490", bg: "#E0F2FE" },
   closed: { label: "Closed", color: "#2E7D46", bg: "#E5F3E8" },
 };
