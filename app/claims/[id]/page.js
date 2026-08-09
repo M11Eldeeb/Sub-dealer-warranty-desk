@@ -548,7 +548,7 @@ export default function ClaimDetailPage() {
 
   if (loading || !claim) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
 
-  const s = STATUS[claim.status];
+  const s = STATUS[claim.status] || STATUS.draft;
   const stampFor = { rejected: ["REJECTED", "#B23A32"], closed: ["CLOSED", "#2E7D46"] };
   const role = profile.role;
 
