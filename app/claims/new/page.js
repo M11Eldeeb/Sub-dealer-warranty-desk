@@ -178,7 +178,7 @@ export default function NewClaimPage() {
         <button
           onClick={() => {
             router.refresh();
-            router.back();
+            router.push("/dashboard/sub-dealer");
           }}
           className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4"
         >

@@ -106,7 +106,7 @@ export default function CreateAccountPage() {
         <button
           onClick={() => {
             router.refresh();
-            router.back();
+            router.push("/dashboard/dealer");
           }}
           className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4"
         >

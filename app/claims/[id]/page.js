@@ -625,7 +625,9 @@ export default function ClaimDetailPage() {
         <button
           onClick={() => {
             router.refresh();
-            router.back();
+            const target =
+              profile?.role === "dealer" ? "/dashboard/dealer" : profile?.role === "parts_team" ? "/dashboard/parts-team" : "/dashboard/sub-dealer";
+            router.push(target);
           }}
           className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4"
         >
