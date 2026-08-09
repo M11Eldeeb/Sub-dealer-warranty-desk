@@ -6,7 +6,7 @@ import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOC
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
-  FileText, History, Paperclip, Plus, CheckCircle2,
+  FileText, History, Paperclip, Plus, CheckCircle2, Loader2,
 } from "lucide-react";
 
 export default function ClaimDetailPage() {
@@ -38,6 +38,7 @@ export default function ClaimDetailPage() {
   const [newFiles, setNewFiles] = useState([]);
   const [afterRepairFiles, setAfterRepairFiles] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
   const [fileUrls, setFileUrls] = useState({});
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [returnRequests, setReturnRequests] = useState([]);
@@ -174,31 +175,46 @@ export default function ClaimDetailPage() {
   };
 
   const handleApprove = async () => {
-    if (!dealerWorkOrder.trim()) return;
-    await supabase.from("claims").update({ dealer_work_order_number: dealerWorkOrder }).eq("id", claim.id);
-    await setStatus("awaiting_parts");
-    await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${dealerWorkOrder}`);
-    await addLog("approved", "awaiting_parts", "Tracking parts shipment.");
-    setDealerWorkOrder("");
-    load();
+    if (!dealerWorkOrder.trim() || actionLoading) return;
+    setActionLoading("approve");
+    try {
+      await supabase.from("claims").update({ dealer_work_order_number: dealerWorkOrder }).eq("id", claim.id);
+      await setStatus("awaiting_parts");
+      await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${dealerWorkOrder}`);
+      await addLog("approved", "awaiting_parts", "Tracking parts shipment.");
+      setDealerWorkOrder("");
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleReturn = async () => {
-    if (!note.trim()) return;
-    await setStatus("returned");
-    await addLog(claim.status, "returned", note);
-    setNote("");
-    setShowReturnBox(false);
-    load();
+    if (!note.trim() || actionLoading) return;
+    setActionLoading("return");
+    try {
+      await setStatus("returned");
+      await addLog(claim.status, "returned", note);
+      setNote("");
+      setShowReturnBox(false);
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleReject = async () => {
-    if (!note.trim()) return;
-    await setStatus("rejected");
-    await addLog(claim.status, "rejected", note);
-    setNote("");
-    setShowRejectBox(false);
-    load();
+    if (!note.trim() || actionLoading) return;
+    setActionLoading("reject");
+    try {
+      await setStatus("rejected");
+      await addLog(claim.status, "rejected", note);
+      setNote("");
+      setShowRejectBox(false);
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const FIELD_LABELS = {
@@ -443,101 +459,128 @@ export default function ClaimDetailPage() {
   };
 
   const submitReturnParts = async () => {
-    if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
+    if (selectedReturnParts.length === 0 || !returnPartReason.trim() || actionLoading) return;
+    setActionLoading("returnParts");
     setReturnPartError("");
-    for (const partId of selectedReturnParts) {
-      const part = parts.find((p) => p.id === partId);
-      const returnQty = Math.min(Math.max(1, parseInt(returnQtyDrafts[partId], 10) || 1), part?.qty || 1);
-      const isFullReturn = returnQty >= (part?.qty || 1);
+    try {
+      for (const partId of selectedReturnParts) {
+        const part = parts.find((p) => p.id === partId);
+        const returnQty = Math.min(Math.max(1, parseInt(returnQtyDrafts[partId], 10) || 1), part?.qty || 1);
+        const isFullReturn = returnQty >= (part?.qty || 1);
 
-      if (isFullReturn) {
-        const { error: partError } = await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
-        if (partError) {
-          setReturnPartError(partError.message);
+        if (isFullReturn) {
+          const { error: partError } = await supabase.from("claim_parts").update({ status: "Parts Return" }).eq("id", partId);
+          if (partError) {
+            setReturnPartError(partError.message);
+            return;
+          }
+        }
+        const { error: reqError } = await supabase.from("part_return_requests").insert({
+          claim_id: claim.id,
+          claim_part_id: partId,
+          reason: returnPartReason.trim(),
+          requested_by: profile.id,
+          qty: returnQty,
+        });
+        if (reqError) {
+          setReturnPartError(reqError.message);
+          return;
+        }
+        await addLog(
+          claim.status,
+          claim.status,
+          `Return requested for part '${part?.name}' (${returnQty} of ${part?.qty}): ${returnPartReason.trim()}`
+        );
+      }
+      if (claim.status !== "parts_return") {
+        await addLog(claim.status, "parts_return", "Claim moved to Parts Return — awaiting resolution.");
+        const statusError = await setStatus("parts_return");
+        if (statusError) {
+          setReturnPartError(`Part(s) marked for return, but the claim status update failed: ${statusError.message}`);
+          await load();
           return;
         }
       }
-      const { error: reqError } = await supabase.from("part_return_requests").insert({
-        claim_id: claim.id,
-        claim_part_id: partId,
-        reason: returnPartReason.trim(),
-        requested_by: profile.id,
-        qty: returnQty,
-      });
-      if (reqError) {
-        setReturnPartError(reqError.message);
-        return;
-      }
-      await addLog(
-        claim.status,
-        claim.status,
-        `Return requested for part '${part?.name}' (${returnQty} of ${part?.qty}): ${returnPartReason.trim()}`
-      );
+      setSelectedReturnParts([]);
+      setReturnQtyDrafts({});
+      setReturnPartReason("");
+      setShowReturnPartBox(false);
+      await load();
+    } finally {
+      setActionLoading(null);
     }
-    if (claim.status !== "parts_return") {
-      await addLog(claim.status, "parts_return", "Claim moved to Parts Return — awaiting resolution.");
-      const statusError = await setStatus("parts_return");
-      if (statusError) {
-        setReturnPartError(`Part(s) marked for return, but the claim status update failed: ${statusError.message}`);
-        load();
-        return;
-      }
-    }
-    setSelectedReturnParts([]);
-    setReturnQtyDrafts({});
-    setReturnPartReason("");
-    setShowReturnPartBox(false);
-    load();
   };
 
   const handleConfirmPartsReceived = async () => {
-    const allCancelled = parts.length > 0 && parts.every((p) => p.status === "Cancelled");
-    if (allCancelled) {
-      await setStatus("closed");
-      await addLog(claim.status, "closed", "All parts cancelled — sub-dealer confirmed, no repair needed. Claim closed.");
-    } else {
-      await setStatus("parts_arrived");
-      await addLog(claim.status, "parts_arrived", "All parts received at branch.");
+    if (actionLoading) return;
+    setActionLoading("confirmParts");
+    try {
+      const allCancelled = parts.length > 0 && parts.every((p) => p.status === "Cancelled");
+      if (allCancelled) {
+        await setStatus("closed");
+        await addLog(claim.status, "closed", "All parts cancelled — sub-dealer confirmed, no repair needed. Claim closed.");
+      } else {
+        await setStatus("parts_arrived");
+        await addLog(claim.status, "parts_arrived", "All parts received at branch.");
+      }
+      await load();
+    } finally {
+      setActionLoading(null);
     }
-    load();
   };
 
   const handleSubmitAfterRepair = async (fileList) => {
-    if (!fileList.length) return;
-    const files = [...fileList];
-    for (const file of files) {
-      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
-      if (!uploadError) {
-        await supabase.from("claim_attachments").insert({
-          claim_id: claim.id,
-          file_path: path,
-          file_name: file.name,
-          stage: "after_repair",
-          uploaded_by: profile.id,
-        });
-        await addLog(claim.status, claim.status, `After-repair attachment added: ${file.name}`);
+    if (!fileList.length || actionLoading) return;
+    setActionLoading("submitAfterRepair");
+    try {
+      const files = [...fileList];
+      for (const file of files) {
+        const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
+        const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
+        if (!uploadError) {
+          await supabase.from("claim_attachments").insert({
+            claim_id: claim.id,
+            file_path: path,
+            file_name: file.name,
+            stage: "after_repair",
+            uploaded_by: profile.id,
+          });
+          await addLog(claim.status, claim.status, `After-repair attachment added: ${file.name}`);
+        }
       }
+      await setStatus("repair_submitted");
+      await addLog(claim.status, "repair_submitted", "After-repair evidence submitted. Awaiting dealer closure.");
+      setAfterRepairFiles([]);
+      await load();
+    } finally {
+      setActionLoading(null);
     }
-    await setStatus("repair_submitted");
-    await addLog(claim.status, "repair_submitted", "After-repair evidence submitted. Awaiting dealer closure.");
-    setAfterRepairFiles([]);
-    load();
   };
 
   const handleCloseClaim = async () => {
-    await setStatus("closed");
-    await addLog(claim.status, "closed", "Claim closed by dealer.");
-    load();
+    if (actionLoading) return;
+    setActionLoading("closeClaim");
+    try {
+      await setStatus("closed");
+      await addLog(claim.status, "closed", "Claim closed by dealer.");
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleReturnAfterRepair = async () => {
-    if (!note.trim()) return;
-    await setStatus("repair_returned");
-    await addLog(claim.status, "repair_returned", note);
-    setNote("");
-    setShowReturnBox(false);
-    load();
+    if (!note.trim() || actionLoading) return;
+    setActionLoading("returnAfterRepair");
+    try {
+      await setStatus("repair_returned");
+      await addLog(claim.status, "repair_returned", note);
+      setNote("");
+      setShowReturnBox(false);
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleDeleteAttachment = async (attachmentId, filePath, fileName) => {
@@ -837,10 +880,11 @@ export default function ClaimDetailPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={submitReturnParts}
-                    disabled={selectedReturnParts.length === 0 || !returnPartReason.trim()}
-                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#B23A32] hover:bg-[#9A2E28] disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={selectedReturnParts.length === 0 || !returnPartReason.trim() || actionLoading !== null}
+                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#B23A32] hover:bg-[#9A2E28] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
-                    Confirm Return
+                    {actionLoading === "returnParts" && <Loader2 size={13} className="animate-spin" />}
+                    {actionLoading === "returnParts" ? "Submitting…" : "Confirm Return"}
                   </button>
                   <button
                     onClick={() => {
@@ -848,7 +892,8 @@ export default function ClaimDetailPage() {
                       setSelectedReturnParts([]);
                       setReturnPartReason("");
                     }}
-                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-[#6E6E6E] hover:bg-[#F4F4F4]"
+                    disabled={actionLoading !== null}
+                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-[#6E6E6E] hover:bg-[#F4F4F4] disabled:opacity-40"
                   >
                     Cancel
                   </button>
@@ -873,10 +918,23 @@ export default function ClaimDetailPage() {
                   icon={Check}
                   label="Approve"
                   onClick={handleApprove}
-                  disabled={!dealerWorkOrder.trim()}
+                  disabled={!dealerWorkOrder.trim() || actionLoading !== null}
+                  loading={actionLoading === "approve"}
                 />
-                <ActionBtn color="#C4551B" icon={RotateCcw} label="Return for Edit" onClick={() => setShowReturnBox((v) => !v)} />
-                <ActionBtn color="#B23A32" icon={X} label="Reject" onClick={() => setShowRejectBox((v) => !v)} />
+                <ActionBtn
+                  color="#C4551B"
+                  icon={RotateCcw}
+                  label="Return for Edit"
+                  onClick={() => setShowReturnBox((v) => !v)}
+                  disabled={actionLoading !== null}
+                />
+                <ActionBtn
+                  color="#B23A32"
+                  icon={X}
+                  label="Reject"
+                  onClick={() => setShowRejectBox((v) => !v)}
+                  disabled={actionLoading !== null}
+                />
               </div>
               {showReturnBox && (
                 <NoteBox
@@ -886,10 +944,19 @@ export default function ClaimDetailPage() {
                   onSubmit={handleReturn}
                   color="#C4551B"
                   label="Send back"
+                  loading={actionLoading === "return"}
                 />
               )}
               {showRejectBox && (
-                <NoteBox placeholder="Reason for rejection..." value={note} onChange={setNote} onSubmit={handleReject} color="#B23A32" label="Confirm rejection" />
+                <NoteBox
+                  placeholder="Reason for rejection..."
+                  value={note}
+                  onChange={setNote}
+                  onSubmit={handleReject}
+                  color="#B23A32"
+                  label="Confirm rejection"
+                  loading={actionLoading === "reject"}
+                />
               )}
             </div>
           )}
@@ -1166,9 +1233,15 @@ export default function ClaimDetailPage() {
               {parts.length > 0 && parts.every((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled") && (
                 <button
                   onClick={handleConfirmPartsReceived}
-                  className="mt-3 block w-fit px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A]"
+                  disabled={actionLoading !== null}
+                  className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {parts.every((p) => p.status === "Cancelled") ? "Confirm — Close Claim" : "Confirm all parts received"}
+                  {actionLoading === "confirmParts" && <Loader2 size={13} className="animate-spin" />}
+                  {actionLoading === "confirmParts"
+                    ? "Processing…"
+                    : parts.every((p) => p.status === "Cancelled")
+                    ? "Confirm — Close Claim"
+                    : "Confirm all parts received"}
                 </button>
               )}
             </div>
@@ -1219,10 +1292,11 @@ export default function ClaimDetailPage() {
               )}
               <button
                 onClick={() => handleSubmitAfterRepair(afterRepairFiles)}
-                disabled={afterRepairFiles.length === 0}
-                className="mt-3 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#1E7A6B] hover:bg-[#175D53] disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={afterRepairFiles.length === 0 || actionLoading !== null}
+                className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#1E7A6B] hover:bg-[#175D53] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Submit After Repair
+                {actionLoading === "submitAfterRepair" && <Loader2 size={13} className="animate-spin" />}
+                {actionLoading === "submitAfterRepair" ? "Uploading & Submitting…" : "Submit After Repair"}
               </button>
             </div>
           )}
@@ -1234,8 +1308,21 @@ export default function ClaimDetailPage() {
               </div>
               <p className="text-sm text-[#0E7490]">Review the evidence above, then close the claim, or return it if something's wrong.</p>
               <div className="flex gap-3">
-                <ActionBtn color="#2E7D46" icon={Check} label="Close Claim" onClick={handleCloseClaim} />
-                <ActionBtn color="#C4551B" icon={RotateCcw} label="Return to Sub-Dealer" onClick={() => setShowReturnBox((v) => !v)} />
+                <ActionBtn
+                  color="#2E7D46"
+                  icon={Check}
+                  label="Close Claim"
+                  onClick={handleCloseClaim}
+                  disabled={actionLoading !== null}
+                  loading={actionLoading === "closeClaim"}
+                />
+                <ActionBtn
+                  color="#C4551B"
+                  icon={RotateCcw}
+                  label="Return to Sub-Dealer"
+                  onClick={() => setShowReturnBox((v) => !v)}
+                  disabled={actionLoading !== null}
+                />
               </div>
               {showReturnBox && (
                 <NoteBox
@@ -1245,6 +1332,7 @@ export default function ClaimDetailPage() {
                   onSubmit={handleReturnAfterRepair}
                   color="#C4551B"
                   label="Send back"
+                  loading={actionLoading === "returnAfterRepair"}
                 />
               )}
             </div>
@@ -1360,7 +1448,7 @@ function Info({ label, value, mono }) {
   );
 }
 
-function ActionBtn({ color, icon: Icon, label, onClick, wide, disabled }) {
+function ActionBtn({ color, icon: Icon, label, onClick, wide, disabled, loading }) {
   return (
     <button
       onClick={onClick}
@@ -1370,22 +1458,23 @@ function ActionBtn({ color, icon: Icon, label, onClick, wide, disabled }) {
       }`}
       style={{ background: color }}
     >
-      <Icon size={14} /> {label}
+      {loading ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />} {loading ? "Processing…" : label}
     </button>
   );
 }
 
-function NoteBox({ placeholder, value, onChange, onSubmit, color, label }) {
+function NoteBox({ placeholder, value, onChange, onSubmit, color, label, loading }) {
   return (
     <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
       <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={2} className="input resize-none text-sm" />
       <button
         onClick={onSubmit}
-        disabled={!value.trim()}
-        className="mt-2 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white disabled:opacity-40"
+        disabled={!value.trim() || loading}
+        className="mt-2 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white disabled:opacity-40 flex items-center gap-1.5"
         style={{ background: color }}
       >
-        {label}
+        {loading && <Loader2 size={13} className="animate-spin" />}
+        {loading ? "Submitting…" : label}
       </button>
     </div>
   );
