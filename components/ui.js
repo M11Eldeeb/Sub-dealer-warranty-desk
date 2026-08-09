@@ -21,6 +21,7 @@ export const STATUS = {
   approved: { label: "Approved", color: "#2A62B0", bg: "#E4EDFA" },
   awaiting_parts: { label: "Awaiting Parts", color: "#5B4FB0", bg: "#EAE7FA" },
   parts_arrived: { label: "Parts Arrived", color: "#1E7A6B", bg: "#E1F2EE" },
+  parts_return: { label: "Parts Return", color: "#C4551B", bg: "#FDEBE0" },
   repair_submitted: { label: "After Repair Submitted", color: "#0E7490", bg: "#E0F2FE" },
   closed: { label: "Closed", color: "#2E7D46", bg: "#E5F3E8" },
 };
@@ -35,6 +36,14 @@ export function cardSubtitle(parts, labor) {
   if (partName) return partName;
   if (!labor || labor.length === 0) return null;
   return [...labor].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.name;
+}
+
+export function sanitizeFileName(name) {
+  const lastDot = name.lastIndexOf(".");
+  const base = lastDot > 0 ? name.slice(0, lastDot) : name;
+  const ext = lastDot > 0 ? name.slice(lastDot) : "";
+  const safeBase = base.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return safeBase + ext;
 }
 
 export function fmt(ts) {

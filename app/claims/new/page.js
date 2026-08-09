@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { sanitizeFileName } from "@/components/ui";
 import { ChevronLeft, ChevronRight, Paperclip, X, Plus } from "lucide-react";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -146,7 +147,7 @@ export default function NewClaimPage() {
     }
 
     for (const file of files) {
-      const path = `${claim.id}/${Date.now()}-${file.name}`;
+      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
       if (uploadError) {
         setError(`Claim created, but "${file.name}" failed to upload: ${uploadError.message}`);

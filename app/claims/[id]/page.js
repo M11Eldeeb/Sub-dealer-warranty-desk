@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
+import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName } from "@/components/ui";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
@@ -291,7 +291,7 @@ export default function ClaimDetailPage() {
 
     // New evidence
     for (const file of newFiles) {
-      const path = `${claim.id}/${Date.now()}-${file.name}`;
+      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
       if (!uploadError) {
         changeNotes.push(`Attachment added: ${file.name}`);
@@ -482,7 +482,7 @@ export default function ClaimDetailPage() {
     if (!fileList.length) return;
     const files = [...fileList];
     for (const file of files) {
-      const path = `${claim.id}/${Date.now()}-${file.name}`;
+      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
       if (!uploadError) {
         await supabase.from("claim_attachments").insert({
