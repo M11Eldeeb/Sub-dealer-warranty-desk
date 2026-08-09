@@ -339,6 +339,33 @@ export default function ClaimDetailPage() {
 
   const addEditLabor = () => setEditLabor((prev) => [...prev, { id: null, code: "", name: "" }]);
 
+  const checkAndRevertReturn = async () => {
+    const { data: openRequests } = await supabase
+      .from("part_return_requests")
+      .select("id")
+      .eq("claim_id", claim.id)
+      .eq("resolved", false);
+    if (!openRequests || openRequests.length === 0) {
+      await setStatus("awaiting_parts");
+      await addLog("parts_return", "awaiting_parts", "All returned parts resolved — claim back to Awaiting Parts.");
+    }
+  };
+
+  const resolveReturnRequest = async (request) => {
+    const { error } = await supabase.from("part_return_requests").update({ resolved: true }).eq("id", request.id);
+    if (error) {
+      setPartsError(error.message);
+      return;
+    }
+    setPartsError("");
+    const part = parts.find((p) => p.id === request.claim_part_id);
+    await addLog(claim.status, claim.status, `Return resolved for part '${part?.name || ""}'.`);
+    if (claim.status === "parts_return") {
+      await checkAndRevertReturn();
+    }
+    load();
+  };
+
   const handlePartStatusChange = async (part, status) => {
     const { error } = await supabase.from("claim_parts").update({ status }).eq("id", part.id);
     if (error) {
@@ -348,13 +375,12 @@ export default function ClaimDetailPage() {
     setPartsError("");
     await addLog(claim.status, claim.status, `Part '${part.name}' status changed to ${status}`);
 
+    if (status !== "Parts Return") {
+      await supabase.from("part_return_requests").update({ resolved: true }).eq("claim_part_id", part.id).eq("resolved", false);
+    }
+
     if (claim.status === "parts_return") {
-      const { data: freshParts } = await supabase.from("claim_parts").select("status").eq("claim_id", claim.id);
-      const stillReturning = freshParts?.some((p) => p.status === "Parts Return");
-      if (!stillReturning) {
-        await setStatus("awaiting_parts");
-        await addLog("parts_return", "awaiting_parts", "All returned parts resolved — claim back to Awaiting Parts.");
-      }
+      await checkAndRevertReturn();
     }
 
     load();
@@ -419,7 +445,6 @@ export default function ClaimDetailPage() {
   const submitReturnParts = async () => {
     if (selectedReturnParts.length === 0 || !returnPartReason.trim()) return;
     setReturnPartError("");
-    let anyFullReturn = false;
     for (const partId of selectedReturnParts) {
       const part = parts.find((p) => p.id === partId);
       const returnQty = Math.min(Math.max(1, parseInt(returnQtyDrafts[partId], 10) || 1), part?.qty || 1);
@@ -431,7 +456,6 @@ export default function ClaimDetailPage() {
           setReturnPartError(partError.message);
           return;
         }
-        anyFullReturn = true;
       }
       const { error: reqError } = await supabase.from("part_return_requests").insert({
         claim_id: claim.id,
@@ -450,7 +474,7 @@ export default function ClaimDetailPage() {
         `Return requested for part '${part?.name}' (${returnQty} of ${part?.qty}): ${returnPartReason.trim()}`
       );
     }
-    if (anyFullReturn && claim.status !== "parts_return") {
+    if (claim.status !== "parts_return") {
       await addLog(claim.status, "parts_return", "Claim moved to Parts Return — awaiting resolution.");
       const statusError = await setStatus("parts_return");
       if (statusError) {
@@ -580,7 +604,7 @@ export default function ClaimDetailPage() {
               <div className="font-mono text-xs text-[#6E6E6E]">{claim.claim_number}</div>
               <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {claim.work_order_number}</h2>
             </div>
-            <StatusTag status={claim.status} parts={parts} />
+            <StatusTag status={claim.status} parts={parts} returnRequests={returnRequests} />
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
@@ -727,12 +751,24 @@ export default function ClaimDetailPage() {
                           )}
                         </div>
                       )}
-                      {p.status === "Parts Return" && returnRequestsForPart.map((r) => (
-                        <div key={r.id} className="mt-1.5 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">
-                          <span className="font-bold">Return requested ({r.qty || 1} of {p.qty}): </span>
-                          {r.reason}
-                        </div>
-                      ))}
+                      {returnRequestsForPart
+                        .filter((r) => !r.resolved)
+                        .map((r) => (
+                          <div key={r.id} className="mt-1.5 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2 flex items-center justify-between gap-2">
+                            <div>
+                              <span className="font-bold">Return requested ({r.qty || 1} of {p.qty}): </span>
+                              {r.reason}
+                            </div>
+                            {(role === "dealer" || role === "parts_team") && (
+                              <button
+                                onClick={() => resolveReturnRequest(r)}
+                                className="shrink-0 px-2 py-1 rounded font-bold text-[10px] uppercase tracking-wide bg-white border border-[#C4551B] text-[#C4551B] hover:bg-[#FDEBE0]"
+                              >
+                                Mark Resolved
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   );
                 })}

@@ -68,7 +68,7 @@ export function getPartsSummary(parts) {
   return { label: `Partially Supplied (${resolved}/${total})`, color: "#5B4FB0", bg: "#EAE7FA" };
 }
 
-export function StatusTag({ status, parts }) {
+export function StatusTag({ status, parts, returnRequests }) {
   if (status === "awaiting_parts" && parts) {
     const summary = getPartsSummary(parts);
     if (summary) {
@@ -82,6 +82,19 @@ export function StatusTag({ status, parts }) {
         </span>
       );
     }
+  }
+  if (status === "parts_return" && returnRequests) {
+    const pending = returnRequests.filter((r) => !r.resolved).length;
+    const s = STATUS.parts_return;
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide"
+        style={{ color: s.color, background: s.bg }}
+      >
+        <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
+        Parts Return {pending > 0 ? `(${pending} pending)` : ""}
+      </span>
+    );
   }
   const s = STATUS[status] || STATUS.draft;
   return (
