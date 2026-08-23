@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
 import ExportDataButton from "@/components/ExportDataButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
-import { Paperclip, Package, Search, AlertCircle, UserPlus } from "lucide-react";
+import { Paperclip, Package, Search, AlertCircle } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "submitted", "returned", "rejected", "approved", "awaiting_parts",
@@ -126,12 +126,6 @@ export default function DealerDashboard() {
               sortOptions={SORT_OPTIONS}
             />
             <ExportDataButton />
-            <Link
-              href="/dashboard/dealer/create-account"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors shrink-0"
-            >
-              <UserPlus size={14} /> Create Account
-            </Link>
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 "use client";
-import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2, RotateCcw, UserPlus } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -135,6 +136,14 @@ export function Header({ profile, onSignOut }) {
         </div>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-[#ADADAD]">{profile?.full_name}</span>
+          {(profile?.role === "dealer" || profile?.role === "admin") && (
+            <Link
+              href="/dashboard/dealer/create-account"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#E4002B] hover:bg-[#B8001F] transition-colors"
+            >
+              <UserPlus size={13} /> Create Account
+            </Link>
+          )}
           <button
             onClick={onSignOut}
             className="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors"

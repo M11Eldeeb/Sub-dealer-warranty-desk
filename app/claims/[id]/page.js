@@ -48,6 +48,7 @@ export default function ClaimDetailPage() {
   const [returnQtyDrafts, setReturnQtyDrafts] = useState({});
   const [returnPartReason, setReturnPartReason] = useState("");
   const [returnPartError, setReturnPartError] = useState("");
+  const [techEmailNote, setTechEmailNote] = useState("");
 
   const load = async () => {
     const {
@@ -260,6 +261,7 @@ export default function ClaimDetailPage() {
   const handleSendToTechnical = async () => {
     if (actionLoading) return;
     setActionLoading("sendTechnical");
+    setTechEmailNote("");
     try {
       await setStatus("technical_review");
       await addLog(
@@ -268,6 +270,20 @@ export default function ClaimDetailPage() {
         claim.technical_verified ? "Sent back to Technical Team for another look." : "Sent to Technical Team for verification."
       );
       await load();
+
+      try {
+        const res = await fetch("/api/notify-technical-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ claimId: claim.id }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setTechEmailNote(`Claim moved to Technical Review, but the notification email failed: ${data.error || "unknown error"}`);
+        }
+      } catch {
+        setTechEmailNote("Claim moved to Technical Review, but the notification email could not be sent (network error).");
+      }
     } finally {
       setActionLoading(null);
     }
@@ -1096,6 +1112,9 @@ export default function ClaimDetailPage() {
                   loading={actionLoading === "sendTechnical"}
                 />
               </div>
+              {techEmailNote && (
+                <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{techEmailNote}</div>
+              )}
               {!dealerEditMode && (
                 <button
                   onClick={startDealerEdit}
