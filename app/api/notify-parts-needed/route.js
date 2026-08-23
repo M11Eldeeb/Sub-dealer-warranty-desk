@@ -27,62 +27,54 @@ export async function POST(request) {
 
   const { data: claim } = await admin
     .from("claims")
-    .select("claim_number, work_order_number, dealer_work_order_number, vin, branches(name)")
+    .select("claim_number, work_order_number, dealer_work_order_number, vin, branches(name), claim_parts(name, part_number, qty)")
     .eq("id", claimId)
     .single();
   if (!claim) {
     return NextResponse.json({ error: "Claim not found." }, { status: 404 });
   }
 
-  // Find every technical_team and admin account, and look up their real emails via the admin API
-  // (profiles doesn't store email — only auth.users does, and that's only readable with the service role).
-  const { data: recipientProfiles } = await admin.from("profiles").select("id, role").in("role", ["technical_team", "admin"]);
+  const { data: partsTeamProfiles } = await admin.from("profiles").select("id").eq("role", "parts_team");
 
   const toEmails = [];
-  const ccEmails = new Set();
-  if (user.email) ccEmails.add(user.email);
-
-  for (const p of recipientProfiles || []) {
+  for (const p of partsTeamProfiles || []) {
     const { data: authUserResult } = await admin.auth.admin.getUserById(p.id);
     const email = authUserResult?.user?.email;
-    if (!email) continue;
-    if (p.role === "technical_team") toEmails.push(email);
-    else ccEmails.add(email);
+    if (email) toEmails.push(email);
   }
 
+  // Always start the reminder clock, even if there's no one to notify right now or the email fails —
+  // so a parts_team account added later still gets caught by the daily reminder check.
+  await admin
+    .from("claims")
+    .update({ awaiting_parts_since: new Date().toISOString(), parts_reminder_sent_at: null })
+    .eq("id", claimId);
+
   if (toEmails.length === 0) {
-    return NextResponse.json({ error: "No technical team accounts exist to notify." }, { status: 400 });
+    return NextResponse.json({ error: "No parts team accounts exist to notify." }, { status: 400 });
   }
+
+  const partsRows = (claim.claim_parts || [])
+    .map((p) => `${p.name}${p.part_number ? ` (${p.part_number})` : ""} x${p.qty}`)
+    .join("<br/>") || "—";
 
   const html = `
     <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111111;">
-      <p>A claim needs technical verification before the dealer can move forward with it.</p>
-      ${claimInfoTable(claim, [["Requested by", requesterProfile.full_name]])}
+      <p>A claim was just approved and needs parts sourced for <b>${claim.branches?.name || "this branch"}</b>.</p>
+      ${claimInfoTable(claim, [["Parts needed", partsRows]])}
       ${claimLinkButton(claimId)}
     </div>
   `;
 
-  // Track when this review started and who to CC on reminders, so the daily cron knows when to nudge again.
-  // Done before the send attempt so the reminder clock starts even if this first email fails.
-  await admin
-    .from("claims")
-    .update({
-      technical_review_since: new Date().toISOString(),
-      last_technical_reminder_at: null,
-      technical_review_requested_by: user.id,
-    })
-    .eq("id", claimId);
-
   try {
     await sendEmail({
       to: toEmails,
-      cc: Array.from(ccEmails),
-      subject: `Technical Verification Needed — Claim ${claim.claim_number}`,
+      subject: `Parts Needed — Claim ${claim.claim_number} (${claim.branches?.name || "branch"})`,
       html,
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 502 });
   }
 
-  return NextResponse.json({ success: true, notified: toEmails.length, cced: ccEmails.size });
+  return NextResponse.json({ success: true, notified: toEmails.length });
 }

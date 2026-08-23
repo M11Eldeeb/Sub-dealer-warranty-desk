@@ -49,6 +49,7 @@ export default function ClaimDetailPage() {
   const [returnPartReason, setReturnPartReason] = useState("");
   const [returnPartError, setReturnPartError] = useState("");
   const [techEmailNote, setTechEmailNote] = useState("");
+  const [partsEmailNote, setPartsEmailNote] = useState("");
 
   const load = async () => {
     const {
@@ -218,6 +219,7 @@ export default function ClaimDetailPage() {
   const handleApprove = async () => {
     if (!dealerWorkOrder.trim() || actionLoading) return;
     setActionLoading("approve");
+    setPartsEmailNote("");
     try {
       await supabase.from("claims").update({ dealer_work_order_number: dealerWorkOrder }).eq("id", claim.id);
       await setStatus("awaiting_parts");
@@ -225,6 +227,20 @@ export default function ClaimDetailPage() {
       await addLog("approved", "awaiting_parts", "Tracking parts shipment.");
       setDealerWorkOrder("");
       await load();
+
+      try {
+        const res = await fetch("/api/notify-parts-needed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ claimId: claim.id }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setPartsEmailNote(`Claim approved, but the parts team notification email failed: ${data.error || "unknown error"}`);
+        }
+      } catch {
+        setPartsEmailNote("Claim approved, but the parts team notification email could not be sent (network error).");
+      }
     } finally {
       setActionLoading(null);
     }
@@ -1112,6 +1128,9 @@ export default function ClaimDetailPage() {
                   loading={actionLoading === "sendTechnical"}
                 />
               </div>
+              {partsEmailNote && (
+                <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{partsEmailNote}</div>
+              )}
               {techEmailNote && (
                 <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{techEmailNote}</div>
               )}
