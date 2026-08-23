@@ -511,7 +511,7 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const handleConfirmPartsReceived = async () => {
+  const handleConfirmPartsReceived = async (forced = false) => {
     if (actionLoading) return;
     setActionLoading("confirmParts");
     try {
@@ -521,7 +521,13 @@ export default function ClaimDetailPage() {
         await addLog(claim.status, "closed", "All parts cancelled — sub-dealer confirmed, no repair needed. Claim closed.");
       } else {
         await setStatus("parts_arrived");
-        await addLog(claim.status, "parts_arrived", "All parts received at branch.");
+        await addLog(
+          claim.status,
+          "parts_arrived",
+          forced
+            ? "Sub-dealer manually marked parts as received — parts team's tracking status wasn't fully updated."
+            : "All parts received at branch."
+        );
       }
       await load();
     } finally {
@@ -559,8 +565,24 @@ export default function ClaimDetailPage() {
 
   const handleCloseClaim = async () => {
     if (actionLoading) return;
+    if (attachments.length > 0) {
+      const confirmed = window.confirm(
+        `Closing this claim will permanently delete all ${attachments.length} evidence file(s) from storage to save space. Make sure you've already downloaded a copy (e.g. via "Download All"). This can't be undone. Continue?`
+      );
+      if (!confirmed) return;
+    }
     setActionLoading("closeClaim");
     try {
+      if (attachments.length > 0) {
+        const paths = attachments.map((a) => a.file_path);
+        await supabase.storage.from("evidence").remove(paths);
+        await supabase.from("claim_attachments").delete().eq("claim_id", claim.id);
+        await addLog(
+          claim.status,
+          claim.status,
+          `Evidence files removed from storage on closing (${attachments.length} file(s)) — all other claim data retained.`
+        );
+      }
       await setStatus("closed");
       await addLog(claim.status, "closed", "Claim closed by dealer.");
       await load();
@@ -1246,6 +1268,19 @@ export default function ClaimDetailPage() {
                     : "Confirm all parts received"}
                 </button>
               )}
+              {parts.length > 0 &&
+                !parts.every((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled") && (
+                  <button
+                    onClick={() => handleConfirmPartsReceived(true)}
+                    disabled={actionLoading !== null}
+                    className="mt-3 flex items-center gap-1.5 text-xs text-[#5B4FB0] underline hover:no-underline disabled:opacity-40"
+                  >
+                    {actionLoading === "confirmParts" && <Loader2 size={12} className="animate-spin" />}
+                    {actionLoading === "confirmParts"
+                      ? "Processing…"
+                      : "Parts have already physically arrived, but the status above isn't updated? Mark parts arrived anyway"}
+                  </button>
+                )}
             </div>
           )}
 
