@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
 import ExportDataButton from "@/components/ExportDataButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
-import { Paperclip, Package, Search, AlertCircle } from "lucide-react";
+import { Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "submitted", "returned", "rejected", "approved", "awaiting_parts",
