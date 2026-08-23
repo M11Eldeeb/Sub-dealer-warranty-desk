@@ -6,7 +6,7 @@ import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOC
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
-  FileText, History, Paperclip, Plus, CheckCircle2, Loader2, Stethoscope,
+  FileText, History, Paperclip, Plus, CheckCircle2, Loader2, Stethoscope, Pencil,
 } from "lucide-react";
 
 export default function ClaimDetailPage() {
@@ -26,6 +26,7 @@ export default function ClaimDetailPage() {
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [editData, setEditData] = useState(null);
   const [editParts, setEditParts] = useState(null);
+  const [dealerEditMode, setDealerEditMode] = useState(false);
   const [removedPartIds, setRemovedPartIds] = useState([]);
   const [editLabor, setEditLabor] = useState(null);
   const [removedLaborIds, setRemovedLaborIds] = useState([]);
@@ -94,6 +95,16 @@ export default function ClaimDetailPage() {
   };
 
   useEffect(() => {
+    if (!claim) return;
+    if (dealerEditMode && claim.status !== "submitted" && claim.status !== "technical_review") {
+      setDealerEditMode(false);
+      setEditData(null);
+      setEditParts(null);
+      setEditLabor(null);
+    }
+  }, [claim, dealerEditMode]);
+
+  useEffect(() => {
     load();
   }, [params.id]);
 
@@ -157,6 +168,35 @@ export default function ClaimDetailPage() {
     setLocationDrafts(location);
     setSupersedingDrafts(superseding);
   }, [parts]);
+
+  const startDealerEdit = () => {
+    setEditData({
+      vin: claim.vin,
+      mileage: claim.mileage,
+      plate: claim.plate,
+      work_order_number: claim.work_order_number,
+      reception_date: claim.reception_date,
+      customer_complaint: claim.customer_complaint,
+      cause_of_defect: claim.cause_of_defect,
+      correction: claim.correction,
+      comment: claim.comment,
+    });
+    setEditParts(parts.map((p) => ({ id: p.id, name: p.name, partNumber: p.part_number || "", qty: p.qty })));
+    setRemovedPartIds([]);
+    setEditLabor(labor.map((l) => ({ id: l.id, code: l.labor_code || "", name: l.labor_name })));
+    setRemovedLaborIds([]);
+    setDealerEditMode(true);
+  };
+
+  const cancelDealerEdit = () => {
+    setDealerEditMode(false);
+    setEditData(null);
+    setEditParts(null);
+    setEditLabor(null);
+    setRemovedPartIds([]);
+    setRemovedLaborIds([]);
+    setNewFiles([]);
+  };
 
   const addLog = async (from_status, to_status, note) => {
     await supabase.from("claim_status_log").insert({
@@ -287,7 +327,8 @@ export default function ClaimDetailPage() {
   };
   const SHORT_FIELDS = ["vin", "mileage", "plate", "work_order_number", "reception_date"];
 
-  const handleSaveAndResubmit = async () => {
+  const saveEditedFields = async (mode) => {
+    // mode: "resubmit" (sub-dealer, from returned) | "dealerEdit" (dealer/tech, no status change)
     if (!editData) return;
     setSaving(true);
 
@@ -307,7 +348,7 @@ export default function ClaimDetailPage() {
 
     await supabase
       .from("claims")
-      .update({ ...editData, mileage: parseInt(editData.mileage, 10), status: "submitted" })
+      .update(mode === "resubmit" ? { ...editData, mileage: parseInt(editData.mileage, 10), status: "submitted" } : { ...editData, mileage: parseInt(editData.mileage, 10) })
       .eq("id", claim.id);
 
     // Part-level diffs
@@ -382,11 +423,26 @@ export default function ClaimDetailPage() {
       await addLog(claim.status, claim.status, changeNote);
     }
 
-    await addLog(claim.status, "submitted", "Edited and resubmitted.");
+    if (mode === "resubmit") {
+      await addLog(claim.status, "submitted", "Edited and resubmitted.");
+    } else {
+      const actorLabel = role === "dealer" ? "dealer" : "technical team";
+      await addLog(
+        claim.status,
+        claim.status,
+        changeNotes.length > 0
+          ? `Data corrected by ${actorLabel} (no status change).`
+          : `${actorLabel === "dealer" ? "Dealer" : "Technical team"} opened edit mode — no changes made.`
+      );
+      setDealerEditMode(false);
+    }
     setNewFiles([]);
     setSaving(false);
     load();
   };
+
+  const handleSaveAndResubmit = () => saveEditedFields("resubmit");
+  const handleDealerSaveEdit = () => saveEditedFields("dealerEdit");
 
   const updateEditPart = (index, field, value) => {
     setEditParts((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
@@ -773,7 +829,9 @@ export default function ClaimDetailPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               {attachments.map((a) => {
-                const canDelete = role === "sub_dealer" && claim.status === "returned" && a.stage === "evidence_before";
+                const canDelete =
+                  (role === "sub_dealer" && claim.status === "returned" && a.stage === "evidence_before") ||
+                  (dealerEditMode && (role === "dealer" || role === "technical_team"));
                 const url = fileUrls[a.id];
                 const isMedia = isImage(a.file_name) || isVideo(a.file_name);
 
@@ -1032,6 +1090,14 @@ export default function ClaimDetailPage() {
                   loading={actionLoading === "sendTechnical"}
                 />
               </div>
+              {!dealerEditMode && (
+                <button
+                  onClick={startDealerEdit}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#4D4D4D] hover:text-[#111111] underline"
+                >
+                  <Pencil size={12} /> Edit claim details, parts, labor, or evidence directly
+                </button>
+              )}
               {showReturnBox && (
                 <NoteBox
                   placeholder="Explain what the sub-dealer needs to fix or add..."
@@ -1083,6 +1149,14 @@ export default function ClaimDetailPage() {
                   disabled={actionLoading !== null}
                 />
               </div>
+              {!dealerEditMode && (
+                <button
+                  onClick={startDealerEdit}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#4D4D4D] hover:text-[#111111] underline"
+                >
+                  <Pencil size={12} /> Edit claim details, parts, labor, or evidence directly
+                </button>
+              )}
               {showReturnBox && (
                 <NoteBox
                   placeholder="Explain why this can't be verified yet..."
@@ -1193,7 +1267,7 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {role === "sub_dealer" && claim.status === "returned" && editData && (
+          {((role === "sub_dealer" && claim.status === "returned") || dealerEditMode) && editData && (
             <div className="bg-white border border-[#E0E0E0] rounded-lg p-5">
               {log.find((l) => l.to_status === "returned" && l.from_status !== "returned")?.note && (
                 <div className="text-sm bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-3 mb-4">
@@ -1363,13 +1437,24 @@ export default function ClaimDetailPage() {
                   />
                 </Field>
               </div>
-              <button
-                onClick={handleSaveAndResubmit}
-                disabled={saving}
-                className="mt-4 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
-              >
-                {saving ? "Submitting…" : "Save & Resubmit Claim"}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={dealerEditMode ? handleDealerSaveEdit : handleSaveAndResubmit}
+                  disabled={saving}
+                  className="mt-4 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : dealerEditMode ? "Save Changes" : "Save & Resubmit Claim"}
+                </button>
+                {dealerEditMode && (
+                  <button
+                    onClick={cancelDealerEdit}
+                    disabled={saving}
+                    className="mt-4 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-[#6E6E6E] hover:bg-[#F4F4F4] disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
