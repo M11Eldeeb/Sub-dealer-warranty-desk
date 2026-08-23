@@ -18,5 +18,6 @@ export default async function Home() {
   if (!profile) redirect("/complete-profile");
   if (profile.role === "dealer") redirect("/dashboard/dealer");
   if (profile.role === "parts_team") redirect("/dashboard/parts-team");
+  if (profile.role === "technical_team") redirect("/dashboard/technical-team");
   redirect("/dashboard/sub-dealer");
 }

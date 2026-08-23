@@ -19,6 +19,7 @@ export const STATUS = {
   returned: { label: "Returned for Edit", color: "#C4551B", bg: "#FDEBE0" },
   rejected: { label: "Rejected", color: "#B23A32", bg: "#FAE4E2" },
   approved: { label: "Approved", color: "#2A62B0", bg: "#E4EDFA" },
+  technical_review: { label: "Technical Review", color: "#6D28D9", bg: "#EDE7FC" },
   awaiting_parts: { label: "Awaiting Parts", color: "#5B4FB0", bg: "#EAE7FA" },
   parts_arrived: { label: "Parts Arrived", color: "#1E7A6B", bg: "#E1F2EE" },
   parts_return: { label: "Parts Return", color: "#C4551B", bg: "#FDEBE0" },
@@ -120,7 +121,13 @@ export function Header({ profile, onSignOut }) {
           <div>
             <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
             <div className="text-[10px] text-[#ADADAD] uppercase tracking-wide mt-0.5">
-              {profile?.role === "dealer" ? "Dealer Console" : profile?.role === "parts_team" ? "Parts Team Console" : "Sub-Dealer Portal"}
+              {profile?.role === "dealer"
+                ? "Dealer Console"
+                : profile?.role === "parts_team"
+                ? "Parts Team Console"
+                : profile?.role === "technical_team"
+                ? "Technical Team Console"
+                : "Sub-Dealer Portal"}
             </div>
           </div>
         </div>

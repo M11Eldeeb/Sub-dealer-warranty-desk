@@ -152,7 +152,7 @@ export default function CreateAccountPage() {
 
           <Field label="Role">
             <div className="flex gap-2">
-              {["sub_dealer", "dealer", "parts_team"].map((r) => (
+              {["sub_dealer", "dealer", "parts_team", "technical_team"].map((r) => (
                 <button
                   key={r}
                   type="button"
@@ -161,7 +161,7 @@ export default function CreateAccountPage() {
                     role === r ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
                   }`}
                 >
-                  {r === "sub_dealer" ? "Sub-Dealer" : r === "dealer" ? "Dealer" : "Parts Team"}
+                  {r === "sub_dealer" ? "Sub-Dealer" : r === "dealer" ? "Dealer" : r === "parts_team" ? "Parts Team" : "Technical Team"}
                 </button>
               ))}
             </div>

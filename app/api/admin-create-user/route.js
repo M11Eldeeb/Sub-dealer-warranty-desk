@@ -22,7 +22,7 @@ export async function POST(request) {
   if (!fullName || !email || !password || !role) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
-  if (!["sub_dealer", "dealer", "parts_team"].includes(role)) {
+  if (!["sub_dealer", "dealer", "parts_team", "technical_team"].includes(role)) {
     return NextResponse.json({ error: "Invalid role." }, { status: 400 });
   }
   if (password.length < 6) {

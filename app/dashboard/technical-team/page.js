@@ -4,23 +4,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
-import ExportDataButton from "@/components/ExportDataButton";
-import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
-import { Paperclip, Package, Search, AlertCircle, UserPlus } from "lucide-react";
+import { Paperclip, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
-const STATUS_OPTIONS = [
-  "submitted", "returned", "rejected", "approved", "awaiting_parts",
-  "parts_arrived", "repair_submitted", "closed",
-];
-const SORT_OPTIONS = [
-  { value: "created_at", label: "Creation Date" },
-  { value: "reception_date", label: "Reception Date" },
-  { value: "status", label: "Status" },
-  { value: "claim_number", label: "Claim Number" },
-  { value: "branch", label: "Branch" },
-];
-
-export default function DealerDashboard() {
+export default function TechnicalTeamDashboard() {
   const router = useRouter();
   const supabase = createClient();
   const [profile, setProfile] = useState(null);
@@ -28,7 +14,6 @@ export default function DealerDashboard() {
   const [filter, setFilter] = useState("needs_review");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -39,13 +24,13 @@ export default function DealerDashboard() {
     if (!user) return router.push("/login");
 
     const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    if (!prof) return router.push("/login?setup=1");
-    if (prof.role !== "dealer") return router.push("/dashboard/sub-dealer");
+    if (!prof || prof.role !== "technical_team") return router.push("/");
     setProfile(prof);
 
+    // RLS already restricts this to claims currently in technical review, or ones this role has verified before.
     const { data: claimsData } = await supabase
       .from("claims")
-      .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name:labor_name, created_at)")
+      .select("*, branches(name), claim_attachments(count)")
       .order("created_at", { ascending: false });
 
     setClaims(claimsData || []);
@@ -65,23 +50,22 @@ export default function DealerDashboard() {
   };
 
   const counts = {
-    needs_review: claims.filter((c) => ["submitted", "repair_submitted"].includes(c.status)).length,
-    active: claims.filter((c) => !["closed", "rejected"].includes(c.status)).length,
-    history: claims.filter((c) => ["closed", "rejected"].includes(c.status)).length,
+    needs_review: claims.filter((c) => c.status === "technical_review").length,
+    verified: claims.filter((c) => c.technical_verified).length,
   };
 
-  const branchList = Array.from(
-    new Map(claims.filter((c) => c.branches).map((c) => [c.branch_id, { id: c.branch_id, name: c.branches.name }])).values()
-  ).sort((a, b) => a.name.localeCompare(b.name));
-
-  const tabFiltered = claims.filter((c) => {
-    if (filter === "needs_review" && !["submitted", "repair_submitted"].includes(c.status)) return false;
-    if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
-    if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
-    if (query && !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
-    return true;
-  });
-  const filtered = applyClaimsFilterSort(tabFiltered, toolbar);
+  const filtered = claims
+    .filter((c) => {
+      if (filter === "needs_review" && c.status !== "technical_review") return false;
+      if (filter === "verified" && !c.technical_verified) return false;
+      if (
+        query &&
+        !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())
+      )
+        return false;
+      return true;
+    })
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
   if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
 
@@ -93,8 +77,7 @@ export default function DealerDashboard() {
           <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm">
             {[
               ["needs_review", "Needs Review"],
-              ["active", "Ongoing"],
-              ["history", "History"],
+              ["verified", "Verified"],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -108,30 +91,14 @@ export default function DealerDashboard() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search claims or branches..."
-                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
-              />
-            </div>
-            <ClaimsToolbar
-              state={toolbar}
-              onChange={setToolbar}
-              statusOptions={STATUS_OPTIONS}
-              branches={branchList}
-              sortOptions={SORT_OPTIONS}
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search claims or branches..."
+              className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
             />
-            <ExportDataButton />
-            <Link
-              href="/dashboard/dealer/create-account"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors shrink-0"
-            >
-              <UserPlus size={14} /> Create Account
-            </Link>
           </div>
         </div>
 
@@ -157,20 +124,14 @@ export default function DealerDashboard() {
                       {c.vin} · {c.plate}
                     </div>
                   </div>
-                  <StatusTag status={c.status} parts={c.claim_parts} />
+                  <StatusTag status={c.status} />
                 </div>
-                <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor)}</div>
-                <div className="flex items-center gap-4 mt-3 text-xs text-[#6E6E6E]">
+                <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor) || c.customer_complaint}</div>
+                <div className="flex items-center gap-3 mt-3 text-xs text-[#6E6E6E]">
                   <span className="flex items-center gap-1">
                     <Paperclip size={12} />
                     {c.claim_attachments?.[0]?.count ?? 0}
                   </span>
-                  {c.claim_parts?.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Package size={12} />
-                      {c.claim_parts.filter((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
-                    </span>
-                  )}
                   {c.technical_verified && (
                     <span className="flex items-center gap-1 text-[#2E7D46] font-bold">
                       <CheckCircle2 size={12} /> Verified

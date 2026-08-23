@@ -19,6 +19,7 @@ export default function CompleteProfilePage() {
   const roleToPath = (r) => {
     if (r === "dealer") return "/dashboard/dealer";
     if (r === "parts_team") return "/dashboard/parts-team";
+    if (r === "technical_team") return "/dashboard/technical-team";
     return "/dashboard/sub-dealer";
   };
 
@@ -122,6 +123,15 @@ export default function CompleteProfilePage() {
                 }`}
               >
                 Parts Team
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("technical_team")}
+                className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
+                  role === "technical_team" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
+                }`}
+              >
+                Technical Team
               </button>
             </div>
             {role === "sub_dealer" && (

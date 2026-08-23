@@ -6,7 +6,7 @@ import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOC
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
-  FileText, History, Paperclip, Plus, CheckCircle2, Loader2,
+  FileText, History, Paperclip, Plus, CheckCircle2, Loader2, Stethoscope,
 } from "lucide-react";
 
 export default function ClaimDetailPage() {
@@ -209,6 +209,63 @@ export default function ClaimDetailPage() {
     try {
       await setStatus("rejected");
       await addLog(claim.status, "rejected", note);
+      setNote("");
+      setShowRejectBox(false);
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSendToTechnical = async () => {
+    if (actionLoading) return;
+    setActionLoading("sendTechnical");
+    try {
+      await setStatus("technical_review");
+      await addLog(
+        claim.status,
+        "technical_review",
+        claim.technical_verified ? "Sent back to Technical Team for another look." : "Sent to Technical Team for verification."
+      );
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleTechApprove = async () => {
+    if (actionLoading) return;
+    setActionLoading("techApprove");
+    try {
+      await supabase.from("claims").update({ technical_verified: true }).eq("id", claim.id);
+      await setStatus("submitted");
+      await addLog(claim.status, "submitted", "Technically verified — sent back to dealer.");
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleTechReturn = async () => {
+    if (!note.trim() || actionLoading) return;
+    setActionLoading("techReturn");
+    try {
+      await setStatus("submitted");
+      await addLog(claim.status, "submitted", `Returned by Technical Team: ${note}`);
+      setNote("");
+      setShowReturnBox(false);
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleTechReject = async () => {
+    if (!note.trim() || actionLoading) return;
+    setActionLoading("techReject");
+    try {
+      await setStatus("rejected");
+      await addLog(claim.status, "rejected", `Rejected by Technical Team: ${note}`);
       setNote("");
       setShowRejectBox(false);
       await load();
@@ -671,7 +728,14 @@ export default function ClaimDetailPage() {
               <div className="font-mono text-xs text-[#6E6E6E]">{claim.claim_number}</div>
               <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {claim.work_order_number}</h2>
             </div>
-            <StatusTag status={claim.status} parts={parts} returnRequests={returnRequests} />
+            <div className="flex items-center gap-2">
+              {claim.technical_verified && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide text-[#2E7D46] bg-[#E5F3E8]">
+                  <CheckCircle2 size={12} /> Technically Verified
+                </span>
+              )}
+              <StatusTag status={claim.status} parts={parts} returnRequests={returnRequests} />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
@@ -959,6 +1023,14 @@ export default function ClaimDetailPage() {
                   onClick={() => setShowRejectBox((v) => !v)}
                   disabled={actionLoading !== null}
                 />
+                <ActionBtn
+                  color="#6D28D9"
+                  icon={Stethoscope}
+                  label={claim.technical_verified ? "Send Back to Technical Team" : "Get Technical Verification"}
+                  onClick={handleSendToTechnical}
+                  disabled={actionLoading !== null}
+                  loading={actionLoading === "sendTechnical"}
+                />
               </div>
               {showReturnBox && (
                 <NoteBox
@@ -982,6 +1054,63 @@ export default function ClaimDetailPage() {
                   loading={actionLoading === "reject"}
                 />
               )}
+            </div>
+          )}
+
+          {role === "technical_team" && claim.status === "technical_review" && (
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <ActionBtn
+                  color="#2E7D46"
+                  icon={Check}
+                  label="Approve"
+                  onClick={handleTechApprove}
+                  disabled={actionLoading !== null}
+                  loading={actionLoading === "techApprove"}
+                />
+                <ActionBtn
+                  color="#C4551B"
+                  icon={RotateCcw}
+                  label="Return to Dealer"
+                  onClick={() => setShowReturnBox((v) => !v)}
+                  disabled={actionLoading !== null}
+                />
+                <ActionBtn
+                  color="#B23A32"
+                  icon={X}
+                  label="Reject"
+                  onClick={() => setShowRejectBox((v) => !v)}
+                  disabled={actionLoading !== null}
+                />
+              </div>
+              {showReturnBox && (
+                <NoteBox
+                  placeholder="Explain why this can't be verified yet..."
+                  value={note}
+                  onChange={setNote}
+                  onSubmit={handleTechReturn}
+                  color="#C4551B"
+                  label="Send back to dealer"
+                  loading={actionLoading === "techReturn"}
+                />
+              )}
+              {showRejectBox && (
+                <NoteBox
+                  placeholder="Reason for rejection..."
+                  value={note}
+                  onChange={setNote}
+                  onSubmit={handleTechReject}
+                  color="#B23A32"
+                  label="Confirm rejection"
+                  loading={actionLoading === "techReject"}
+                />
+              )}
+            </div>
+          )}
+
+          {role === "sub_dealer" && claim.status === "technical_review" && (
+            <div className="bg-[#EDE7FC] border border-[#D9CCF7] rounded-lg p-4 text-sm text-[#6D28D9] flex items-center gap-2">
+              <Stethoscope size={15} /> Your claim is undergoing technical verification.
             </div>
           )}
 
