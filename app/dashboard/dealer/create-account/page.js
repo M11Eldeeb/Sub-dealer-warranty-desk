@@ -37,7 +37,7 @@ export default function CreateAccountPage() {
       if (!user) return router.push("/login");
 
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof || prof.role !== "dealer") return router.push("/");
+      if (!prof || !["dealer", "admin"].includes(prof.role)) return router.push("/");
       setProfile(prof);
 
       const { data: branchData } = await supabase.from("branches").select("*").order("name");

@@ -426,13 +426,13 @@ export default function ClaimDetailPage() {
     if (mode === "resubmit") {
       await addLog(claim.status, "submitted", "Edited and resubmitted.");
     } else {
-      const actorLabel = role === "dealer" ? "dealer" : "technical team";
+      const actorLabel = role === "admin" ? "admin" : role === "dealer" ? "dealer" : "technical team";
       await addLog(
         claim.status,
         claim.status,
         changeNotes.length > 0
           ? `Data corrected by ${actorLabel} (no status change).`
-          : `${actorLabel === "dealer" ? "Dealer" : "Technical team"} opened edit mode — no changes made.`
+          : `${actorLabel.charAt(0).toUpperCase() + actorLabel.slice(1)} opened edit mode — no changes made.`
       );
       setDealerEditMode(false);
     }
@@ -761,7 +761,13 @@ export default function ClaimDetailPage() {
           onClick={() => {
             router.refresh();
             const target =
-              profile?.role === "dealer" ? "/dashboard/dealer" : profile?.role === "parts_team" ? "/dashboard/parts-team" : "/dashboard/sub-dealer";
+              profile?.role === "dealer" || profile?.role === "admin"
+                ? "/dashboard/dealer"
+                : profile?.role === "parts_team"
+                ? "/dashboard/parts-team"
+                : profile?.role === "technical_team"
+                ? "/dashboard/technical-team"
+                : "/dashboard/sub-dealer";
             router.push(target);
           }}
           className="flex items-center gap-1 text-sm text-[#4D4D4D] hover:text-[#111111] mb-4"
@@ -825,13 +831,13 @@ export default function ClaimDetailPage() {
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E]">Evidence</div>
-              <DownloadAttachmentsButton claimNumber={claim.claim_number} attachments={attachments} />
+              <DownloadAttachmentsButton claim={claim} parts={parts} labor={labor} attachments={attachments} />
             </div>
             <div className="flex flex-wrap gap-2">
               {attachments.map((a) => {
                 const canDelete =
                   (role === "sub_dealer" && claim.status === "returned" && a.stage === "evidence_before") ||
-                  (dealerEditMode && (role === "dealer" || role === "technical_team"));
+                  (dealerEditMode && (role === "dealer" || role === "technical_team" || role === "admin"));
                 const url = fileUrls[a.id];
                 const isMedia = isImage(a.file_name) || isVideo(a.file_name);
 
@@ -948,7 +954,7 @@ export default function ClaimDetailPage() {
                               <span className="font-bold">Return requested ({r.qty || 1} of {p.qty}): </span>
                               {r.reason}
                             </div>
-                            {(role === "dealer" || role === "parts_team") && (
+                            {(role === "dealer" || role === "parts_team" || role === "admin") && (
                               <button
                                 onClick={() => resolveReturnRequest(r)}
                                 className="shrink-0 px-2 py-1 rounded font-bold text-[10px] uppercase tracking-wide bg-white border border-[#C4551B] text-[#C4551B] hover:bg-[#FDEBE0]"
@@ -1047,7 +1053,7 @@ export default function ClaimDetailPage() {
               </div>
             ))}
 
-          {role === "dealer" && claim.status === "submitted" && (
+          {(role === "dealer" || role === "admin") && claim.status === "submitted" && (
             <div className="space-y-3">
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
                 <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Dealer Work Order Number</label>
@@ -1123,7 +1129,7 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {role === "technical_team" && claim.status === "technical_review" && (
+          {(role === "technical_team" || role === "admin") && claim.status === "technical_review" && (
             <div className="space-y-3">
               <div className="flex gap-3">
                 <ActionBtn
@@ -1188,7 +1194,7 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {(role === "dealer" || role === "parts_team") &&
+          {(role === "dealer" || role === "parts_team" || role === "admin") &&
             (["awaiting_parts", "parts_return"].includes(claim.status) || parts.some((p) => p.status === "Parts Return")) && (
             <div className="bg-[#EAE7FA] border border-[#D3CDF2] rounded-lg p-4">
               <div className="text-sm font-bold text-[#5B4FB0] mb-2 flex items-center gap-2">
@@ -1552,7 +1558,7 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {role === "dealer" && claim.status === "repair_submitted" && (
+          {(role === "dealer" || role === "admin") && claim.status === "repair_submitted" && (
             <div className="bg-[#E0F2FE] border border-[#B8E4F5] rounded-lg p-4 space-y-3">
               <div className="text-sm font-bold text-[#0E7490] mb-2 flex items-center gap-2">
                 <CheckCircle2 size={15} /> After-repair evidence submitted

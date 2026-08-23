@@ -40,7 +40,7 @@ export default function DealerDashboard() {
 
     const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
     if (!prof) return router.push("/login?setup=1");
-    if (prof.role !== "dealer") return router.push("/dashboard/sub-dealer");
+    if (!["dealer", "admin"].includes(prof.role)) return router.push("/dashboard/sub-dealer");
     setProfile(prof);
 
     const { data: claimsData } = await supabase

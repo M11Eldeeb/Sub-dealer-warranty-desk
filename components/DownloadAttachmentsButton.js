@@ -1,9 +1,21 @@
 "use client";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { sanitizeFileName, firstPartName } from "@/components/ui";
 import { Download, Loader2 } from "lucide-react";
 
-export default function DownloadAttachmentsButton({ claimNumber, attachments }) {
+function buildZipName(claim, parts, labor) {
+  const segments = [];
+  if (claim.dealer_work_order_number) segments.push(claim.dealer_work_order_number);
+  if (claim.vin) segments.push(claim.vin);
+  const partOrLabor = firstPartName(parts) || labor?.[0]?.labor_name;
+  if (partOrLabor) segments.push(partOrLabor);
+  if (claim.work_order_number) segments.push(claim.work_order_number);
+  const name = segments.length > 0 ? segments.join(" - ") : claim.claim_number;
+  return sanitizeFileName(`${name}.zip`);
+}
+
+export default function DownloadAttachmentsButton({ claim, parts, labor, attachments }) {
   const supabase = createClient();
   const [working, setWorking] = useState(false);
   const [progress, setProgress] = useState("");
@@ -37,7 +49,7 @@ export default function DownloadAttachmentsButton({ claimNumber, attachments }) 
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${claimNumber}-attachments.zip`;
+      a.download = buildZipName(claim, parts, labor);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

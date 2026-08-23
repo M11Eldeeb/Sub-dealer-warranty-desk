@@ -13,7 +13,7 @@ export async function POST(request) {
   }
 
   const { data: requesterProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (requesterProfile?.role !== "dealer") {
+  if (!["dealer", "admin"].includes(requesterProfile?.role)) {
     return NextResponse.json({ error: "Only dealer accounts can create new accounts." }, { status: 403 });
   }
 

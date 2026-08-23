@@ -121,7 +121,9 @@ export function Header({ profile, onSignOut }) {
           <div>
             <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
             <div className="text-[10px] text-[#ADADAD] uppercase tracking-wide mt-0.5">
-              {profile?.role === "dealer"
+              {profile?.role === "admin"
+                ? "Admin Console"
+                : profile?.role === "dealer"
                 ? "Dealer Console"
                 : profile?.role === "parts_team"
                 ? "Parts Team Console"
