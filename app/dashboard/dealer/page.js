@@ -65,7 +65,7 @@ export default function DealerDashboard() {
   };
 
   const counts = {
-    needs_review: claims.filter((c) => ["submitted", "repair_submitted"].includes(c.status)).length,
+    needs_review: claims.filter((c) => ["submitted", "waiting_pa", "repair_submitted"].includes(c.status)).length,
     active: claims.filter((c) => !["closed", "rejected"].includes(c.status)).length,
     history: claims.filter((c) => ["closed", "rejected"].includes(c.status)).length,
   };
@@ -75,7 +75,7 @@ export default function DealerDashboard() {
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   const tabFiltered = claims.filter((c) => {
-    if (filter === "needs_review" && !["submitted", "repair_submitted"].includes(c.status)) return false;
+    if (filter === "needs_review" && !["submitted", "waiting_pa", "repair_submitted"].includes(c.status)) return false;
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
     if (query && !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;

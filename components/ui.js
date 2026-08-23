@@ -17,6 +17,7 @@ export const SUPPLYING_LOCATIONS = ["Heraa Jeddah", "Al Qassim", "Jizan", "Riyad
 export const STATUS = {
   draft: { label: "Draft", color: "#8A8F98", bg: "#F1F2F4" },
   submitted: { label: "Submitted", color: "#C77700", bg: "#FCF1DA" },
+  waiting_pa: { label: "Waiting PA", color: "#B45309", bg: "#FDF0DC" },
   returned: { label: "Returned for Edit", color: "#C4551B", bg: "#FDEBE0" },
   rejected: { label: "Rejected", color: "#B23A32", bg: "#FAE4E2" },
   approved: { label: "Approved", color: "#2A62B0", bg: "#E4EDFA" },

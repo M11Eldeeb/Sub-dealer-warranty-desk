@@ -107,6 +107,13 @@ export default function ClaimDetailPage() {
   }, [claim, dealerEditMode]);
 
   useEffect(() => {
+    if (!claim) return;
+    if (claim.dealer_work_order_number && !dealerWorkOrder) {
+      setDealerWorkOrder(claim.dealer_work_order_number);
+    }
+  }, [claim]);
+
+  useEffect(() => {
     load();
   }, [params.id]);
 
@@ -241,6 +248,19 @@ export default function ClaimDetailPage() {
       } catch {
         setPartsEmailNote("Claim approved, but the parts team notification email could not be sent (network error).");
       }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleApproveAsPA = async () => {
+    if (!dealerWorkOrder.trim() || actionLoading) return;
+    setActionLoading("approveAsPA");
+    try {
+      await supabase.from("claims").update({ dealer_work_order_number: dealerWorkOrder }).eq("id", claim.id);
+      await setStatus("waiting_pa");
+      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${dealerWorkOrder} — waiting on PA confirmation.`);
+      await load();
     } finally {
       setActionLoading(null);
     }
@@ -1085,7 +1105,7 @@ export default function ClaimDetailPage() {
               </div>
             ))}
 
-          {(role === "dealer" || role === "admin") && claim.status === "submitted" && (
+          {(role === "dealer" || role === "admin") && ["submitted", "waiting_pa"].includes(claim.status) && (
             <div className="space-y-3">
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
                 <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Dealer Work Order Number</label>
@@ -1105,6 +1125,16 @@ export default function ClaimDetailPage() {
                   disabled={!dealerWorkOrder.trim() || actionLoading !== null}
                   loading={actionLoading === "approve"}
                 />
+                {claim.status === "submitted" && (
+                  <ActionBtn
+                    color="#B45309"
+                    icon={Clock}
+                    label="Approve as PA"
+                    onClick={handleApproveAsPA}
+                    disabled={!dealerWorkOrder.trim() || actionLoading !== null}
+                    loading={actionLoading === "approveAsPA"}
+                  />
+                )}
                 <ActionBtn
                   color="#C4551B"
                   icon={RotateCcw}
