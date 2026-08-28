@@ -22,7 +22,17 @@ export async function middleware(request) {
     }
   );
 
-  await supabase.auth.getUser();
+  try {
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("middleware auth check timed out")), 5000)),
+    ]);
+  } catch {
+    // Don't let a slow or failing Supabase auth response take the whole site down.
+    // This middleware only refreshes the session cookie — the real access check
+    // for each page happens client-side, so it's safe to just move on here.
+  }
+
   return response;
 }
 
