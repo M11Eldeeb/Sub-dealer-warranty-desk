@@ -17,11 +17,25 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) return setError(error.message);
-    router.push("/");
-    router.refresh();
+    try {
+      const { error } = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 12000)),
+      ]);
+      if (error) {
+        setLoading(false);
+        return setError(error.message);
+      }
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setLoading(false);
+      if (err.message === "timeout") {
+        setError("This is taking too long — check your connection and try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    }
   };
 
   return (
