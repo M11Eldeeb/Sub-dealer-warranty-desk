@@ -581,7 +581,8 @@ export default function ClaimDetailPage() {
   };
 
   const requestPartStatusChange = (part, newStatus) => {
-    if (role === "parts_team") {
+    const claimHasRequisition = attachments.some((a) => a.stage === "part_requisition");
+    if (role === "parts_team" && !claimHasRequisition) {
       setPendingPartStatus({ partId: part.id, newStatus });
       setRequisitionFile(null);
     } else {
@@ -602,7 +603,7 @@ export default function ClaimDetailPage() {
       await supabase.from("claim_attachments").insert({
         claim_id: claim.id,
         file_path: path,
-        file_name: `Requisition - ${part.name} - ${requisitionFile.name}`,
+        file_name: `Requisition - ${claim.claim_number} - ${requisitionFile.name}`,
         stage: "part_requisition",
         uploaded_by: profile.id,
       });
@@ -1393,7 +1394,7 @@ export default function ClaimDetailPage() {
                     {pendingPartStatus?.partId === p.id && (
                       <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 space-y-2">
                         <div className="text-xs font-bold text-[#111111]">
-                          Attach the part requisition to confirm status change to "{pendingPartStatus.newStatus}"
+                          Attach a part requisition for this claim to confirm status change to "{pendingPartStatus.newStatus}" — one requisition covers every part on this claim.
                         </div>
                         <input
                           type="file"

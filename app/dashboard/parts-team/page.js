@@ -28,6 +28,7 @@ export default function PartsTeamDashboard() {
   const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [rowError, setRowError] = useState("");
   const [returnRequests, setReturnRequests] = useState([]);
+  const [claimsWithRequisition, setClaimsWithRequisition] = useState(new Set());
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
   const [requisitionFile, setRequisitionFile] = useState(null);
   const [requisitionUploading, setRequisitionUploading] = useState(false);
@@ -55,6 +56,9 @@ export default function PartsTeamDashboard() {
 
     const { data: returnData } = await supabase.from("part_return_requests").select("*");
     setReturnRequests(returnData || []);
+
+    const { data: requisitionData } = await supabase.from("claim_attachments").select("claim_id").eq("stage", "part_requisition");
+    setClaimsWithRequisition(new Set((requisitionData || []).map((a) => a.claim_id)));
 
     const tracking = {};
     const eta = {};
@@ -124,8 +128,12 @@ export default function PartsTeamDashboard() {
   };
 
   const requestPartStatusChange = (part, newStatus) => {
-    setPendingPartStatus({ partId: part.id, part, newStatus });
-    setRequisitionFile(null);
+    if (claimsWithRequisition.has(part.claim_id)) {
+      handlePartStatusChange(part, newStatus);
+    } else {
+      setPendingPartStatus({ partId: part.id, part, newStatus });
+      setRequisitionFile(null);
+    }
   };
 
   const confirmPartStatusWithRequisition = async () => {
@@ -142,7 +150,7 @@ export default function PartsTeamDashboard() {
       await supabase.from("claim_attachments").insert({
         claim_id: part.claim_id,
         file_path: path,
-        file_name: `Requisition - ${part.name} - ${requisitionFile.name}`,
+        file_name: `Requisition - ${part.claims?.claim_number || part.claim_id} - ${requisitionFile.name}`,
         stage: "part_requisition",
         uploaded_by: profile.id,
       });
@@ -318,7 +326,7 @@ export default function PartsTeamDashboard() {
                 {pendingPartStatus?.partId === p.id && (
                   <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 mt-2 space-y-2">
                     <div className="text-xs font-bold text-[#111111]">
-                      Attach the part requisition to confirm status change to "{pendingPartStatus.newStatus}"
+                      Attach a part requisition for this claim to confirm status change to "{pendingPartStatus.newStatus}" — one requisition covers every part on this claim.
                     </div>
                     <input type="file" onChange={(e) => setRequisitionFile(e.target.files[0] || null)} className="text-xs" />
                     <div className="flex gap-2">
