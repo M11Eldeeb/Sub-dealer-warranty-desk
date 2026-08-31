@@ -50,6 +50,24 @@ export function sanitizeFileName(name) {
   return safeBase + ext;
 }
 
+export function isAgeing(claim) {
+  if (claim.status !== "returned" || !claim.returned_since) return false;
+  const days = (Date.now() - new Date(claim.returned_since).getTime()) / (1000 * 60 * 60 * 24);
+  return days > 30;
+}
+
+export function AgeingBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2]">
+      ⚠ Ageing
+    </span>
+  );
+}
+
+export function combinedWorkOrder(claim) {
+  return claim.dealer_work_order_number ? `${claim.work_order_number}-${claim.dealer_work_order_number}` : claim.work_order_number;
+}
+
 export function fmt(ts) {
   return new Date(ts).toLocaleString("en-US", {
     month: "short",
