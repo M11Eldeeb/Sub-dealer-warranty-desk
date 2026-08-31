@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
+import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Plus, Paperclip, Package, Search, AlertCircle } from "lucide-react";
 
@@ -142,12 +142,15 @@ export default function SubDealerDashboard() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number}</div>
-                    <div className="font-bold text-[#111111] mt-0.5">WO# {c.work_order_number}</div>
+                    <div className="font-bold text-[#111111] mt-0.5">WO# {combinedWorkOrder(c)}</div>
                     <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
                       {c.vin} · {c.plate}
                     </div>
                   </div>
-                  <StatusTag status={c.status} parts={c.claim_parts} />
+                  <div className="flex items-center gap-1.5">
+                    {isAgeing(c) && <AgeingBadge />}
+                    <StatusTag status={c.status} parts={c.claim_parts} />
+                  </div>
                 </div>
                 <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor)}</div>
                 <div className="flex items-center gap-4 mt-3 text-xs text-[#6E6E6E]">

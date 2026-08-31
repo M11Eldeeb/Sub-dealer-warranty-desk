@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt, cardSubtitle } from "@/components/ui";
+import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder } from "@/components/ui";
 import { Paperclip, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function TechnicalTeamDashboard() {
@@ -119,7 +119,7 @@ export default function TechnicalTeamDashboard() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number} · {c.branches?.name}</div>
-                    <div className="font-bold text-[#111111] mt-0.5">WO# {c.work_order_number}</div>
+                    <div className="font-bold text-[#111111] mt-0.5">WO# {combinedWorkOrder(c)}</div>
                     <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
                       {c.vin} · {c.plate}
                     </div>

@@ -105,6 +105,18 @@ export default function NewClaimPage() {
     } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
+    const baseWorkOrder = branchAbbreviation ? `${branchAbbreviation}-${workOrderNumber}` : workOrderNumber;
+    let finalWorkOrder = baseWorkOrder;
+    let dedupeNote = "";
+    const { data: possibleDupes } = await supabase.from("claims").select("work_order_number").ilike("work_order_number", `${baseWorkOrder}%`);
+    const existingWOs = new Set((possibleDupes || []).map((c) => c.work_order_number));
+    if (existingWOs.has(finalWorkOrder)) {
+      let n = 1;
+      while (existingWOs.has(`${baseWorkOrder}-${n}`)) n++;
+      finalWorkOrder = `${baseWorkOrder}-${n}`;
+      dedupeNote = ` (auto-suffixed to avoid duplicating an existing work order number)`;
+    }
+
     const { data: claim, error: claimError } = await supabase
       .from("claims")
       .insert({
@@ -113,7 +125,7 @@ export default function NewClaimPage() {
         vin,
         mileage: parseInt(mileage, 10),
         plate,
-        work_order_number: branchAbbreviation ? `${branchAbbreviation}-${workOrderNumber}` : workOrderNumber,
+        work_order_number: finalWorkOrder,
         reception_date: receptionDate,
         customer_complaint: customerComplaint,
         cause_of_defect: causeOfDefect,
@@ -162,10 +174,20 @@ export default function NewClaimPage() {
       });
     }
 
-    await supabase.from("claim_status_log").insert([
+    const initialLogs = [
       { claim_id: claim.id, from_status: null, to_status: "draft", actor_name: profile.full_name, note: "Claim created" },
       { claim_id: claim.id, from_status: "draft", to_status: "submitted", actor_name: profile.full_name, note: "Submitted for review" },
-    ]);
+    ];
+    if (dedupeNote) {
+      initialLogs.push({
+        claim_id: claim.id,
+        from_status: "submitted",
+        to_status: "submitted",
+        actor_name: profile.full_name,
+        note: `Work order number set to ${finalWorkOrder}${dedupeNote}.`,
+      });
+    }
+    await supabase.from("claim_status_log").insert(initialLogs);
 
     setSaving(false);
     router.push(`/claims/${claim.id}`);

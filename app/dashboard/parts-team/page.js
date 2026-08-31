@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
+import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
-import { Search, AlertCircle, ExternalLink } from "lucide-react";
+import { Search, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 
 const SORT_OPTIONS = [
   { value: "created_at", label: "Creation Date" },
@@ -28,6 +28,9 @@ export default function PartsTeamDashboard() {
   const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [rowError, setRowError] = useState("");
   const [returnRequests, setReturnRequests] = useState([]);
+  const [pendingPartStatus, setPendingPartStatus] = useState(null);
+  const [requisitionFile, setRequisitionFile] = useState(null);
+  const [requisitionUploading, setRequisitionUploading] = useState(false);
   const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
   const load = async (showSpinner = true) => {
@@ -118,6 +121,37 @@ export default function PartsTeamDashboard() {
     }
 
     load();
+  };
+
+  const requestPartStatusChange = (part, newStatus) => {
+    setPendingPartStatus({ partId: part.id, part, newStatus });
+    setRequisitionFile(null);
+  };
+
+  const confirmPartStatusWithRequisition = async () => {
+    if (!requisitionFile || !pendingPartStatus || requisitionUploading) return;
+    setRequisitionUploading(true);
+    try {
+      const part = pendingPartStatus.part;
+      const path = `${part.claim_id}/${Date.now()}-${sanitizeFileName(requisitionFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, requisitionFile);
+      if (uploadError) {
+        setRowError(uploadError.message);
+        return;
+      }
+      await supabase.from("claim_attachments").insert({
+        claim_id: part.claim_id,
+        file_path: path,
+        file_name: `Requisition - ${part.name} - ${requisitionFile.name}`,
+        stage: "part_requisition",
+        uploaded_by: profile.id,
+      });
+      await handlePartStatusChange(part, pendingPartStatus.newStatus);
+      setPendingPartStatus(null);
+      setRequisitionFile(null);
+    } finally {
+      setRequisitionUploading(false);
+    }
   };
 
   const saveTrackingNumber = async (part) => {
@@ -271,7 +305,7 @@ export default function PartsTeamDashboard() {
                 <div className="flex gap-2 mt-3">
                   <select
                     value={p.status}
-                    onChange={(e) => handlePartStatusChange(p, e.target.value)}
+                    onChange={(e) => requestPartStatusChange(p, e.target.value)}
                     className="input text-xs flex-1"
                   >
                     {PART_STATUS_OPTIONS.map((opt) => (
@@ -281,6 +315,34 @@ export default function PartsTeamDashboard() {
                     ))}
                   </select>
                 </div>
+                {pendingPartStatus?.partId === p.id && (
+                  <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 mt-2 space-y-2">
+                    <div className="text-xs font-bold text-[#111111]">
+                      Attach the part requisition to confirm status change to "{pendingPartStatus.newStatus}"
+                    </div>
+                    <input type="file" onChange={(e) => setRequisitionFile(e.target.files[0] || null)} className="text-xs" />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={confirmPartStatusWithRequisition}
+                        disabled={!requisitionFile || requisitionUploading}
+                        className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {requisitionUploading && <Loader2 size={11} className="animate-spin" />}
+                        {requisitionUploading ? "Uploading…" : "Confirm"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPendingPartStatus(null);
+                          setRequisitionFile(null);
+                        }}
+                        disabled={requisitionUploading}
+                        className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2 mt-2">
                   <input
                     value={trackingDrafts[p.id] ?? ""}

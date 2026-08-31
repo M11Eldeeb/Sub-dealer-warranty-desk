@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName } from "@/components/ui";
+import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName, combinedWorkOrder, isAgeing, AgeingBadge } from "@/components/ui";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
@@ -35,6 +35,7 @@ export default function ClaimDetailPage() {
   const [locationDrafts, setLocationDrafts] = useState({});
   const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [dealerWorkOrder, setDealerWorkOrder] = useState("");
+  const [dealerWOPrefix, setDealerWOPrefix] = useState("HER");
   const [partsError, setPartsError] = useState("");
   const [newFiles, setNewFiles] = useState([]);
   const [afterRepairFiles, setAfterRepairFiles] = useState([]);
@@ -49,6 +50,8 @@ export default function ClaimDetailPage() {
   const [returnPartReason, setReturnPartReason] = useState("");
   const [returnPartError, setReturnPartError] = useState("");
   const [techEmailNote, setTechEmailNote] = useState("");
+  const [pendingPartStatus, setPendingPartStatus] = useState(null);
+  const [requisitionFile, setRequisitionFile] = useState(null);
   const [partsEmailNote, setPartsEmailNote] = useState("");
 
   const load = async () => {
@@ -109,7 +112,14 @@ export default function ClaimDetailPage() {
   useEffect(() => {
     if (!claim) return;
     if (claim.dealer_work_order_number && !dealerWorkOrder) {
-      setDealerWorkOrder(claim.dealer_work_order_number);
+      const dashIndex = claim.dealer_work_order_number.indexOf("-");
+      if (dashIndex > 0) {
+        setDealerWOPrefix(claim.dealer_work_order_number.slice(0, dashIndex));
+        setDealerWorkOrder(claim.dealer_work_order_number.slice(dashIndex + 1));
+      } else {
+        setDealerWOPrefix("");
+        setDealerWorkOrder(claim.dealer_work_order_number);
+      }
     }
   }, [claim]);
 
@@ -227,10 +237,11 @@ export default function ClaimDetailPage() {
     if (!dealerWorkOrder.trim() || actionLoading) return;
     setActionLoading("approve");
     setPartsEmailNote("");
+    const fullDealerWO = dealerWOPrefix.trim() ? `${dealerWOPrefix.trim()}-${dealerWorkOrder.trim()}` : dealerWorkOrder.trim();
     try {
-      await supabase.from("claims").update({ dealer_work_order_number: dealerWorkOrder }).eq("id", claim.id);
+      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO }).eq("id", claim.id);
       await setStatus("awaiting_parts");
-      await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${dealerWorkOrder}`);
+      await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${fullDealerWO}`);
       await addLog("approved", "awaiting_parts", "Tracking parts shipment.");
       setDealerWorkOrder("");
       await load();
@@ -256,10 +267,11 @@ export default function ClaimDetailPage() {
   const handleApproveAsPA = async () => {
     if (!dealerWorkOrder.trim() || actionLoading) return;
     setActionLoading("approveAsPA");
+    const fullDealerWO = dealerWOPrefix.trim() ? `${dealerWOPrefix.trim()}-${dealerWorkOrder.trim()}` : dealerWorkOrder.trim();
     try {
-      await supabase.from("claims").update({ dealer_work_order_number: dealerWorkOrder }).eq("id", claim.id);
+      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO }).eq("id", claim.id);
       await setStatus("waiting_pa");
-      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${dealerWorkOrder} — waiting on PA confirmation.`);
+      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${fullDealerWO} — waiting on PA confirmation.`);
       await load();
     } finally {
       setActionLoading(null);
@@ -270,6 +282,7 @@ export default function ClaimDetailPage() {
     if (!note.trim() || actionLoading) return;
     setActionLoading("return");
     try {
+      await supabase.from("claims").update({ returned_since: new Date().toISOString() }).eq("id", claim.id);
       await setStatus("returned");
       await addLog(claim.status, "returned", note);
       setNote("");
@@ -567,6 +580,40 @@ export default function ClaimDetailPage() {
     load();
   };
 
+  const requestPartStatusChange = (part, newStatus) => {
+    if (role === "parts_team") {
+      setPendingPartStatus({ partId: part.id, newStatus });
+      setRequisitionFile(null);
+    } else {
+      handlePartStatusChange(part, newStatus);
+    }
+  };
+
+  const confirmPartStatusWithRequisition = async (part) => {
+    if (!requisitionFile || !pendingPartStatus || actionLoading) return;
+    setActionLoading("partReq");
+    try {
+      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(requisitionFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, requisitionFile);
+      if (uploadError) {
+        setPartsError(uploadError.message);
+        return;
+      }
+      await supabase.from("claim_attachments").insert({
+        claim_id: claim.id,
+        file_path: path,
+        file_name: `Requisition - ${part.name} - ${requisitionFile.name}`,
+        stage: "part_requisition",
+        uploaded_by: profile.id,
+      });
+      await handlePartStatusChange(part, pendingPartStatus.newStatus);
+      setPendingPartStatus(null);
+      setRequisitionFile(null);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const saveTrackingNumber = async (part) => {
     const value = trackingDrafts[part.id] ?? "";
     if ((part.tracking_number || "") === value) return;
@@ -840,9 +887,10 @@ export default function ClaimDetailPage() {
           <div className="flex items-start justify-between">
             <div>
               <div className="font-mono text-xs text-[#6E6E6E]">{claim.claim_number}</div>
-              <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {claim.work_order_number}</h2>
+              <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {combinedWorkOrder(claim)}</h2>
             </div>
             <div className="flex items-center gap-2">
+              {isAgeing(claim) && <AgeingBadge />}
               {claim.technical_verified && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide text-[#2E7D46] bg-[#E5F3E8]">
                   <CheckCircle2 size={12} /> Technically Verified
@@ -1109,12 +1157,22 @@ export default function ClaimDetailPage() {
             <div className="space-y-3">
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
                 <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Dealer Work Order Number</label>
-                <input
-                  value={dealerWorkOrder}
-                  onChange={(e) => setDealerWorkOrder(e.target.value)}
-                  placeholder="Required to approve"
-                  className="input"
-                />
+                <div className="flex gap-2">
+                  <input
+                    value={dealerWOPrefix}
+                    onChange={(e) => setDealerWOPrefix(e.target.value.toUpperCase())}
+                    placeholder="HER"
+                    title="Prefix — usually HER, but editable"
+                    className="input font-mono font-bold w-20 text-center"
+                  />
+                  <span className="flex items-center text-[#6E6E6E] font-bold">-</span>
+                  <input
+                    value={dealerWorkOrder}
+                    onChange={(e) => setDealerWorkOrder(e.target.value)}
+                    placeholder="Required to approve"
+                    className="input flex-1"
+                  />
+                </div>
               </div>
               <div className="flex gap-3">
                 <ActionBtn
@@ -1281,7 +1339,7 @@ export default function ClaimDetailPage() {
                     <div className="flex gap-2">
                       <select
                         value={p.status}
-                        onChange={(e) => handlePartStatusChange(p, e.target.value)}
+                        onChange={(e) => requestPartStatusChange(p, e.target.value)}
                         className="input text-xs flex-1"
                       >
                         {PART_STATUS_OPTIONS.map((opt) => (
@@ -1332,6 +1390,38 @@ export default function ClaimDetailPage() {
                         />
                       )}
                     </div>
+                    {pendingPartStatus?.partId === p.id && (
+                      <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 space-y-2">
+                        <div className="text-xs font-bold text-[#111111]">
+                          Attach the part requisition to confirm status change to "{pendingPartStatus.newStatus}"
+                        </div>
+                        <input
+                          type="file"
+                          onChange={(e) => setRequisitionFile(e.target.files[0] || null)}
+                          className="text-xs"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => confirmPartStatusWithRequisition(p)}
+                            disabled={!requisitionFile || actionLoading !== null}
+                            className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            {actionLoading === "partReq" && <Loader2 size={11} className="animate-spin" />}
+                            {actionLoading === "partReq" ? "Uploading…" : "Confirm"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPendingPartStatus(null);
+                              setRequisitionFile(null);
+                            }}
+                            disabled={actionLoading !== null}
+                            className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {parts.every((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled") && (
