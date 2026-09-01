@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, daysSinceReturned } from "@/components/ui";
+import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Plus, Paperclip, Package, Search, AlertCircle } from "lucide-react";
 
@@ -148,7 +148,11 @@ export default function SubDealerDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {isAgeing(c) && <AgeingBadge days={daysSinceReturned(c)} />}
+                    {isAgeing(c) ? (
+                      <AgeingBadge days={daysSinceReturned(c)} />
+                    ) : (
+                      daysSinceReturned(c) !== null && <ReturnedDaysBadge days={daysSinceReturned(c)} />
+                    )}
                     <StatusTag status={c.status} parts={c.claim_parts} />
                   </div>
                 </div>
