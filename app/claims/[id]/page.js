@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName, combinedWorkOrder, isAgeing, AgeingBadge } from "@/components/ui";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
+import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
   FileText, History, Paperclip, Plus, CheckCircle2, Loader2, Stethoscope, Pencil,
@@ -997,8 +998,15 @@ export default function ClaimDetailPage() {
             </div>
           </div>
 
+          {(labor.length > 0 || parts.length > 0) && (
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E]">Parts &amp; Labor</div>
+              <ExportPartsLaborButton claim={claim} parts={parts} labor={labor} />
+            </div>
+          )}
+
           {labor.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-2">
               <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Labor</div>
               <div className="space-y-1.5">
                 {labor.map((l) => (
