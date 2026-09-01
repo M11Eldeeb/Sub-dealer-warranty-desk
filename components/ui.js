@@ -50,16 +50,28 @@ export function sanitizeFileName(name) {
   return safeBase + ext;
 }
 
-export function isAgeing(claim) {
-  if (claim.status !== "returned" || !claim.returned_since) return false;
-  const days = (Date.now() - new Date(claim.returned_since).getTime()) / (1000 * 60 * 60 * 24);
-  return days > 30;
+export function daysSinceReturned(claim) {
+  if (claim.status !== "returned" || !claim.returned_since) return null;
+  return Math.floor((Date.now() - new Date(claim.returned_since).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function AgeingBadge() {
+export function isAgeing(claim) {
+  const days = daysSinceReturned(claim);
+  return days !== null && days > 30;
+}
+
+export function AgeingBadge({ days }) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2]">
-      ⚠ Ageing
+      ⚠ Ageing — {days}d
+    </span>
+  );
+}
+
+export function ReturnedDaysBadge({ days }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide text-[#C4551B] bg-[#FDEBE0]">
+      Returned {days} day{days === 1 ? "" : "s"} ago
     </span>
   );
 }

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge } from "@/components/ui";
+import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, daysSinceReturned } from "@/components/ui";
 import ExportDataButton from "@/components/ExportDataButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -152,7 +152,7 @@ export default function DealerDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {isAgeing(c) && <AgeingBadge />}
+                    {isAgeing(c) && <AgeingBadge days={daysSinceReturned(c)} />}
                     <StatusTag status={c.status} parts={c.claim_parts} />
                   </div>
                 </div>

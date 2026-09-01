@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName, combinedWorkOrder, isAgeing, AgeingBadge } from "@/components/ui";
+import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
 import {
@@ -892,7 +892,11 @@ export default function ClaimDetailPage() {
               <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {combinedWorkOrder(claim)}</h2>
             </div>
             <div className="flex items-center gap-2">
-              {isAgeing(claim) && <AgeingBadge />}
+              {isAgeing(claim) ? (
+                <AgeingBadge days={daysSinceReturned(claim)} />
+              ) : (
+                daysSinceReturned(claim) !== null && <ReturnedDaysBadge days={daysSinceReturned(claim)} />
+              )}
               {claim.technical_verified && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide text-[#2E7D46] bg-[#E5F3E8]">
                   <CheckCircle2 size={12} /> Technically Verified
@@ -1437,6 +1441,38 @@ export default function ClaimDetailPage() {
                   <div className="text-xs text-[#5B4FB0]">All parts shipped or cancelled — waiting on sub-dealer to confirm receipt.</div>
                 )}
               </div>
+            </div>
+          )}
+
+          {(role === "dealer" || role === "admin") && claim.status === "returned" && isAgeing(claim) && (
+            <div className="bg-[#FDEBE0] border border-[#F2C9A8] rounded-lg p-4 space-y-3">
+              <div className="text-sm text-[#B23A32]">
+                <span className="font-bold">This claim has been returned for {daysSinceReturned(claim)} days</span> without the sub-dealer
+                resubmitting. You can reject it for exceeding 30 days if you'd like — this is a manual decision, it won't happen on its own.
+              </div>
+              <ActionBtn
+                color="#B23A32"
+                icon={X}
+                label="Reject — Exceeded 30 Days"
+                onClick={() => {
+                  if (!showRejectBox && !note.trim()) {
+                    setNote(`Rejected — returned for edit ${daysSinceReturned(claim)} days ago with no response from the sub-dealer.`);
+                  }
+                  setShowRejectBox((v) => !v);
+                }}
+                disabled={actionLoading !== null}
+              />
+              {showRejectBox && (
+                <NoteBox
+                  placeholder="Reason for rejection..."
+                  value={note}
+                  onChange={setNote}
+                  onSubmit={handleReject}
+                  color="#B23A32"
+                  label="Confirm rejection"
+                  loading={actionLoading === "reject"}
+                />
+              )}
             </div>
           )}
 

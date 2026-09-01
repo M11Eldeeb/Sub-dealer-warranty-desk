@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { combinedWorkOrder, sanitizeFileName } from "@/components/ui";
 import { FileSpreadsheet, Loader2 } from "lucide-react";
 
 export default function ExportPartsLaborButton({ claim, parts, labor }) {
@@ -36,7 +37,7 @@ export default function ExportPartsLaborButton({ claim, parts, labor }) {
       laborSheet["!cols"] = [{ wch: 14 }, { wch: 36 }];
       XLSX.utils.book_append_sheet(workbook, laborSheet, "Labor");
 
-      XLSX.writeFile(workbook, `${claim.claim_number}-parts-and-labor.xlsx`);
+      XLSX.writeFile(workbook, sanitizeFileName(`${combinedWorkOrder(claim)}.xlsx`));
     } finally {
       setWorking(false);
     }
