@@ -213,9 +213,11 @@ export default function PartsTeamDashboard() {
     load();
   };
 
+  const visibleInConsole = (p) => !(p.status === "Supplied to Sub-Dealer" && p.claims?.status === "closed");
+
   const counts = {};
   PART_STATUS_OPTIONS.forEach((s) => {
-    counts[s] = parts.filter((p) => p.status === s).length;
+    counts[s] = parts.filter((p) => p.status === s && visibleInConsole(p)).length;
   });
 
   const branchList = Array.from(
@@ -226,6 +228,7 @@ export default function PartsTeamDashboard() {
 
   const tabFiltered = parts.filter((p) => {
     if (p.status !== filter) return false;
+    if (!visibleInConsole(p)) return false;
     if (
       query &&
       !`${p.name} ${p.part_number} ${p.claims?.claim_number} ${p.claims?.dealer_work_order_number} ${p.claims?.branches?.name}`
