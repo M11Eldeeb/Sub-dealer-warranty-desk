@@ -7,6 +7,22 @@ body {
   color: #111111;
 }
 
+* {
+  scrollbar-color: #d0d0d0 transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 999px;
+  border: 2px solid #f4f4f4;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b8b8b8;
+}
+
 @layer components {
   .input {
     width: 100%;
@@ -16,8 +32,26 @@ body {
     font-size: 14px;
     background: #ffffff;
     outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   .input:focus {
     border-color: #e4002b;
+    box-shadow: 0 0 0 3px rgba(228, 0, 43, 0.12);
+  }
+
+  /* Shared "premium" card surface used across dashboards and the claim
+     detail page — soft layered shadow that deepens on hover, plus a slight
+     lift, rather than the flat single-shadow look. */
+  .claim-card {
+    background: #ffffff;
+    border: 1px solid #ececec;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 1px 1px rgba(17, 17, 17, 0.03);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  }
+  .claim-card:hover {
+    transform: translateY(-3px);
+    border-color: #e6c9cf;
+    box-shadow: 0 12px 28px -12px rgba(17, 17, 17, 0.18), 0 4px 10px -4px rgba(228, 0, 43, 0.1);
   }
 }

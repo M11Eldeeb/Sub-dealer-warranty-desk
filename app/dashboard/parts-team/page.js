@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName } from "@/components/ui";
+import { Header, Tabs, ClaimGrid, ClaimCard, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
 import { Search, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 
@@ -240,27 +240,23 @@ export default function PartsTeamDashboard() {
   });
   const filtered = applyPartsFilterSort(tabFiltered, toolbar);
 
-  if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
+        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-5xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm flex-wrap">
-            {PART_STATUS_OPTIONS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilter(s)}
-                className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 ${
-                  filter === s ? "bg-[#111111] text-white" : "text-[#4D4D4D]"
-                }`}
-              >
-                {PART_STATUS[s].label}
-                <span className={`px-1.5 rounded-full text-[10px] ${filter === s ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{counts[s]}</span>
-              </button>
-            ))}
-          </div>
+          <Tabs
+            value={filter}
+            onChange={setFilter}
+            tabs={PART_STATUS_OPTIONS.map((s) => ({ key: s, label: PART_STATUS[s].label, count: counts[s] }))}
+          />
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
@@ -289,11 +285,13 @@ export default function PartsTeamDashboard() {
             No parts here.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <ClaimGrid animKey={filter}>
             {filtered.map((p) => {
               const returnRequestsForPart = returnRequests.filter((r) => r.claim_part_id === p.id);
               return (
-              <div key={p.id} className="bg-white border border-[#E0E0E0] rounded-lg p-4" style={{ borderLeft: "4px solid #E4002B" }}>
+              <ClaimCard key={p.id} claimId={p.id}>
+              <div className="claim-card relative p-4 overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#FF2447] to-[#B8001F]" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-mono text-xs text-[#6E6E6E]">
                     {p.claims?.claim_number} · {p.claims?.branches?.name}
@@ -407,9 +405,10 @@ export default function PartsTeamDashboard() {
                   </div>
                 ))}
               </div>
+              </ClaimCard>
               );
             })}
-          </div>
+          </ClaimGrid>
         )}
       </div>
     </div>

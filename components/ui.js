@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2, RotateCcw, UserPlus } from "lucide-react";
 
 export const PART_STATUS = {
@@ -144,10 +145,16 @@ export function StatusTag({ status, parts, returnRequests }) {
 
 export function Header({ profile, onSignOut }) {
   return (
-    <div className="bg-[#111111] text-white px-6 py-4">
+    <div
+      className="sticky top-0 z-30 bg-[#111111] text-white px-6 py-4 border-b border-white/5"
+      style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
+    >
       <div className="max-w-5xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded bg-[#E4002B] flex items-center justify-center">
+          <div
+            className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2447] to-[#B8001F] flex items-center justify-center"
+            style={{ boxShadow: "0 4px 12px -2px rgba(228,0,43,0.6)" }}
+          >
             <Wrench size={16} className="text-white" />
           </div>
           <div>
@@ -170,19 +177,90 @@ export function Header({ profile, onSignOut }) {
           {(profile?.role === "dealer" || profile?.role === "admin") && (
             <Link
               href="/dashboard/dealer/create-account"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#E4002B] hover:bg-[#B8001F] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#E4002B] hover:bg-[#FF2447] active:scale-95 transition-all"
             >
               <UserPlus size={13} /> Create Account
             </Link>
           )}
           <button
             onClick={onSignOut}
-            className="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors"
+            className="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-all"
           >
             Sign out
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Segmented tab control with a sliding pill indicator (shared layoutId, so it
+ * glides between tabs instead of jump-cutting) — used by every dashboard's
+ * Needs Review / Ongoing / History style switcher.
+ */
+export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
+  return (
+    <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm relative flex-wrap">
+      {tabs.map(({ key, label, count }) => {
+        const active = value === key;
+        return (
+          <button
+            key={key}
+            onClick={() => onChange(key)}
+            className={`relative px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 transition-colors ${
+              active ? "text-white" : "text-[#4D4D4D] hover:text-[#111111]"
+            }`}
+          >
+            {active && (
+              <motion.span
+                layoutId={layoutId}
+                className="absolute inset-0 rounded-md bg-[#111111]"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative flex items-center gap-1.5">
+              {label}
+              {count !== undefined && (
+                <span className={`px-1.5 rounded-full text-[10px] transition-colors ${active ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{count}</span>
+              )}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.035 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.98 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] } },
+  exit: { opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.15 } },
+};
+
+/**
+ * Animated claim-card grid: fades/slides cards in with a light stagger
+ * whenever `animKey` changes (pass the active tab/filter) and whenever the
+ * card list itself changes. Wrap each card in <ClaimCard> below.
+ */
+export function ClaimGrid({ animKey, children }) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div key={animKey} variants={gridVariants} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+export function ClaimCard({ claimId, children }) {
+  return (
+    <motion.div key={claimId} layout variants={cardVariants} exit="exit">
+      {children}
+    </motion.div>
   );
 }

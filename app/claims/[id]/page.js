@@ -1168,6 +1168,18 @@ export default function ClaimDetailPage() {
 
           {(role === "dealer" || role === "admin") && ["submitted", "waiting_pa"].includes(claim.status) && (
             <div className="space-y-3">
+              {(log[0]?.note?.startsWith("Returned by Technical Team:") || log[0]?.note === "Technically verified — sent back to dealer.") && (
+                <div className="bg-[#EDE7FC] border border-[#D9CCF7] rounded-lg p-4 text-sm text-[#6D28D9] flex items-start gap-2.5">
+                  <Stethoscope size={16} className="shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">This claim is back with you from Technical Review</span> — no further action needed from anyone else
+                    right now.
+                    {log[0]?.note?.startsWith("Returned by Technical Team:") && (
+                      <div className="mt-1 text-[#4C1D95]">{log[0].note.replace("Returned by Technical Team: ", "")}</div>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
                 <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Dealer Work Order Number</label>
                 <div className="flex gap-2">

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Plus, Paperclip, Package, Search, AlertCircle } from "lucide-react";
 
@@ -66,6 +66,11 @@ export default function SubDealerDashboard() {
     router.push("/login");
   };
 
+  const counts = {
+    active: claims.filter((c) => !["closed", "rejected"].includes(c.status)).length,
+    history: claims.filter((c) => ["closed", "rejected"].includes(c.status)).length,
+  };
+
   const tabFiltered = claims.filter((c) => {
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
@@ -74,31 +79,26 @@ export default function SubDealerDashboard() {
   });
   const filtered = applyClaimsFilterSort(tabFiltered, toolbar);
 
-  if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
+        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-5xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm">
-            <button
-              onClick={() => setFilter("active")}
-              className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide ${
-                filter === "active" ? "bg-[#111111] text-white" : "text-[#4D4D4D]"
-              }`}
-            >
-              Ongoing
-            </button>
-            <button
-              onClick={() => setFilter("history")}
-              className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide ${
-                filter === "history" ? "bg-[#111111] text-white" : "text-[#4D4D4D]"
-              }`}
-            >
-              History
-            </button>
-          </div>
+          <Tabs
+            value={filter}
+            onChange={setFilter}
+            tabs={[
+              { key: "active", label: "Ongoing", count: counts.active },
+              { key: "history", label: "History", count: counts.history },
+            ]}
+          />
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
@@ -118,7 +118,7 @@ export default function SubDealerDashboard() {
             />
             <Link
               href="/claims/new"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-gradient-to-r from-[#FF2447] to-[#E4002B] hover:shadow-lg hover:shadow-[#E4002B]/25 active:scale-95 transition-all"
             >
               <Plus size={14} /> New Claim
             </Link>
@@ -131,48 +131,48 @@ export default function SubDealerDashboard() {
             No claims here.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <ClaimGrid animKey={filter}>
             {filtered.map((c) => (
-              <Link
-                key={c.id}
-                href={`/claims/${c.id}`}
-                className="bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg p-4 hover:shadow-md hover:-translate-y-0.5 transition-all"
-                style={{ borderLeft: "4px solid #E4002B" }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number}</div>
-                    <div className="font-bold text-[#111111] mt-0.5">WO# {combinedWorkOrder(c)}</div>
-                    <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
-                      {c.vin} · {c.plate}
+              <ClaimCard key={c.id} claimId={c.id}>
+                <Link href={`/claims/${c.id}`} className="claim-card group relative block p-4 overflow-hidden">
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#FF2447] to-[#B8001F] scale-y-0 group-hover:scale-y-100 origin-center transition-transform duration-300"
+                  />
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number}</div>
+                      <div className="font-bold text-[#111111] mt-0.5 group-hover:text-[#E4002B] transition-colors">WO# {combinedWorkOrder(c)}</div>
+                      <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
+                        {c.vin} · {c.plate}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {isAgeing(c) ? (
+                        <AgeingBadge days={daysSinceReturned(c)} />
+                      ) : (
+                        daysSinceReturned(c) !== null && <ReturnedDaysBadge days={daysSinceReturned(c)} />
+                      )}
+                      <StatusTag status={c.status} parts={c.claim_parts} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {isAgeing(c) ? (
-                      <AgeingBadge days={daysSinceReturned(c)} />
-                    ) : (
-                      daysSinceReturned(c) !== null && <ReturnedDaysBadge days={daysSinceReturned(c)} />
-                    )}
-                    <StatusTag status={c.status} parts={c.claim_parts} />
-                  </div>
-                </div>
-                <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor)}</div>
-                <div className="flex items-center gap-4 mt-3 text-xs text-[#6E6E6E]">
-                  <span className="flex items-center gap-1">
-                    <Paperclip size={12} />
-                    {c.claim_attachments?.[0]?.count ?? 0}
-                  </span>
-                  {c.claim_parts?.length > 0 && (
+                  <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor)}</div>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-[#6E6E6E]">
                     <span className="flex items-center gap-1">
-                      <Package size={12} />
-                      {c.claim_parts.filter((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
+                      <Paperclip size={12} />
+                      {c.claim_attachments?.[0]?.count ?? 0}
                     </span>
-                  )}
-                  <span className="ml-auto">{fmt(c.created_at)}</span>
-                </div>
-              </Link>
+                    {c.claim_parts?.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Package size={12} />
+                        {c.claim_parts.filter((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
+                      </span>
+                    )}
+                    <span className="ml-auto">{fmt(c.created_at)}</span>
+                  </div>
+                </Link>
+              </ClaimCard>
             ))}
-          </div>
+          </ClaimGrid>
         )}
       </div>
     </div>

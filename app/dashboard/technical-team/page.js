@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, fmt, cardSubtitle, combinedWorkOrder } from "@/components/ui";
+import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder } from "@/components/ui";
 import { Paperclip, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function TechnicalTeamDashboard() {
@@ -67,30 +67,26 @@ export default function TechnicalTeamDashboard() {
     })
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-  if (loading) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
+        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-5xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm">
-            {[
-              ["needs_review", "Needs Review"],
-              ["verified", "Verified"],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 ${
-                  filter === key ? "bg-[#111111] text-white" : "text-[#4D4D4D]"
-                }`}
-              >
-                {label}
-                <span className={`px-1.5 rounded-full text-[10px] ${filter === key ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{counts[key]}</span>
-              </button>
-            ))}
-          </div>
+          <Tabs
+            value={filter}
+            onChange={setFilter}
+            tabs={[
+              { key: "needs_review", label: "Needs Review", count: counts.needs_review },
+              { key: "verified", label: "Verified", count: counts.verified },
+            ]}
+          />
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
             <input
@@ -108,40 +104,40 @@ export default function TechnicalTeamDashboard() {
             No claims here.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <ClaimGrid animKey={filter}>
             {filtered.map((c) => (
-              <Link
-                key={c.id}
-                href={`/claims/${c.id}`}
-                className="bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg p-4 hover:shadow-md hover:-translate-y-0.5 transition-all"
-                style={{ borderLeft: "4px solid #E4002B" }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number} · {c.branches?.name}</div>
-                    <div className="font-bold text-[#111111] mt-0.5">WO# {combinedWorkOrder(c)}</div>
-                    <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
-                      {c.vin} · {c.plate}
+              <ClaimCard key={c.id} claimId={c.id}>
+                <Link href={`/claims/${c.id}`} className="claim-card group relative block p-4 overflow-hidden">
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#FF2447] to-[#B8001F] scale-y-0 group-hover:scale-y-100 origin-center transition-transform duration-300"
+                  />
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number} · {c.branches?.name}</div>
+                      <div className="font-bold text-[#111111] mt-0.5 group-hover:text-[#E4002B] transition-colors">WO# {combinedWorkOrder(c)}</div>
+                      <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
+                        {c.vin} · {c.plate}
+                      </div>
                     </div>
+                    <StatusTag status={c.status} />
                   </div>
-                  <StatusTag status={c.status} />
-                </div>
-                <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor) || c.customer_complaint}</div>
-                <div className="flex items-center gap-3 mt-3 text-xs text-[#6E6E6E]">
-                  <span className="flex items-center gap-1">
-                    <Paperclip size={12} />
-                    {c.claim_attachments?.[0]?.count ?? 0}
-                  </span>
-                  {c.technical_verified && (
-                    <span className="flex items-center gap-1 text-[#2E7D46] font-bold">
-                      <CheckCircle2 size={12} /> Verified
+                  <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor) || c.customer_complaint}</div>
+                  <div className="flex items-center gap-3 mt-3 text-xs text-[#6E6E6E]">
+                    <span className="flex items-center gap-1">
+                      <Paperclip size={12} />
+                      {c.claim_attachments?.[0]?.count ?? 0}
                     </span>
-                  )}
-                  <span className="ml-auto">{fmt(c.created_at)}</span>
-                </div>
-              </Link>
+                    {c.technical_verified && (
+                      <span className="flex items-center gap-1 text-[#2E7D46] font-bold">
+                        <CheckCircle2 size={12} /> Verified
+                      </span>
+                    )}
+                    <span className="ml-auto">{fmt(c.created_at)}</span>
+                  </div>
+                </Link>
+              </ClaimCard>
             ))}
-          </div>
+          </ClaimGrid>
         )}
       </div>
     </div>
