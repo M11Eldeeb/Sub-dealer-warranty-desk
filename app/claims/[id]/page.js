@@ -52,7 +52,7 @@ export default function ClaimDetailPage() {
   const [returnPartError, setReturnPartError] = useState("");
   const [techEmailNote, setTechEmailNote] = useState("");
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
-  const [requisitionFile, setRequisitionFile] = useState(null);
+  const [requisitionFiles, setRequisitionFiles] = useState([]);
   const [partsEmailNote, setPartsEmailNote] = useState("");
 
   const load = async () => {
@@ -583,34 +583,36 @@ export default function ClaimDetailPage() {
 
   const requestPartStatusChange = (part, newStatus) => {
     const claimHasRequisition = attachments.some((a) => a.stage === "part_requisition");
-    if (role === "parts_team" && !claimHasRequisition) {
+    if (role === "parts_team" && newStatus === "Supplied to Sub-Dealer" && !claimHasRequisition) {
       setPendingPartStatus({ partId: part.id, newStatus });
-      setRequisitionFile(null);
+      setRequisitionFiles([]);
     } else {
       handlePartStatusChange(part, newStatus);
     }
   };
 
   const confirmPartStatusWithRequisition = async (part) => {
-    if (!requisitionFile || !pendingPartStatus || actionLoading) return;
+    if (!requisitionFiles.length || !pendingPartStatus || actionLoading) return;
     setActionLoading("partReq");
     try {
-      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(requisitionFile.name)}`;
-      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, requisitionFile);
-      if (uploadError) {
-        setPartsError(uploadError.message);
-        return;
+      for (const file of requisitionFiles) {
+        const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
+        const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
+        if (uploadError) {
+          setPartsError(uploadError.message);
+          return;
+        }
+        await supabase.from("claim_attachments").insert({
+          claim_id: claim.id,
+          file_path: path,
+          file_name: `Requisition - ${claim.claim_number} - ${file.name}`,
+          stage: "part_requisition",
+          uploaded_by: profile.id,
+        });
       }
-      await supabase.from("claim_attachments").insert({
-        claim_id: claim.id,
-        file_path: path,
-        file_name: `Requisition - ${claim.claim_number} - ${requisitionFile.name}`,
-        stage: "part_requisition",
-        uploaded_by: profile.id,
-      });
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
       setPendingPartStatus(null);
-      setRequisitionFile(null);
+      setRequisitionFiles([]);
     } finally {
       setActionLoading(null);
     }
@@ -1418,17 +1420,21 @@ export default function ClaimDetailPage() {
                     {pendingPartStatus?.partId === p.id && (
                       <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 space-y-2">
                         <div className="text-xs font-bold text-[#111111]">
-                          Attach a part requisition for this claim to confirm status change to "{pendingPartStatus.newStatus}" — one requisition covers every part on this claim.
+                          Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence below.
                         </div>
                         <input
                           type="file"
-                          onChange={(e) => setRequisitionFile(e.target.files[0] || null)}
+                          multiple
+                          onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))}
                           className="text-xs"
                         />
+                        {requisitionFiles.length > 0 && (
+                          <div className="text-[10px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>
+                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={() => confirmPartStatusWithRequisition(p)}
-                            disabled={!requisitionFile || actionLoading !== null}
+                            disabled={!requisitionFiles.length || actionLoading !== null}
                             className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                           >
                             {actionLoading === "partReq" && <Loader2 size={11} className="animate-spin" />}
@@ -1437,7 +1443,7 @@ export default function ClaimDetailPage() {
                           <button
                             onClick={() => {
                               setPendingPartStatus(null);
-                              setRequisitionFile(null);
+                              setRequisitionFiles([]);
                             }}
                             disabled={actionLoading !== null}
                             className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
@@ -1456,18 +1462,20 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {(role === "dealer" || role === "admin") && claim.status === "returned" && isAgeing(claim) && (
+          {(role === "dealer" || role === "admin") && claim.status === "returned" && (
             <div className="bg-[#FDEBE0] border border-[#F2C9A8] rounded-lg p-4 space-y-3">
-              <div className="text-sm text-[#B23A32]">
-                <span className="font-bold">This claim has been returned for {daysSinceReturned(claim)} days</span> without the sub-dealer
-                resubmitting. You can reject it for exceeding 30 days if you'd like — this is a manual decision, it won't happen on its own.
-              </div>
+              {isAgeing(claim) && (
+                <div className="text-sm text-[#B23A32]">
+                  <span className="font-bold">This claim has been returned for {daysSinceReturned(claim)} days</span> without the sub-dealer
+                  resubmitting. You can reject it for exceeding 30 days if you'd like — this is a manual decision, it won't happen on its own.
+                </div>
+              )}
               <ActionBtn
                 color="#B23A32"
                 icon={X}
-                label="Reject — Exceeded 30 Days"
+                label={isAgeing(claim) ? "Reject — Exceeded 30 Days" : "Reject"}
                 onClick={() => {
-                  if (!showRejectBox && !note.trim()) {
+                  if (isAgeing(claim) && !showRejectBox && !note.trim()) {
                     setNote(`Rejected — returned for edit ${daysSinceReturned(claim)} days ago with no response from the sub-dealer.`);
                   }
                   setShowRejectBox((v) => !v);

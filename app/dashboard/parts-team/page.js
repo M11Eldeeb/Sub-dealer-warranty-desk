@@ -30,7 +30,7 @@ export default function PartsTeamDashboard() {
   const [returnRequests, setReturnRequests] = useState([]);
   const [claimsWithRequisition, setClaimsWithRequisition] = useState(new Set());
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
-  const [requisitionFile, setRequisitionFile] = useState(null);
+  const [requisitionFiles, setRequisitionFiles] = useState([]);
   const [requisitionUploading, setRequisitionUploading] = useState(false);
   const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
@@ -128,35 +128,37 @@ export default function PartsTeamDashboard() {
   };
 
   const requestPartStatusChange = (part, newStatus) => {
-    if (claimsWithRequisition.has(part.claim_id)) {
-      handlePartStatusChange(part, newStatus);
-    } else {
+    if (newStatus === "Supplied to Sub-Dealer" && !claimsWithRequisition.has(part.claim_id)) {
       setPendingPartStatus({ partId: part.id, part, newStatus });
-      setRequisitionFile(null);
+      setRequisitionFiles([]);
+    } else {
+      handlePartStatusChange(part, newStatus);
     }
   };
 
   const confirmPartStatusWithRequisition = async () => {
-    if (!requisitionFile || !pendingPartStatus || requisitionUploading) return;
+    if (!requisitionFiles.length || !pendingPartStatus || requisitionUploading) return;
     setRequisitionUploading(true);
     try {
       const part = pendingPartStatus.part;
-      const path = `${part.claim_id}/${Date.now()}-${sanitizeFileName(requisitionFile.name)}`;
-      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, requisitionFile);
-      if (uploadError) {
-        setRowError(uploadError.message);
-        return;
+      for (const file of requisitionFiles) {
+        const path = `${part.claim_id}/${Date.now()}-${sanitizeFileName(file.name)}`;
+        const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
+        if (uploadError) {
+          setRowError(uploadError.message);
+          return;
+        }
+        await supabase.from("claim_attachments").insert({
+          claim_id: part.claim_id,
+          file_path: path,
+          file_name: `Requisition - ${part.claims?.claim_number || part.claim_id} - ${file.name}`,
+          stage: "part_requisition",
+          uploaded_by: profile.id,
+        });
       }
-      await supabase.from("claim_attachments").insert({
-        claim_id: part.claim_id,
-        file_path: path,
-        file_name: `Requisition - ${part.claims?.claim_number || part.claim_id} - ${requisitionFile.name}`,
-        stage: "part_requisition",
-        uploaded_by: profile.id,
-      });
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
       setPendingPartStatus(null);
-      setRequisitionFile(null);
+      setRequisitionFiles([]);
     } finally {
       setRequisitionUploading(false);
     }
@@ -327,13 +329,14 @@ export default function PartsTeamDashboard() {
                 {pendingPartStatus?.partId === p.id && (
                   <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 mt-2 space-y-2">
                     <div className="text-xs font-bold text-[#111111]">
-                      Attach a part requisition for this claim to confirm status change to "{pendingPartStatus.newStatus}" — one requisition covers every part on this claim.
+                      Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence.
                     </div>
-                    <input type="file" onChange={(e) => setRequisitionFile(e.target.files[0] || null)} className="text-xs" />
+                    <input type="file" multiple onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))} className="text-xs" />
+                    {requisitionFiles.length > 0 && <div className="text-[10px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>}
                     <div className="flex gap-2">
                       <button
                         onClick={confirmPartStatusWithRequisition}
-                        disabled={!requisitionFile || requisitionUploading}
+                        disabled={!requisitionFiles.length || requisitionUploading}
                         className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                       >
                         {requisitionUploading && <Loader2 size={11} className="animate-spin" />}
@@ -342,7 +345,7 @@ export default function PartsTeamDashboard() {
                       <button
                         onClick={() => {
                           setPendingPartStatus(null);
-                          setRequisitionFile(null);
+                          setRequisitionFiles([]);
                         }}
                         disabled={requisitionUploading}
                         className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
