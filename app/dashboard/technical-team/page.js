@@ -132,6 +132,11 @@ export default function TechnicalTeamDashboard() {
                         <CheckCircle2 size={12} /> Verified
                       </span>
                     )}
+                    {c.defected_part_arrived && (
+                      <span className="flex items-center gap-1 text-[#5B4FB0] font-bold">
+                        <CheckCircle2 size={12} /> Defected Part Arrived
+                      </span>
+                    )}
                     <span className="ml-auto">{fmt(c.created_at)}</span>
                   </div>
                 </Link>

@@ -294,10 +294,25 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const deleteAllAttachments = async (reason) => {
+    if (attachments.length === 0) return;
+    const paths = attachments.map((a) => a.file_path);
+    await supabase.storage.from("evidence").remove(paths);
+    await supabase.from("claim_attachments").delete().eq("claim_id", claim.id);
+    await addLog(claim.status, claim.status, `Evidence files removed from storage (${reason}, ${attachments.length} file(s)) — all other claim data retained.`);
+  };
+
   const handleReject = async () => {
     if (!note.trim() || actionLoading) return;
+    if (attachments.length > 0) {
+      const confirmed = window.confirm(
+        `Rejecting this claim will permanently delete all ${attachments.length} evidence file(s) from storage to save space. Make sure you've already downloaded a copy (e.g. via "Download All"). This can't be undone. Continue?`
+      );
+      if (!confirmed) return;
+    }
     setActionLoading("reject");
     try {
+      await deleteAllAttachments("claim rejected");
       await setStatus("rejected");
       await addLog(claim.status, "rejected", note);
       setNote("");
@@ -368,8 +383,15 @@ export default function ClaimDetailPage() {
 
   const handleTechReject = async () => {
     if (!note.trim() || actionLoading) return;
+    if (attachments.length > 0) {
+      const confirmed = window.confirm(
+        `Rejecting this claim will permanently delete all ${attachments.length} evidence file(s) from storage to save space. Make sure you've already downloaded a copy (e.g. via "Download All"). This can't be undone. Continue?`
+      );
+      if (!confirmed) return;
+    }
     setActionLoading("techReject");
     try {
+      await deleteAllAttachments("claim rejected");
       await setStatus("rejected");
       await addLog(claim.status, "rejected", `Rejected by Technical Team: ${note}`);
       setNote("");
@@ -779,6 +801,18 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleMarkDefectedPartArrived = async () => {
+    if (actionLoading) return;
+    setActionLoading("defectedPartArrived");
+    try {
+      await supabase.from("claims").update({ defected_part_arrived: true }).eq("id", claim.id);
+      await addLog(claim.status, claim.status, "Defected part marked as arrived.");
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleCloseClaim = async () => {
     if (actionLoading) return;
     if (attachments.length > 0) {
@@ -789,16 +823,7 @@ export default function ClaimDetailPage() {
     }
     setActionLoading("closeClaim");
     try {
-      if (attachments.length > 0) {
-        const paths = attachments.map((a) => a.file_path);
-        await supabase.storage.from("evidence").remove(paths);
-        await supabase.from("claim_attachments").delete().eq("claim_id", claim.id);
-        await addLog(
-          claim.status,
-          claim.status,
-          `Evidence files removed from storage on closing (${attachments.length} file(s)) — all other claim data retained.`
-        );
-      }
+      await deleteAllAttachments("claim closed");
       await setStatus("closed");
       await addLog(claim.status, "closed", "Claim closed by dealer.");
       await load();
@@ -1828,6 +1853,23 @@ export default function ClaimDetailPage() {
             <div className="text-sm text-[#6E6E6E] flex items-center gap-2">
               <History size={15} /> {claim.status === "closed" ? "Closed" : "Rejected"} — retained in claim history for reference.
             </div>
+          )}
+
+          {claim.status === "closed" && (role === "dealer" || role === "admin") && (
+            claim.defected_part_arrived ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide text-[#2E7D46] bg-[#E5F3E8] w-fit">
+                <CheckCircle2 size={12} /> Defected Part Arrived
+              </div>
+            ) : (
+              <ActionBtn
+                color="#5B4FB0"
+                icon={CheckCircle2}
+                label="Mark Defected Part Arrived"
+                onClick={handleMarkDefectedPartArrived}
+                disabled={actionLoading !== null}
+                loading={actionLoading === "defectedPartArrived"}
+              />
+            )
           )}
         </div>
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
-import { Plus, Paperclip, Package, Search, AlertCircle } from "lucide-react";
+import { Plus, Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "submitted", "returned", "rejected", "approved", "awaiting_parts",
@@ -165,6 +165,11 @@ export default function SubDealerDashboard() {
                       <span className="flex items-center gap-1">
                         <Package size={12} />
                         {c.claim_parts.filter((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
+                      </span>
+                    )}
+                    {c.defected_part_arrived && (
+                      <span className="flex items-center gap-1 text-[#5B4FB0] font-bold">
+                        <CheckCircle2 size={12} /> Defected Part Arrived
                       </span>
                     )}
                     <span className="ml-auto">{fmt(c.created_at)}</span>
