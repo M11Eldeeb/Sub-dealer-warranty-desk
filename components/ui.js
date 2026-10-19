@@ -147,7 +147,7 @@ export function StatusTag({ status, parts, returnRequests }) {
 export function Header({ profile, onSignOut }) {
   return (
     <div
-      className="sticky top-0 z-40 bg-[#111111] text-white px-6 py-4 border-b border-white/5"
+      className="sticky top-0 z-40 bg-[#111111] text-white px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5"
       style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
     >
       <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -257,14 +257,14 @@ function HeaderMenu({ profile, onSignOut }) {
  */
 export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
   return (
-    <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm relative flex-wrap">
+    <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm relative max-w-full overflow-x-auto no-scrollbar sm:flex-wrap sm:overflow-visible">
       {tabs.map(({ key, label, count }) => {
         const active = value === key;
         return (
           <button
             key={key}
             onClick={() => onChange(key)}
-            className={`relative px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 transition-colors ${
+            className={`relative shrink-0 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 transition-colors ${
               active ? "text-white" : "text-[#4D4D4D] hover:text-[#111111]"
             }`}
           >
@@ -306,7 +306,7 @@ const cardVariants = {
 export function ClaimGrid({ animKey, children }) {
   return (
     <AnimatePresence mode="wait">
-      <motion.div key={animKey} variants={gridVariants} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
+      <motion.div key={animKey} variants={gridVariants} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {children}
       </motion.div>
     </AnimatePresence>
@@ -315,7 +315,7 @@ export function ClaimGrid({ animKey, children }) {
 
 export function ClaimCard({ claimId, children }) {
   return (
-    <motion.div key={claimId} layout variants={cardVariants} exit="exit">
+    <motion.div key={claimId} layout variants={cardVariants} exit="exit" className="min-w-0">
       {children}
     </motion.div>
   );

@@ -192,7 +192,7 @@ export default function NewClaimPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-6 py-8">
+    <div className="min-h-screen bg-[#F4F4F4] px-4 sm:px-6 py-5 sm:py-8">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => {
@@ -206,8 +206,8 @@ export default function NewClaimPage() {
         <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">New Warranty Claim</h2>
         <p className="text-sm text-[#6E6E6E] mb-6">Fill in vehicle and repair details, then attach supporting evidence.</p>
 
-        <div className="space-y-4 bg-white border border-[#E0E0E0] rounded-lg p-5">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4 bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="VIN">
               <input value={vin} onChange={(e) => setVin(e.target.value)} placeholder="17-character VIN" className="input font-mono" />
             </Field>
@@ -215,7 +215,7 @@ export default function NewClaimPage() {
               <input type="number" min="0" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="45000" className="input" />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Plate Number">
               <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="ABC 1234" className="input" />
             </Field>
@@ -271,18 +271,18 @@ export default function NewClaimPage() {
           <Field label="Labor Code and Name">
             <div className="space-y-2">
               {labor.map((l, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2">
                   <input
                     value={l.code}
                     onChange={(e) => updateLabor(i, "code", e.target.value)}
                     placeholder="Labor code"
-                    className="input flex-1 font-mono"
+                    className="input basis-full sm:basis-0 flex-1 min-w-0 font-mono"
                   />
                   <input
                     value={l.name}
                     onChange={(e) => updateLabor(i, "name", e.target.value)}
                     placeholder="Labor name"
-                    className="input flex-1"
+                    className="input flex-1 min-w-0"
                   />
                   <button
                     type="button"
@@ -308,18 +308,18 @@ export default function NewClaimPage() {
           <Field label="Part Number and Name (optional — leave empty for labor-only claims)">
             <div className="space-y-2">
               {parts.map((p, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2">
                   <input
                     value={p.name}
                     onChange={(e) => updatePart(i, "name", e.target.value)}
                     placeholder="Part name"
-                    className="input flex-1"
+                    className="input basis-full sm:basis-0 flex-1 min-w-0"
                   />
                   <input
                     value={p.partNumber}
                     onChange={(e) => updatePart(i, "partNumber", e.target.value)}
                     placeholder="Part number"
-                    className="input flex-1 font-mono"
+                    className="input flex-1 min-w-0 font-mono"
                   />
                   <input
                     type="number"

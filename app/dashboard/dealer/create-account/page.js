@@ -102,7 +102,7 @@ export default function CreateAccountPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <button
           onClick={() => {
             router.refresh();
@@ -151,13 +151,13 @@ export default function CreateAccountPage() {
           </Field>
 
           <Field label="Role">
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 sm:flex gap-2">
               {["sub_dealer", "dealer", "parts_team", "technical_team"].map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
+                  className={`sm:flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
                     role === r ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
                   }`}
                 >

@@ -249,7 +249,7 @@ export default function PartsTeamDashboard() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-6 py-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <Tabs
             value={filter}
@@ -257,13 +257,13 @@ export default function PartsTeamDashboard() {
             tabs={PART_STATUS_OPTIONS.map((s) => ({ key: s, label: PART_STATUS[s].label, count: counts[s] }))}
           />
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search parts, claims, WO#, branch..."
-                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-64"
+                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
               />
             </div>
             <ClaimsToolbar
@@ -314,7 +314,7 @@ export default function PartsTeamDashboard() {
                   <select
                     value={p.status}
                     onChange={(e) => requestPartStatusChange(p, e.target.value)}
-                    className="input text-xs flex-1"
+                    className="input text-xs flex-1 min-w-0"
                   >
                     {PART_STATUS_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
@@ -358,7 +358,7 @@ export default function PartsTeamDashboard() {
                     onChange={(e) => setTrackingDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
                     onBlur={() => saveTrackingNumber(p)}
                     placeholder="Tracking number"
-                    className="input text-xs flex-1 font-mono"
+                    className="input text-xs flex-1 min-w-0 font-mono"
                   />
                   <input
                     type="date"
@@ -366,7 +366,7 @@ export default function PartsTeamDashboard() {
                     onChange={(e) => setEtaDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
                     onBlur={() => saveEta(p)}
                     title="ETA"
-                    className="input text-xs flex-1"
+                    className="input text-xs flex-1 min-w-0"
                   />
                 </div>
                 <div className="flex gap-2 mt-2">
@@ -376,7 +376,7 @@ export default function PartsTeamDashboard() {
                       setLocationDrafts((prev) => ({ ...prev, [p.id]: e.target.value }));
                       saveLocation(p, e.target.value);
                     }}
-                    className="input text-xs flex-1"
+                    className="input text-xs flex-1 min-w-0"
                   >
                     <option value="">Supplying location…</option>
                     {SUPPLYING_LOCATIONS.map((loc) => (
@@ -391,7 +391,7 @@ export default function PartsTeamDashboard() {
                       onChange={(e) => setSupersedingDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
                       onBlur={() => saveSuperseding(p)}
                       placeholder="Superseding part # (optional)"
-                      className="input text-xs flex-1 font-mono"
+                      className="input text-xs flex-1 min-w-0 font-mono"
                     />
                   )}
                 </div>

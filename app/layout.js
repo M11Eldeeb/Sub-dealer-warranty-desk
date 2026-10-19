@@ -12,6 +12,12 @@ export const metadata = {
   description: "Warranty claims workflow for automotive sub-dealers",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#111111",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

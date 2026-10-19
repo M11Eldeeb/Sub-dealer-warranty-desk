@@ -41,9 +41,11 @@ export default function DriveStatus({ role }) {
         </div>
       )}
       {status.connected ? (
-        <div className="text-xs text-[#6E6E6E] flex items-center gap-1.5">
-          <HardDrive size={13} className="text-[#2E7D46]" />
-          Evidence is saved to Google Drive (Sub Dealer Claims) as <b className="text-[#111111]">{status.accountEmail}</b>
+        <div className="text-xs text-[#6E6E6E] flex items-center flex-wrap gap-x-1.5 gap-y-1">
+          <HardDrive size={13} className="text-[#2E7D46] shrink-0" />
+          <span className="min-w-0 break-words">
+            Evidence is saved to Google Drive (Sub Dealer Claims) as <b className="text-[#111111]">{status.accountEmail}</b>
+          </span>
           {status.rootFolderId && (
             <a href={`https://drive.google.com/drive/folders/${status.rootFolderId}`} target="_blank" rel="noreferrer" className="ml-2 underline hover:text-[#111111]">
               Open folder

@@ -849,7 +849,7 @@ export default function ClaimDetailPage() {
   const role = profile.role;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-6 py-8">
+    <div className="min-h-screen bg-[#F4F4F4] px-4 sm:px-6 py-5 sm:py-8">
       <div className="max-w-3xl mx-auto">
         <button
           onClick={() => {
@@ -879,8 +879,8 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          <div className="flex items-start justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <div className="font-mono text-xs text-[#6E6E6E]">{claim.claim_number}</div>
               <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {combinedWorkOrder(claim)}</h2>
             </div>
@@ -1195,7 +1195,7 @@ export default function ClaimDetailPage() {
                   />
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <ActionBtn
                   color="#2E7D46"
                   icon={Check}
@@ -1278,7 +1278,7 @@ export default function ClaimDetailPage() {
 
           {(role === "technical_team" || role === "admin") && claim.status === "technical_review" && (
             <div className="space-y-3">
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <ActionBtn
                   color="#2E7D46"
                   icon={Check}
@@ -1353,11 +1353,11 @@ export default function ClaimDetailPage() {
               <div className="space-y-2">
                 {parts.map((p) => (
                   <div key={p.id} className="bg-white rounded px-3 py-2 text-sm space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-[#111111]">{p.name}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-[#111111] min-w-0 break-words">{p.name}</span>
                       <span className="text-[#6E6E6E] font-mono text-xs">{p.part_number}</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <select
                         value={p.status}
                         onChange={(e) => requestPartStatusChange(p, e.target.value)}
@@ -1385,7 +1385,7 @@ export default function ClaimDetailPage() {
                         className="input text-xs flex-1"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <select
                         value={locationDrafts[p.id] ?? ""}
                         onChange={(e) => {
@@ -1500,7 +1500,7 @@ export default function ClaimDetailPage() {
               )}
               <div className="text-sm font-bold text-[#111111] mb-3">Edit claim details</div>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="VIN">
                     <input className="input font-mono" value={editData.vin} onChange={(e) => setEditData({ ...editData, vin: e.target.value })} />
                   </Field>
@@ -1514,7 +1514,7 @@ export default function ClaimDetailPage() {
                     />
                   </Field>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Plate Number">
                     <input className="input" value={editData.plate} onChange={(e) => setEditData({ ...editData, plate: e.target.value })} />
                   </Field>
@@ -1563,18 +1563,18 @@ export default function ClaimDetailPage() {
                   <Field label="Labor Code and Name">
                     <div className="space-y-2">
                       {editLabor.map((l, i) => (
-                        <div key={l.id ?? `new-${i}`} className="flex gap-2">
+                        <div key={l.id ?? `new-${i}`} className="flex flex-wrap sm:flex-nowrap gap-2">
                           <input
                             value={l.code}
                             onChange={(e) => updateEditLabor(i, "code", e.target.value)}
                             placeholder="Labor code"
-                            className="input flex-1 font-mono"
+                            className="input basis-full sm:basis-0 flex-1 min-w-0 font-mono"
                           />
                           <input
                             value={l.name}
                             onChange={(e) => updateEditLabor(i, "name", e.target.value)}
                             placeholder="Labor name"
-                            className="input flex-1"
+                            className="input flex-1 min-w-0"
                           />
                           <button
                             type="button"
@@ -1602,18 +1602,18 @@ export default function ClaimDetailPage() {
                   <Field label="Part Number and Name (optional — leave empty for labor-only claims)">
                     <div className="space-y-2">
                       {editParts.map((p, i) => (
-                        <div key={p.id ?? `new-${i}`} className="flex gap-2">
+                        <div key={p.id ?? `new-${i}`} className="flex flex-wrap sm:flex-nowrap gap-2">
                           <input
                             value={p.name}
                             onChange={(e) => updateEditPart(i, "name", e.target.value)}
                             placeholder="Part name"
-                            className="input flex-1"
+                            className="input basis-full sm:basis-0 flex-1 min-w-0"
                           />
                           <input
                             value={p.partNumber}
                             onChange={(e) => updateEditPart(i, "partNumber", e.target.value)}
                             placeholder="Part number"
-                            className="input flex-1 font-mono"
+                            className="input flex-1 min-w-0 font-mono"
                           />
                           <input
                             type="number"
@@ -1781,7 +1781,7 @@ export default function ClaimDetailPage() {
                 <CheckCircle2 size={15} /> After-repair evidence submitted
               </div>
               <p className="text-sm text-[#0E7490]">Review the evidence above, then close the claim, or return it if something's wrong.</p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <ActionBtn
                   color="#2E7D46"
                   icon={Check}
@@ -1848,9 +1848,9 @@ export default function ClaimDetailPage() {
           </div>
           <div className="space-y-2">
             {log.map((l) => (
-              <div key={l.id} className="flex gap-3 text-sm">
-                <div className="text-xs text-[#6E6E6E] w-32 shrink-0 pt-0.5 font-mono">{fmt(l.at)}</div>
-                <div>
+              <div key={l.id} className="flex flex-col sm:flex-row gap-0.5 sm:gap-3 text-sm">
+                <div className="text-xs text-[#6E6E6E] sm:w-32 sm:shrink-0 sm:pt-0.5 font-mono">{fmt(l.at)}</div>
+                <div className="min-w-0 break-words">
                   <span className="font-bold text-[#111111]">{l.actor_name}</span>
                   <span className="text-[#4D4D4D]"> — {l.note}</span>
                 </div>
@@ -1944,7 +1944,7 @@ function ActionBtn({ color, icon: Icon, label, onClick, wide, disabled, loading 
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed grow sm:grow-0 ${
         wide ? "w-full" : ""
       }`}
       style={{ background: color }}
