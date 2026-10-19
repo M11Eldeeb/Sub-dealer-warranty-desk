@@ -30,7 +30,7 @@ export async function GET(request) {
   const done = (flag, detail) => {
     // detail is Google's own error text (never a secret); only admins see this page.
     const extra = detail ? `&detail=${encodeURIComponent(detail.slice(0, 700))}` : "";
-    const res = NextResponse.redirect(`${origin}/dashboard/dealer?drive=${flag}${extra}`);
+    const res = NextResponse.redirect(`${origin}/dashboard/settings?drive=${flag}${extra}`);
     res.cookies.delete({ name: "gd_state", path: "/api/google-drive" });
     return res;
   };

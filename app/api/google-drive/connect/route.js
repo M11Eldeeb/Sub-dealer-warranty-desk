@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /** Starts connecting the company Google account. Admins only. */
 export async function GET(request) {
   const origin = new URL(request.url).origin;
-  const back = (flag) => NextResponse.redirect(`${origin}/dashboard/dealer?drive=${flag}`);
+  const back = (flag) => NextResponse.redirect(`${origin}/dashboard/settings?drive=${flag}`);
 
   const supabase = createClient();
   const {

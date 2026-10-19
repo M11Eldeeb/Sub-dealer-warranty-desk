@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/ui";
+import DriveStatus from "@/components/DriveStatus";
 import { ChevronLeft, Mail, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
 
 const FLAGS = {
@@ -85,8 +86,14 @@ export default function SettingsPage() {
           <ChevronLeft size={16} /> Back
         </button>
         <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Settings</h2>
-        <p className="text-sm text-[#6E6E6E] mb-6">Email settings for the notifications WarrantyDesk sends.</p>
+        <p className="text-sm text-[#6E6E6E] mb-6">Google Drive storage and email settings.</p>
 
+        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Google Drive</div>
+        <div className="bg-white border border-[#E0E0E0] rounded-lg p-4 mb-6">
+          <DriveStatus role={profile?.role} />
+        </div>
+
+        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Email</div>
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-5 space-y-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#111111] text-white flex items-center justify-center shrink-0">
