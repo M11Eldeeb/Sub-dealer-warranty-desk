@@ -14,8 +14,13 @@ export async function GET(request) {
   const now = Date.now();
   const results = { partsReminders: 0, technicalReminders: 0, errors: [] };
 
-  // ---------- Parts team: single reminder, 24h after approval, only if untouched ----------
+  // ---------- Parts team ----------
+  // Reminds only while parts are still outstanding (Waiting Action, ICT or VOR); a part that is Supplied to
+  // Sub-Dealer (or cancelled / returned) is finished and never triggers one.
+  //  - first reminder: 24h after approval if nobody has changed any part status yet, otherwise 5 days after approval
+  //  - then every 5 days after the previous reminder
   // Wording and recipients come from the "Parts team reminder" email in Settings.
+  const OUTSTANDING = ["Waiting Action", "ICT", "VOR"];
   const { data: awaitingPartsClaims } = await admin
     .from("claims")
     .select(
@@ -24,13 +29,26 @@ export async function GET(request) {
     .eq("status", "awaiting_parts");
 
   for (const claim of awaitingPartsClaims || []) {
-    if (claim.parts_reminder_sent_at || !claim.awaiting_parts_since) continue;
-    if (now - new Date(claim.awaiting_parts_since).getTime() < DAY_MS) continue;
-    const untouched = (claim.claim_parts || []).every((p) => p.status === "Waiting Action");
-    if (!untouched || claim.claim_parts.length === 0) continue;
+    if (!claim.awaiting_parts_since) continue;
+    const parts = claim.claim_parts || [];
+    const outstanding = parts.filter((p) => OUTSTANDING.includes(p.status));
+    if (outstanding.length === 0) continue;
+
+    let waitMs, since;
+    if (claim.parts_reminder_sent_at) {
+      waitMs = 5 * DAY_MS;
+      since = claim.parts_reminder_sent_at;
+    } else {
+      const untouched = parts.every((p) => p.status === "Waiting Action");
+      waitMs = untouched ? DAY_MS : 5 * DAY_MS;
+      since = claim.awaiting_parts_since;
+    }
+    if (now - new Date(since).getTime() < waitMs) continue;
 
     try {
-      const sent = await sendTemplatedEmail(admin, "parts_reminder", { claim, claimId: claim.id });
+      // The email lists only what is still outstanding, with its current status.
+      const listed = { ...claim, claim_parts: outstanding.map((p) => ({ ...p, name: `${p.name} — ${p.status}` })) };
+      const sent = await sendTemplatedEmail(admin, "parts_reminder", { claim: listed, claimId: claim.id });
       if (sent.skipped) continue;
       await admin.from("claims").update({ parts_reminder_sent_at: new Date().toISOString() }).eq("id", claim.id);
       results.partsReminders++;
