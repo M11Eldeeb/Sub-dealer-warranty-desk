@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { DriveError, ensureClaimFolder, getDriveStatus, safeDriveName, startResumableUpload } from "@/lib/google-drive";
+import { DriveError, ensureClaimFolder, getDriveStatus, safeDriveName, startResumableUpload, fetchClaimForFolder } from "@/lib/google-drive";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -31,11 +31,7 @@ export async function POST(request) {
     if (!f || typeof f.name !== "string" || !(Number(f.size) >= 1)) return NextResponse.json({ error: "A file looks empty or invalid." }, { status: 400 });
   }
 
-  const { data: claim } = await supabase
-    .from("claims")
-    .select("id, branch_id, claim_number, work_order_number, dealer_work_order_number, branches(name)")
-    .eq("id", claimId)
-    .maybeSingle();
+  const claim = await fetchClaimForFolder(supabase, claimId);
   if (!claim) return NextResponse.json({ error: "Claim not found." }, { status: 404 });
 
   if (!(await getDriveStatus())) return NextResponse.json({ fallback: true, reason: "not-connected" });

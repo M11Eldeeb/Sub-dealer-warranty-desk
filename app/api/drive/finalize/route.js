@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { DriveError, ensureClaimFolder, getDriveStatus, getFileMeta, trashFile } from "@/lib/google-drive";
+import { DriveError, ensureClaimFolder, getDriveStatus, getFileMeta, trashFile, fetchClaimForFolder } from "@/lib/google-drive";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -27,11 +27,7 @@ export async function POST(request) {
   const files = Array.isArray(body?.files) ? body.files : [];
   if (!UUID.test(claimId || "") || !STAGES.includes(stage) || files.length < 1) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
-  const { data: claim } = await supabase
-    .from("claims")
-    .select("id, branch_id, claim_number, work_order_number, dealer_work_order_number, branches(name)")
-    .eq("id", claimId)
-    .maybeSingle();
+  const claim = await fetchClaimForFolder(supabase, claimId);
   if (!claim) return NextResponse.json({ error: "Claim not found." }, { status: 404 });
   if (!(await getDriveStatus())) return NextResponse.json({ error: "Google Drive is not connected." }, { status: 409 });
 

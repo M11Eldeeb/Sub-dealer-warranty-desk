@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ensureClaimFolder, getDriveStatus } from "@/lib/google-drive";
+import { ensureClaimFolder, getDriveStatus, fetchClaimForFolder } from "@/lib/google-drive";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -21,11 +21,7 @@ export async function POST(request) {
   const body = await request.json().catch(() => null);
   if (!UUID.test(body?.claimId || "")) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
-  const { data: claim } = await supabase
-    .from("claims")
-    .select("id, branch_id, claim_number, work_order_number, dealer_work_order_number, branches(name)")
-    .eq("id", body.claimId)
-    .maybeSingle();
+  const claim = await fetchClaimForFolder(supabase, body.claimId);
   if (!claim) return NextResponse.json({ error: "Not found." }, { status: 404 });
   if (!(await getDriveStatus())) return NextResponse.json({ ok: true, skipped: "not-connected" });
 
