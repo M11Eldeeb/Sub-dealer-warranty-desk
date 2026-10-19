@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
-import ExportDataButton from "@/components/ExportDataButton";
 import DriveStatus from "@/components/DriveStatus";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -123,7 +122,6 @@ export default function DealerDashboard() {
               branches={branchList}
               sortOptions={SORT_OPTIONS}
             />
-            <ExportDataButton />
           </div>
         </div>
 

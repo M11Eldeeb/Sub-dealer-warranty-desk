@@ -1,7 +1,9 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import ExportDataButton from "@/components/ExportDataButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2, RotateCcw, UserPlus } from "lucide-react";
+import { Wrench, Clock, RefreshCw, Truck, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -146,7 +148,7 @@ export function StatusTag({ status, parts, returnRequests }) {
 export function Header({ profile, onSignOut }) {
   return (
     <div
-      className="sticky top-0 z-30 bg-[#111111] text-white px-6 py-4 border-b border-white/5"
+      className="sticky top-0 z-40 bg-[#111111] text-white px-6 py-4 border-b border-white/5"
       style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
     >
       <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -172,24 +174,79 @@ export function Header({ profile, onSignOut }) {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-[#ADADAD]">{profile?.full_name}</span>
-          {(profile?.role === "dealer" || profile?.role === "admin") && (
-            <Link
-              href="/dashboard/dealer/create-account"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#E4002B] hover:bg-[#FF2447] active:scale-95 transition-all"
-            >
-              <UserPlus size={13} /> Create Account
-            </Link>
-          )}
-          <button
-            onClick={onSignOut}
-            className="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-all"
-          >
-            Sign out
-          </button>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-[#ADADAD] hidden sm:inline">{profile?.full_name}</span>
+          <HeaderMenu profile={profile} onSignOut={onSignOut} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The sandwich menu: user + e-mail settings and data export for dealer / admin accounts, and Sign out for everyone. */
+function HeaderMenu({ profile, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const manager = profile?.role === "dealer" || profile?.role === "admin";
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const item = "w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-[#111111] hover:bg-[#F4F4F4] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Menu"
+        aria-expanded={open}
+        className="w-9 h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-all"
+      >
+        {open ? <X size={18} /> : <Menu size={18} />}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.14 }}
+            className="absolute right-0 mt-2 w-60 bg-white text-[#111111] rounded-lg border border-[#E0E0E0] overflow-hidden origin-top-right"
+            style={{ boxShadow: "0 18px 40px -12px rgba(0,0,0,0.45)" }}
+          >
+            <div className="px-3.5 py-3 border-b border-[#EEEEEE] bg-[#FAFAFA]">
+              <div className="text-sm font-bold truncate">{profile?.full_name}</div>
+              <div className="text-[10px] uppercase tracking-wide text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
+            </div>
+            {manager && (
+              <>
+                <Link href="/dashboard/users" onClick={() => setOpen(false)} className={item}>
+                  <Users size={16} className="text-[#6E6E6E]" /> User settings
+                </Link>
+                <Link href="/dashboard/settings" onClick={() => setOpen(false)} className={item}>
+                  <Settings size={16} className="text-[#6E6E6E]" /> Settings
+                </Link>
+                <ExportDataButton variant="menu" className={item} />
+                <div className="border-t border-[#EEEEEE]" />
+              </>
+            )}
+            <button onClick={onSignOut} className={`${item} text-[#B23A32]`}>
+              <LogOut size={16} /> Sign out
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

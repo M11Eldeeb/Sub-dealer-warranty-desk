@@ -78,6 +78,8 @@ export async function POST(request) {
       to: toEmails,
       cc: Array.from(ccEmails),
       subject: `Technical Verification Needed — Claim ${claim.claim_number}`,
+      kind: "technical-review",
+      sentBy: user.id,
       html,
     });
   } catch (err) {

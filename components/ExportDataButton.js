@@ -15,7 +15,7 @@ function summarizeLabor(labor) {
   return labor.map((l) => `${l.labor_code ? `${l.labor_code}: ` : ""}${l.labor_name}`).join("; ");
 }
 
-export default function ExportDataButton() {
+export default function ExportDataButton({ variant = "button", className = "" }) {
   const supabase = createClient();
   const [working, setWorking] = useState(false);
 
@@ -70,6 +70,15 @@ export default function ExportDataButton() {
       setWorking(false);
     }
   };
+
+  if (variant === "menu") {
+    return (
+      <button onClick={handleExport} disabled={working} title="Export every claim you can see to an Excel spreadsheet" className={className}>
+        {working ? <Loader2 size={16} className="animate-spin text-[#6E6E6E]" /> : <FileSpreadsheet size={16} className="text-[#6E6E6E]" />}
+        {working ? "Exporting…" : "Export data"}
+      </button>
+    );
+  }
 
   return (
     <button
