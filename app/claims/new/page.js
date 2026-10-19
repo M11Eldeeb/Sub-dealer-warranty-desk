@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { sanitizeFileName } from "@/components/ui";
+import { uploadEvidence } from "@/lib/evidence-upload";
 import { ChevronLeft, ChevronRight, Paperclip, X, Plus } from "lucide-react";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -158,20 +158,17 @@ export default function NewClaimPage() {
       });
     }
 
-    for (const file of files) {
-      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
-      if (uploadError) {
-        setError(`Claim created, but "${file.name}" failed to upload: ${uploadError.message}`);
-        continue;
-      }
-      await supabase.from("claim_attachments").insert({
-        claim_id: claim.id,
-        file_path: path,
-        file_name: file.name,
+    if (files.length > 0) {
+      const { failed } = await uploadEvidence({
+        supabase,
+        claimId: claim.id,
+        uploadedBy: profile.id,
         stage: "evidence_before",
-        uploaded_by: profile.id,
+        items: files.map((file) => ({ file, name: file.name })),
       });
+      if (failed.length > 0) {
+        setError(`Claim created, but ${failed.length} file(s) failed to upload: ${failed.map((f) => `"${f.name}" (${f.message})`).join("; ")}`);
+      }
     }
 
     const initialLogs = [

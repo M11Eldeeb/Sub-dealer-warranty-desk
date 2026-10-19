@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import ExportDataButton from "@/components/ExportDataButton";
+import DriveStatus from "@/components/DriveStatus";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -94,6 +95,7 @@ export default function DealerDashboard() {
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div className="max-w-5xl mx-auto px-6 py-6">
+        <DriveStatus role={profile?.role} />
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <Tabs
             value={filter}

@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import { uploadEvidence, removeAttachment, attachmentUrl, syncClaimFolder } from "@/lib/evidence-upload";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
 import {
@@ -54,6 +55,7 @@ export default function ClaimDetailPage() {
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
   const [requisitionFiles, setRequisitionFiles] = useState([]);
   const [partsEmailNote, setPartsEmailNote] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   const load = async () => {
     const {
@@ -82,22 +84,14 @@ export default function ClaimDetailPage() {
     const { data: logData } = await supabase.from("claim_status_log").select("*").eq("claim_id", params.id).order("at", { ascending: false });
     setLog(logData || []);
 
-    // Render the page now — evidence thumbnails can pop in a moment later,
-    // no need to hold up VIN/parts/labor/history on file-signing round trips.
+    // Files are opened through the site (/api/drive/file/<id>): it checks who may see the claim and streams the
+    // file from Google Drive (or from the older Supabase storage), so no signing round trips are needed here.
+    const urlMap = {};
+    (attData || []).forEach((a) => {
+      urlMap[a.id] = attachmentUrl(a.id);
+    });
+    setFileUrls(urlMap);
     setLoading(false);
-
-    if (attData?.length) {
-      const { data: signedUrls } = await supabase.storage
-        .from("evidence")
-        .createSignedUrls(attData.map((a) => a.file_path), 3600);
-      const urlMap = {};
-      attData.forEach((a, i) => {
-        urlMap[a.id] = signedUrls?.[i]?.signedUrl;
-      });
-      setFileUrls(urlMap);
-    } else {
-      setFileUrls({});
-    }
   };
 
   useEffect(() => {
@@ -245,6 +239,7 @@ export default function ClaimDetailPage() {
       await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${fullDealerWO}`);
       await addLog("approved", "awaiting_parts", "Tracking parts shipment.");
       setDealerWorkOrder("");
+      await syncClaimFolder(claim.id);
       await load();
 
       try {
@@ -273,6 +268,7 @@ export default function ClaimDetailPage() {
       await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO }).eq("id", claim.id);
       await setStatus("waiting_pa");
       await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${fullDealerWO} — waiting on PA confirmation.`);
+      await syncClaimFolder(claim.id);
       await load();
     } finally {
       setActionLoading(null);
@@ -294,25 +290,10 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const deleteAllAttachments = async (reason) => {
-    if (attachments.length === 0) return;
-    const paths = attachments.map((a) => a.file_path);
-    await supabase.storage.from("evidence").remove(paths);
-    await supabase.from("claim_attachments").delete().eq("claim_id", claim.id);
-    await addLog(claim.status, claim.status, `Evidence files removed from storage (${reason}, ${attachments.length} file(s)) — all other claim data retained.`);
-  };
-
   const handleReject = async () => {
     if (!note.trim() || actionLoading) return;
-    if (attachments.length > 0) {
-      const confirmed = window.confirm(
-        `Rejecting this claim will permanently delete all ${attachments.length} evidence file(s) from storage to save space. Make sure you've already downloaded a copy (e.g. via "Download All"). This can't be undone. Continue?`
-      );
-      if (!confirmed) return;
-    }
     setActionLoading("reject");
     try {
-      await deleteAllAttachments("claim rejected");
       await setStatus("rejected");
       await addLog(claim.status, "rejected", note);
       setNote("");
@@ -383,15 +364,8 @@ export default function ClaimDetailPage() {
 
   const handleTechReject = async () => {
     if (!note.trim() || actionLoading) return;
-    if (attachments.length > 0) {
-      const confirmed = window.confirm(
-        `Rejecting this claim will permanently delete all ${attachments.length} evidence file(s) from storage to save space. Make sure you've already downloaded a copy (e.g. via "Download All"). This can't be undone. Continue?`
-      );
-      if (!confirmed) return;
-    }
     setActionLoading("techReject");
     try {
-      await deleteAllAttachments("claim rejected");
       await setStatus("rejected");
       await addLog(claim.status, "rejected", `Rejected by Technical Team: ${note}`);
       setNote("");
@@ -491,21 +465,20 @@ export default function ClaimDetailPage() {
       }
     }
 
-    // New evidence
-    for (const file of newFiles) {
-      const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
-      if (!uploadError) {
-        changeNotes.push(`Attachment added: ${file.name}`);
-        await supabase.from("claim_attachments").insert({
-          claim_id: claim.id,
-          file_path: path,
-          file_name: file.name,
-          stage: "evidence_before",
-          uploaded_by: profile.id,
-        });
-      }
+    // New evidence (goes to the claim's Google Drive folder)
+    if (newFiles.length > 0) {
+      const { uploaded, failed } = await uploadEvidence({
+        supabase,
+        claimId: claim.id,
+        uploadedBy: profile.id,
+        stage: "evidence_before",
+        items: newFiles.map((file) => ({ file, name: file.name })),
+      });
+      uploaded.forEach((name) => changeNotes.push(`Attachment added: ${name}`));
+      if (failed.length > 0) setUploadError(`${failed.length} file(s) could not be attached: ${failed.map((f) => `"${f.name}" (${f.message})`).join("; ")}`);
     }
+    // The Drive folder is named after the work orders - follow any edit to them.
+    await syncClaimFolder(claim.id);
 
     for (const changeNote of changeNotes) {
       await addLog(claim.status, claim.status, changeNote);
@@ -617,20 +590,16 @@ export default function ClaimDetailPage() {
     if (!requisitionFiles.length || !pendingPartStatus || actionLoading) return;
     setActionLoading("partReq");
     try {
-      for (const file of requisitionFiles) {
-        const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
-        if (uploadError) {
-          setPartsError(uploadError.message);
-          return;
-        }
-        await supabase.from("claim_attachments").insert({
-          claim_id: claim.id,
-          file_path: path,
-          file_name: `Requisition - ${claim.claim_number} - ${file.name}`,
-          stage: "part_requisition",
-          uploaded_by: profile.id,
-        });
+      const { failed } = await uploadEvidence({
+        supabase,
+        claimId: claim.id,
+        uploadedBy: profile.id,
+        stage: "part_requisition",
+        items: requisitionFiles.map((file) => ({ file, name: `Requisition - ${claim.claim_number} - ${file.name}` })),
+      });
+      if (failed.length > 0) {
+        setPartsError(failed.map((f) => `${f.name}: ${f.message}`).join("; "));
+        return;
       }
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
       setPendingPartStatus(null);
@@ -778,19 +747,22 @@ export default function ClaimDetailPage() {
     setActionLoading("submitAfterRepair");
     try {
       const files = [...fileList];
-      for (const file of files) {
-        const path = `${claim.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
-        if (!uploadError) {
-          await supabase.from("claim_attachments").insert({
-            claim_id: claim.id,
-            file_path: path,
-            file_name: file.name,
-            stage: "after_repair",
-            uploaded_by: profile.id,
-          });
-          await addLog(claim.status, claim.status, `After-repair attachment added: ${file.name}`);
-        }
+      setUploadError("");
+      const { uploaded, failed } = await uploadEvidence({
+        supabase,
+        claimId: claim.id,
+        uploadedBy: profile.id,
+        stage: "after_repair",
+        items: files.map((file) => ({ file, name: file.name })),
+      });
+      for (const name of uploaded) await addLog(claim.status, claim.status, `After-repair attachment added: ${name}`);
+      if (failed.length > 0) {
+        // Keep only the files that did not go through, so pressing the button again never duplicates the others.
+        const failedNames = new Set(failed.map((f) => f.name));
+        setAfterRepairFiles(files.filter((f) => failedNames.has(f.name)));
+        setUploadError(`${failed.length} file(s) could not be attached, so the after-repair was NOT submitted yet: ${failed.map((f) => `"${f.name}" (${f.message})`).join("; ")}`);
+        await load();
+        return;
       }
       await setStatus("repair_submitted");
       await addLog(claim.status, "repair_submitted", "After-repair evidence submitted. Awaiting dealer closure.");
@@ -815,15 +787,8 @@ export default function ClaimDetailPage() {
 
   const handleCloseClaim = async () => {
     if (actionLoading) return;
-    if (attachments.length > 0) {
-      const confirmed = window.confirm(
-        `Closing this claim will permanently delete all ${attachments.length} evidence file(s) from storage to save space. Make sure you've already downloaded a copy (e.g. via "Download All"). This can't be undone. Continue?`
-      );
-      if (!confirmed) return;
-    }
     setActionLoading("closeClaim");
     try {
-      await deleteAllAttachments("claim closed");
       await setStatus("closed");
       await addLog(claim.status, "closed", "Claim closed by dealer.");
       await load();
@@ -846,17 +811,18 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const handleDeleteAttachment = async (attachmentId, filePath, fileName) => {
-    await supabase.storage.from("evidence").remove([filePath]);
-    await supabase.from("claim_attachments").delete().eq("id", attachmentId);
+  const handleDeleteAttachment = async (attachmentId, fileName) => {
+    try {
+      await removeAttachment(attachmentId);
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : "Could not remove the file.");
+      return;
+    }
     await addLog(claim.status, claim.status, `Attachment removed: ${fileName}`);
     load();
   };
 
-  const viewFile = async (path) => {
-    const { data } = await supabase.storage.from("evidence").createSignedUrl(path, 60);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-  };
+  const viewFile = (attachmentId) => window.open(attachmentUrl(attachmentId), "_blank");
 
   const isImage = (name) => /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(name);
   const isVideo = (name) => /\.(mp4|mov|webm|ogg|m4v)$/i.test(name);
@@ -966,6 +932,9 @@ export default function ClaimDetailPage() {
               <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E]">Evidence</div>
               <DownloadAttachmentsButton claim={claim} parts={parts} labor={labor} attachments={attachments} />
             </div>
+            {uploadError && (
+              <div className="text-xs text-[#B23A32] bg-[#FAE4E2] border border-[#F2C9A8] rounded p-2 mb-2">{uploadError}</div>
+            )}
             <div className="flex flex-wrap gap-2">
               {attachments.map((a) => {
                 const canDelete =
@@ -992,7 +961,7 @@ export default function ClaimDetailPage() {
                       </button>
                       {canDelete && (
                         <button
-                          onClick={() => handleDeleteAttachment(a.id, a.file_path, a.file_name)}
+                          onClick={() => handleDeleteAttachment(a.id, a.file_name)}
                           title="Remove this file"
                           className="absolute -top-1.5 -right-1.5 bg-white text-[#B23A32] border border-[#F2C9A8] rounded-full p-0.5 shadow-sm hover:bg-[#FAE4E2]"
                         >
@@ -1010,12 +979,12 @@ export default function ClaimDetailPage() {
                       a.stage === "after_repair" ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-white text-[#4D4D4D] border border-[#E0E0E0]"
                     }`}
                   >
-                    <button onClick={() => viewFile(a.file_path)} className="flex items-center gap-1.5 hover:underline">
+                    <button onClick={() => viewFile(a.id)} className="flex items-center gap-1.5 hover:underline">
                       <FileText size={12} /> {a.file_name}
                     </button>
                     {canDelete && (
                       <button
-                        onClick={() => handleDeleteAttachment(a.id, a.file_path, a.file_name)}
+                        onClick={() => handleDeleteAttachment(a.id, a.file_name)}
                         title="Remove this file"
                         className="ml-0.5 text-[#B23A32] hover:bg-[#FAE4E2] rounded p-0.5"
                       >

@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header, Tabs, ClaimGrid, ClaimCard, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, sanitizeFileName } from "@/components/ui";
+import { Header, Tabs, ClaimGrid, ClaimCard, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
+import { uploadEvidence } from "@/lib/evidence-upload";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
 import { Search, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 
@@ -141,20 +142,16 @@ export default function PartsTeamDashboard() {
     setRequisitionUploading(true);
     try {
       const part = pendingPartStatus.part;
-      for (const file of requisitionFiles) {
-        const path = `${part.claim_id}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const { error: uploadError } = await supabase.storage.from("evidence").upload(path, file);
-        if (uploadError) {
-          setRowError(uploadError.message);
-          return;
-        }
-        await supabase.from("claim_attachments").insert({
-          claim_id: part.claim_id,
-          file_path: path,
-          file_name: `Requisition - ${part.claims?.claim_number || part.claim_id} - ${file.name}`,
-          stage: "part_requisition",
-          uploaded_by: profile.id,
-        });
+      const { failed } = await uploadEvidence({
+        supabase,
+        claimId: part.claim_id,
+        uploadedBy: profile.id,
+        stage: "part_requisition",
+        items: requisitionFiles.map((file) => ({ file, name: `Requisition - ${part.claims?.claim_number || part.claim_id} - ${file.name}` })),
+      });
+      if (failed.length > 0) {
+        setRowError(failed.map((x) => `${x.name}: ${x.message}`).join("; "));
+        return;
       }
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
       setPendingPartStatus(null);

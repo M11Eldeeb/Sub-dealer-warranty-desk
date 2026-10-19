@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeFileName, firstPartName } from "@/components/ui";
+import { attachmentUrl } from "@/lib/evidence-upload";
 import { Download, Loader2 } from "lucide-react";
 
 function buildZipName(claim, parts, labor) {
@@ -33,7 +34,8 @@ export default function DownloadAttachmentsButton({ claim, parts, labor, attachm
         const att = attachments[i];
         setProgress(`File ${i + 1} of ${attachments.length}…`);
         try {
-          const { data: blob } = await supabase.storage.from("evidence").download(att.file_path);
+          const res = await fetch(attachmentUrl(att.id));
+          const blob = res.ok ? await res.blob() : null;
           if (blob) {
             const prefix = att.stage === "after_repair" ? "after_repair_" : "";
             zip.file(`${prefix}${att.file_name}`, blob);

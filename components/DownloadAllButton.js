@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { attachmentUrl } from "@/lib/evidence-upload";
 import { Download, Loader2 } from "lucide-react";
 
 function buildSummary(claim) {
@@ -93,7 +94,8 @@ export default function DownloadAllButton() {
           const evidenceFolder = folder.folder("evidence");
           for (const att of claim.claim_attachments) {
             try {
-              const { data: blob } = await supabase.storage.from("evidence").download(att.file_path);
+              const res = await fetch(attachmentUrl(att.id));
+              const blob = res.ok ? await res.blob() : null;
               if (blob) {
                 const prefix = att.stage === "after_repair" ? "after_repair_" : "";
                 evidenceFolder.file(`${prefix}${att.file_name}`, blob);
