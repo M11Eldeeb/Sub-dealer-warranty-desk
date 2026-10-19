@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/ui";
 import DriveStatus from "@/components/DriveStatus";
+import EmailTemplates from "@/components/EmailTemplates";
 import { ChevronLeft, Mail, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
 
 const FLAGS = {
@@ -150,6 +151,10 @@ export default function SettingsPage() {
 
           {testResult && <div className={`text-xs rounded-lg border p-3 ${banner(testResult.ok)}`}>{testResult.text}</div>}
         </div>
+
+        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mt-8 mb-1">Automatic emails</div>
+        <p className="text-xs text-[#6E6E6E] mb-3">Click an email to change its wording, who it goes to and who is copied. Changes apply to the next email sent.</p>
+        <EmailTemplates />
 
         {status?.recent?.length > 0 && (
           <div className="mt-6">

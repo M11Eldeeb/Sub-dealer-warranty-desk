@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, claimInfoTable, claimLinkButton } from "@/lib/email";
+import { sendTemplatedEmail } from "@/lib/email-templates";
 
 export async function POST(request) {
   const supabase = createClient();
@@ -34,15 +34,6 @@ export async function POST(request) {
     return NextResponse.json({ error: "Claim not found." }, { status: 404 });
   }
 
-  const { data: partsTeamProfiles } = await admin.from("profiles").select("id").eq("role", "parts_team");
-
-  const toEmails = [];
-  for (const p of partsTeamProfiles || []) {
-    const { data: authUserResult } = await admin.auth.admin.getUserById(p.id);
-    const email = authUserResult?.user?.email;
-    if (email) toEmails.push(email);
-  }
-
   // Always start the reminder clock, even if there's no one to notify right now or the email fails —
   // so a parts_team account added later still gets caught by the daily reminder check.
   await admin
@@ -50,31 +41,14 @@ export async function POST(request) {
     .update({ awaiting_parts_since: new Date().toISOString(), parts_reminder_sent_at: null })
     .eq("id", claimId);
 
-  if (toEmails.length === 0) {
-    return NextResponse.json({ error: "No parts team accounts exist to notify." }, { status: 400 });
-  }
-
-  const partsRows = (claim.claim_parts || [])
-    .map((p) => `${p.name}${p.part_number ? ` (${p.part_number})` : ""} x${p.qty}`)
-    .join("<br/>") || "—";
-
-  const html = `
-    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111111;">
-      <p>A claim was just approved and needs parts sourced for <b>${claim.branches?.name || "this branch"}</b>.</p>
-      ${claimInfoTable(claim, [["Parts needed", partsRows]])}
-      ${claimLinkButton(claimId)}
-    </div>
-  `;
-
   try {
-    await sendEmail({
-      to: toEmails,
-      subject: `Parts Needed — Claim ${claim.claim_number} (${claim.branches?.name || "branch"})`,
-      html,
+    const result = await sendTemplatedEmail(admin, "parts_needed", {
+      claim,
+      claimId,
+      trigger: { id: user.id, email: user.email, name: requesterProfile.full_name },
     });
+    return NextResponse.json({ success: true, ...result });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 502 });
   }
-
-  return NextResponse.json({ success: true, notified: toEmails.length });
 }

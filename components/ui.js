@@ -152,7 +152,7 @@ export function Header({ profile, onSignOut }) {
       style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
     >
       <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <Link href="/" title="Back to the main page" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
           <div
             className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2447] to-[#B8001F] flex items-center justify-center"
             style={{ boxShadow: "0 4px 12px -2px rgba(228,0,43,0.6)" }}
@@ -173,7 +173,7 @@ export function Header({ profile, onSignOut }) {
                 : "Sub-Dealer Portal"}
             </div>
           </div>
-        </div>
+        </Link>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-[#ADADAD] hidden sm:inline">{profile?.full_name}</span>
           <HeaderMenu profile={profile} onSignOut={onSignOut} />
