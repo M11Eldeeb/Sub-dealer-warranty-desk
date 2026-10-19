@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/ui";
 import { ChevronLeft, UserPlus, KeyRound, Trash2, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
 
+const ROLE_ORDER = ["admin", "dealer", "technical_team", "parts_team", "sub_dealer"];
 const ROLE_LABEL = { admin: "Admin", dealer: "Dealer", sub_dealer: "Sub-Dealer", parts_team: "Parts Team", technical_team: "Technical Team" };
 
 export default function UsersPage() {
@@ -105,6 +106,9 @@ export default function UsersPage() {
 
   const q = query.trim().toLowerCase();
   const shown = users.filter((u) => !q || [u.fullName, u.email, u.branch, ROLE_LABEL[u.role]].some((v) => (v || "").toLowerCase().includes(q)));
+  const groups = [...ROLE_ORDER, ...new Set(shown.map((u) => u.role).filter((r) => !ROLE_ORDER.includes(r)))]
+    .map((role) => ({ role, members: shown.filter((u) => u.role === role) }))
+    .filter((g) => g.members.length > 0);
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
@@ -163,8 +167,14 @@ export default function UsersPage() {
           {shown.length === 0 ? (
             <div className="p-6 text-center text-sm text-[#6E6E6E]">No users match.</div>
           ) : (
-            <ul className="divide-y divide-[#EEEEEE]">
-              {shown.map((u) => (
+            <div>
+              {groups.map((g) => (
+                <div key={g.role}>
+                  <div className="px-4 py-2 bg-[#FAFAFA] border-b border-[#EEEEEE] text-[10px] font-black uppercase tracking-widest text-[#6E6E6E]">
+                    {ROLE_LABEL[g.role] || g.role} <span className="font-bold">({g.members.length})</span>
+                  </div>
+                  <ul className="divide-y divide-[#EEEEEE] border-b border-[#EEEEEE] last:border-b-0">
+                    {g.members.map((u) => (
                 <li key={u.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
                     <div className="font-bold text-sm text-[#111111] truncate">
@@ -173,7 +183,6 @@ export default function UsersPage() {
                     </div>
                     <div className="text-xs text-[#6E6E6E] truncate">{u.email || "no email"}</div>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-[#111111] text-white">{ROLE_LABEL[u.role] || u.role}</span>
                       {u.branch && <span className="text-xs text-[#4D4D4D]">{u.branch}</span>}
                     </div>
                   </div>
@@ -198,8 +207,11 @@ export default function UsersPage() {
                     </div>
                   )}
                 </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>
