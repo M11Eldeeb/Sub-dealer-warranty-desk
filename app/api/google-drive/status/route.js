@@ -15,5 +15,5 @@ export async function GET() {
   if (!["dealer", "admin"].includes(profile?.role)) return NextResponse.json({ error: "Not allowed." }, { status: 403 });
 
   const status = await getDriveStatus();
-  return NextResponse.json({ configured: !!driveConfig(), connected: !!status, accountEmail: status?.accountEmail ?? null, connectedAt: status?.connectedAt ?? null });
+  return NextResponse.json({ configured: !!driveConfig(), connected: !!status, accountEmail: status?.accountEmail ?? null, rootFolderId: status?.rootFolderId ?? null, connectedAt: status?.connectedAt ?? null });
 }

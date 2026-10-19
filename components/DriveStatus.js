@@ -44,6 +44,11 @@ export default function DriveStatus({ role }) {
         <div className="text-xs text-[#6E6E6E] flex items-center gap-1.5">
           <HardDrive size={13} className="text-[#2E7D46]" />
           Evidence is saved to Google Drive (Sub Dealer Claims) as <b className="text-[#111111]">{status.accountEmail}</b>
+          {status.rootFolderId && (
+            <a href={`https://drive.google.com/drive/folders/${status.rootFolderId}`} target="_blank" rel="noreferrer" className="ml-2 underline hover:text-[#111111]">
+              Open folder
+            </a>
+          )}
           {role === "admin" && (
             <a href="/api/google-drive/connect" className="ml-2 underline hover:text-[#111111]">
               Reconnect
