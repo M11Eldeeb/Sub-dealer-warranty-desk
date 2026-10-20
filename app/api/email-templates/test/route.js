@@ -37,7 +37,12 @@ export async function POST(request) {
 
   const template = { ...TEMPLATE_DEFAULTS[input.key], ...checked.value };
   const { data: profile } = await admin.from("profiles").select("full_name").eq("id", who.user.id).maybeSingle();
-  const { subject, html } = renderTemplate(template, claim, { requestedBy: profile?.full_name ?? "", claimId: claim.id });
+  const { subject, html } = renderTemplate(template, claim, {
+    requestedBy: profile?.full_name ?? "",
+    claimId: claim.id,
+    reason: "Sample reason: the photos are not clear, please attach new ones.",
+    returnType: "returned for edit",
+  });
   const result = await sendMail({ kind: "test", to: [who.user.email], subject: `[TEST] ${subject}`, html, sentBy: who.user.id });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 502 });
   return NextResponse.json({ sentTo: who.user.email });

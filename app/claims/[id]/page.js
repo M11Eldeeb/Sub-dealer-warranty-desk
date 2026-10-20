@@ -55,6 +55,7 @@ export default function ClaimDetailPage() {
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
   const [requisitionFiles, setRequisitionFiles] = useState([]);
   const [partsEmailNote, setPartsEmailNote] = useState("");
+  const [returnEmailNote, setReturnEmailNote] = useState("");
   const [uploadError, setUploadError] = useState("");
 
   const load = async () => {
@@ -222,6 +223,22 @@ export default function ClaimDetailPage() {
     });
   };
 
+  // Emails the sub-dealer's branch that the claim / after-repair evidence was returned (never blocks the return itself).
+  const notifySubDealerReturn = async (type, reason) => {
+    setReturnEmailNote("");
+    try {
+      const res = await fetch("/api/notify-sub-dealer-return", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claimId: claim.id, type, reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) setReturnEmailNote(`Claim returned, but the sub-dealer notification email failed: ${data.error || "unknown error"}`);
+    } catch {
+      setReturnEmailNote("Claim returned, but the sub-dealer notification email could not be sent (network error).");
+    }
+  };
+
   const setStatus = async (status) => {
     const { error } = await supabase.from("claims").update({ status }).eq("id", claim.id);
     if (error) console.error("Failed to update claim status:", error.message);
@@ -282,9 +299,11 @@ export default function ClaimDetailPage() {
       await supabase.from("claims").update({ returned_since: new Date().toISOString() }).eq("id", claim.id);
       await setStatus("returned");
       await addLog(claim.status, "returned", note);
+      const returnReason = note;
       setNote("");
       setShowReturnBox(false);
       await load();
+      await notifySubDealerReturn("returned", returnReason);
     } finally {
       setActionLoading(null);
     }
@@ -803,9 +822,11 @@ export default function ClaimDetailPage() {
     try {
       await setStatus("repair_returned");
       await addLog(claim.status, "repair_returned", note);
+      const returnReason = note;
       setNote("");
       setShowReturnBox(false);
       await load();
+      await notifySubDealerReturn("repair_returned", returnReason);
     } finally {
       setActionLoading(null);
     }
@@ -868,6 +889,10 @@ export default function ClaimDetailPage() {
         >
           <ChevronLeft size={16} /> Back to claims
         </button>
+
+        {returnEmailNote && (
+          <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2 mb-3">{returnEmailNote}</div>
+        )}
 
         <div className="relative bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg p-6 overflow-hidden" style={{ borderLeft: `5px solid ${s.color}` }}>
           {stampFor[claim.status] && (

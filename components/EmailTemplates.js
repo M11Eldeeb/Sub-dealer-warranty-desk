@@ -20,8 +20,8 @@ const fromDraft = (d) => ({
   include_details: d.include_details,
   include_button: d.include_button,
   config: {
-    to: { roles: d.config.to.roles, users: d.config.to.users, extra: splitEmails(d.config.to.extraText) },
-    cc: { roles: d.config.cc.roles, users: d.config.cc.users, extra: splitEmails(d.config.cc.extraText), trigger: !!d.config.cc.trigger },
+    to: { roles: d.config.to.roles, users: d.config.to.users, extra: splitEmails(d.config.to.extraText), branch: !!d.config.to.branch },
+    cc: { roles: d.config.cc.roles, users: d.config.cc.users, extra: splitEmails(d.config.cc.extraText), trigger: !!d.config.cc.trigger, branch: !!d.config.cc.branch },
   },
 });
 
@@ -36,7 +36,7 @@ const toggle = (list, value) => (list.includes(value) ? list.filter((v) => v !==
 const chip = (on) =>
   `px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${on ? "bg-[#111111] text-white border-[#111111]" : "bg-white text-[#4D4D4D] border-[#E0E0E0] hover:border-[#111111]"}`;
 
-function Recipients({ title, list, onChange, users, roles, triggerLabel }) {
+function Recipients({ title, list, onChange, users, roles, triggerLabel, branchLabel }) {
   const set = (patch) => onChange({ ...list, ...patch });
   return (
     <div className="border border-[#EEEEEE] rounded-lg p-3 space-y-3">
@@ -61,6 +61,12 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel }) {
           ))}
         </div>
       </div>
+      {branchLabel && (
+        <label className="flex items-center gap-2 text-xs text-[#111111] cursor-pointer">
+          <input type="checkbox" checked={!!list.branch} onChange={(e) => set({ branch: e.target.checked })} />
+          {branchLabel}
+        </label>
+      )}
       {triggerLabel && (
         <label className="flex items-center gap-2 text-xs text-[#111111] cursor-pointer">
           <input type="checkbox" checked={!!list.trigger} onChange={(e) => set({ trigger: e.target.checked })} />
@@ -99,6 +105,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
 
   const summary = (list) => {
     const parts = [...list.roles.map((r) => ROLE_LABEL[r] || r), ...list.users.map((id) => users.find((u) => u.id === id)?.name).filter(Boolean), ...splitEmails(list.extraText)];
+    if (list.branch) parts.push("the claim's sub-dealer branch");
     if (list.trigger) parts.push("the person who triggered it");
     return parts.length ? parts.join(", ") : "nobody";
   };
@@ -115,7 +122,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
           <div className="text-xs text-[#6E6E6E] mt-0.5">{draft.when}</div>
           <div className="text-xs text-[#4D4D4D] mt-1 truncate">
             To: <b>{summary(draft.config.to)}</b>
-            {(draft.config.cc.roles.length > 0 || draft.config.cc.users.length > 0 || draft.config.cc.trigger || draft.config.cc.extraText.trim()) && (
+            {(draft.config.cc.roles.length > 0 || draft.config.cc.users.length > 0 || draft.config.cc.trigger || draft.config.cc.branch || draft.config.cc.extraText.trim()) && (
               <>
                 {" "}
                 · Cc: <b>{summary(draft.config.cc)}</b>
@@ -173,14 +180,22 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <Recipients title="To" list={draft.config.to} onChange={(to) => setDraft({ ...draft, config: { ...draft.config, to } })} users={users} roles={roles} />
+            <Recipients
+              title="To"
+              list={draft.config.to}
+              onChange={(to) => setDraft({ ...draft, config: { ...draft.config, to } })}
+              users={users}
+              roles={roles}
+              branchLabel="The sub-dealer accounts of the claim's own branch"
+            />
             <Recipients
               title="Cc"
               list={draft.config.cc}
               onChange={(cc) => setDraft({ ...draft, config: { ...draft.config, cc } })}
               users={users}
               roles={roles}
-              triggerLabel="The person who triggered it (who sent / approved the claim)"
+              triggerLabel="The person who triggered it (who sent / approved / returned the claim)"
+              branchLabel="The sub-dealer accounts of the claim's own branch"
             />
           </div>
 
