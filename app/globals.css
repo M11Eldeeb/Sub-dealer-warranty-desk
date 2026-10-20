@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
 body {
   background: #f4f4f4;
   color: #111111;
@@ -32,7 +37,7 @@ body {
     font-size: 14px;
     background: #ffffff;
     outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
   }
   .input:focus {
     border-color: #e4002b;
@@ -47,12 +52,19 @@ body {
     border: 1px solid #ececec;
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 1px 1px rgba(17, 17, 17, 0.03);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
   }
-  .claim-card:hover {
-    transform: translateY(-3px);
-    border-color: #e6c9cf;
-    box-shadow: 0 12px 28px -12px rgba(17, 17, 17, 0.18), 0 4px 10px -4px rgba(228, 0, 43, 0.1);
+  /* Lift only where there is a real hover (not after a tap on a phone). */
+  @media (hover: hover) and (pointer: fine) {
+    .claim-card:hover {
+      transform: translateY(-2px);
+      border-color: #e6c9cf;
+      box-shadow: 0 12px 28px -12px rgba(17, 17, 17, 0.18), 0 4px 10px -4px rgba(228, 0, 43, 0.1);
+    }
+  }
+  .claim-card:active {
+    transform: scale(0.992);
+    transition-duration: 100ms;
   }
 }
 
@@ -70,5 +82,111 @@ body {
   select,
   textarea {
     font-size: 16px !important;
+  }
+}
+
+/* ---- Motion ------------------------------------------------------------------------------------------
+   Corporate and calm: short (120-260ms), strong ease-out, no bounce, tiny distances. Only transform and
+   opacity are animated. Anything that appears often is quick; one-off moments (page load) are a touch slower. */
+
+/* Every button answers a press. Opt out with .no-press (full-width list rows). */
+button:not(:disabled):not(.no-press):active {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-in {
+  animation: page-in 260ms var(--ease-out) backwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fade-in 160ms var(--ease-out) backwards;
+}
+
+/* Banners and notes that appear after an action. */
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.note-in {
+  animation: note-in 200ms var(--ease-out) backwards;
+}
+
+/* Popovers grow out of their button (set transform-origin where used). */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.pop-in {
+  animation: pop-in 150ms var(--ease-out) backwards;
+}
+
+/* Dialogs stay centred: scale up slightly from the middle. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.dialog-in {
+  animation: dialog-in 200ms var(--ease-out) backwards;
+}
+
+/* Expand / collapse without animating height itself: the row track grows from 0fr to 1fr. */
+.reveal-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms var(--ease-out);
+}
+.reveal-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.reveal-panel > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -133,7 +133,8 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
         <ChevronDown size={18} className={`shrink-0 text-[#6E6E6E] transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      <div className="reveal-panel" data-open={open}>
+        <div inert={open ? undefined : ""}>
         <div className="border-t border-[#EEEEEE] p-4 space-y-4">
           <label className="flex items-center gap-2 text-sm font-semibold text-[#111111] cursor-pointer">
             <input type="checkbox" checked={draft.enabled} onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })} />
@@ -200,7 +201,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
           </div>
 
           {state?.message && (
-            <div className={`text-xs rounded-lg border p-3 flex items-start gap-2 ${state.ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
+            <div className={`note-in text-xs rounded-lg border p-3 flex items-start gap-2 ${state.ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
               {state.ok ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
               {state.message}
             </div>
@@ -233,7 +234,8 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
             </button>
           </div>
         </div>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

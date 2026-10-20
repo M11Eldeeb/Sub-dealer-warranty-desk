@@ -193,7 +193,7 @@ export default function NewClaimPage() {
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] px-4 sm:px-6 py-5 sm:py-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto page-in">
         <button
           onClick={() => {
             router.refresh();
@@ -439,7 +439,7 @@ export default function NewClaimPage() {
       </div>
 
       {lightboxPos !== null && mediaEntries[lightboxPos] && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" onClick={() => setLightboxPos(null)}>
+        <div className="fade-in fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" onClick={() => setLightboxPos(null)}>
           <button
             onClick={() => setLightboxPos(null)}
             className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2"

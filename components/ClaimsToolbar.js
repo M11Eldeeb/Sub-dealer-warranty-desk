@@ -135,7 +135,7 @@ export default function ClaimsToolbar({
           </button>
 
           {filterOpen && (
-            <div className="absolute z-30 top-full mt-2 left-0 sm:left-auto sm:right-0 w-72 max-w-[calc(100vw-2rem)] bg-white border border-[#E0E0E0] rounded-lg shadow-xl p-4 space-y-4">
+            <div className="pop-in origin-top-left sm:origin-top-right absolute z-30 top-full mt-2 left-0 sm:left-auto sm:right-0 w-72 max-w-[calc(100vw-2rem)] bg-white border border-[#E0E0E0] rounded-lg shadow-xl p-4 space-y-4">
               {branches && branches.length > 0 && (
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Branch</div>
@@ -238,7 +238,7 @@ export default function ClaimsToolbar({
         </button>
 
         {sortOpen && (
-          <div className="absolute z-30 top-full mt-2 right-0 w-56 bg-white border border-[#E0E0E0] rounded-lg shadow-xl p-2">
+          <div className="pop-in origin-top-right absolute z-30 top-full mt-2 right-0 w-56 bg-white border border-[#E0E0E0] rounded-lg shadow-xl p-2">
             {sortOptions.map((o) => (
               <button
                 key={o.value}

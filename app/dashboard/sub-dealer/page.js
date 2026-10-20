@@ -89,7 +89,7 @@ export default function SubDealerDashboard() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <Tabs
             value={filter}

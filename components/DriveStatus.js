@@ -32,7 +32,7 @@ export default function DriveStatus({ role }) {
   return (
     <div className="space-y-2">
       {flag && (
-        <div className={`text-xs rounded-lg border p-3 flex items-start gap-2 ${kind === "ok" ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
+        <div className={`note-in text-xs rounded-lg border p-3 flex items-start gap-2 ${kind === "ok" ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
           {kind === "ok" ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
           <div>
             {text}

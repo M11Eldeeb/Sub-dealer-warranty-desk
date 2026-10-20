@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Children, cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ExportDataButton from "@/components/ExportDataButton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -202,7 +202,7 @@ function HeaderMenu({ profile, onSignOut }) {
     };
   }, [open]);
 
-  const item = "w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-[#111111] hover:bg-[#F4F4F4] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+  const item = "no-press w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-[#111111] hover:bg-[#F4F4F4] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
 
   return (
     <div className="relative" ref={ref}>
@@ -210,17 +210,27 @@ function HeaderMenu({ profile, onSignOut }) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Menu"
         aria-expanded={open}
-        className="w-9 h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-all"
+        className="w-9 h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors"
       >
-        {open ? <X size={18} /> : <Menu size={18} />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={open ? "close" : "open"}
+            initial={{ opacity: 0, rotate: open ? -45 : 45 }}
+            animate={{ opacity: 1, rotate: 0 }}
+            exit={{ opacity: 0, rotate: open ? 45 : -45 }}
+            transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
+            className="flex"
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
+          </motion.span>
+        </AnimatePresence>
       </button>
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.97 }}
-            transition={{ duration: 0.14 }}
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] } }}
+            exit={{ opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.1, ease: [0.23, 1, 0.32, 1] } }}
             className="absolute right-0 mt-2 w-60 bg-white text-[#111111] rounded-lg border border-[#E0E0E0] overflow-hidden origin-top-right"
             style={{ boxShadow: "0 18px 40px -12px rgba(0,0,0,0.45)" }}
           >
@@ -272,7 +282,7 @@ export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
               <motion.span
                 layoutId={layoutId}
                 className="absolute inset-0 rounded-md bg-[#111111]"
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                transition={{ type: "spring", duration: 0.3, bounce: 0.08 }}
               />
             )}
             <span className="relative flex items-center gap-1.5">
@@ -288,34 +298,43 @@ export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
   );
 }
 
-const gridVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.035 } },
-};
+// Cards ease in with a short, capped stagger: the first handful cascade, the rest arrive together,
+// so a long list never makes anyone wait for the tail.
+const STAGGER_STEP = 0.03;
+const STAGGER_CAP = 8;
 const cardVariants = {
-  hidden: { opacity: 0, y: 10, scale: 0.98 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] } },
-  exit: { opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.15 } },
+  hidden: { opacity: 0, y: 8 },
+  show: (index = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.26, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, STAGGER_CAP) * STAGGER_STEP },
+  }),
 };
 
 /**
- * Animated claim-card grid: fades/slides cards in with a light stagger
- * whenever `animKey` changes (pass the active tab/filter) and whenever the
- * card list itself changes. Wrap each card in <ClaimCard> below.
+ * Animated claim-card grid: cards fade up into place whenever `animKey` changes (pass the active tab/filter)
+ * and whenever the list itself changes. Wrap each card in <ClaimCard> below.
  */
 export function ClaimGrid({ animKey, children }) {
+  const cards = Children.toArray(children).map((child, i) => (isValidElement(child) ? cloneElement(child, { index: i }) : child));
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key={animKey} variants={gridVariants} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {children}
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={animKey}
+        initial={{ opacity: 0.6 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0, transition: { duration: 0.08 } }}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+      >
+        {cards}
       </motion.div>
     </AnimatePresence>
   );
 }
 
-export function ClaimCard({ claimId, children }) {
+export function ClaimCard({ claimId, index = 0, children }) {
   return (
-    <motion.div key={claimId} layout variants={cardVariants} exit="exit" className="min-w-0">
+    <motion.div key={claimId} layout="position" variants={cardVariants} initial="hidden" animate="show" custom={index} className="min-w-0">
       {children}
     </motion.div>
   );

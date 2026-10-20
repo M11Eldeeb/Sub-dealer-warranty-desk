@@ -1,4 +1,5 @@
 import "./globals.css";
+import MotionProvider from "@/components/MotionProvider";
 import { Barlow } from "next/font/google";
 
 const barlow = Barlow({
@@ -21,7 +22,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={barlow.className}>{children}</body>
+      <body className={barlow.className}>
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }

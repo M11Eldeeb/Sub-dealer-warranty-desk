@@ -871,7 +871,7 @@ export default function ClaimDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] px-4 sm:px-6 py-5 sm:py-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto page-in">
         <button
           onClick={() => {
             router.refresh();
@@ -891,7 +891,7 @@ export default function ClaimDetailPage() {
         </button>
 
         {returnEmailNote && (
-          <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2 mb-3">{returnEmailNote}</div>
+          <div className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2 mb-3">{returnEmailNote}</div>
         )}
 
         <div className="relative bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg p-6 overflow-hidden" style={{ borderLeft: `5px solid ${s.color}` }}>
@@ -1263,10 +1263,10 @@ export default function ClaimDetailPage() {
                 />
               </div>
               {partsEmailNote && (
-                <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{partsEmailNote}</div>
+                <div className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{partsEmailNote}</div>
               )}
               {techEmailNote && (
-                <div className="text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{techEmailNote}</div>
+                <div className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{techEmailNote}</div>
               )}
               {!dealerEditMode && (
                 <button
@@ -1886,7 +1886,7 @@ export default function ClaimDetailPage() {
       </div>
 
       {lightboxIndex !== null && viewableAttachments[lightboxIndex] && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" onClick={() => setLightboxIndex(null)}>
+        <div className="fade-in fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" onClick={() => setLightboxIndex(null)}>
           <button
             onClick={() => setLightboxIndex(null)}
             className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2"

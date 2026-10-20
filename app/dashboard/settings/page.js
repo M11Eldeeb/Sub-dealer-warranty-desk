@@ -76,13 +76,13 @@ export default function SettingsPage() {
     );
 
   const [kind, text] = flag ? FLAGS[flag.key] || ["warn", "Email: " + flag.key] : [null, null];
-  const banner = (ok) => (ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]");
+  const banner = (ok) => (ok ? "note-in bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "note-in bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]");
   const isAdmin = profile?.role === "admin";
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
         <button onClick={() => router.push("/dashboard/dealer")} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
           <ChevronLeft size={16} /> Back
         </button>

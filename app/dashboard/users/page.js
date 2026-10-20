@@ -113,7 +113,7 @@ export default function UsersPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
         <button onClick={() => router.push("/dashboard/dealer")} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
           <ChevronLeft size={16} /> Back
         </button>
@@ -134,7 +134,7 @@ export default function UsersPage() {
 
         {notice && (
           <div
-            className={`text-sm rounded-lg border p-3 mb-4 flex items-start gap-2 ${
+            className={`note-in text-sm rounded-lg border p-3 mb-4 flex items-start gap-2 ${
               notice.tone === "good" ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"
             }`}
           >
@@ -143,7 +143,7 @@ export default function UsersPage() {
         )}
 
         {temp && (
-          <div className="bg-[#E5F3E8] border border-[#C3E0C9] rounded-lg p-4 mb-4 text-sm">
+          <div className="note-in bg-[#E5F3E8] border border-[#C3E0C9] rounded-lg p-4 mb-4 text-sm">
             <div className="font-bold text-[#2E7D46] mb-1">New password for {temp.name}</div>
             <div className="text-[#2E7D46]">Share it with them directly. This is the only time it is shown.</div>
             <div className="bg-white rounded p-2.5 mt-2 font-mono text-xs space-y-1">
@@ -217,8 +217,8 @@ export default function UsersPage() {
       </div>
 
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-white rounded-lg p-5 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="fade-in fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setConfirmDelete(null)}>
+          <div className="dialog-in bg-white rounded-lg p-5 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
             <div className="font-black uppercase tracking-wide text-[#111111] mb-2">Delete account?</div>
             <p className="text-sm text-[#4D4D4D] mb-4">
               <b>{confirmDelete.fullName}</b> ({confirmDelete.email}) will no longer be able to sign in. If they have claims or history on record the account cannot be deleted - reset their password instead.
