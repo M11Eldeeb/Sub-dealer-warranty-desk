@@ -22,7 +22,9 @@ export async function GET() {
     .select("id, created_at, kind, recipients, subject, status, error")
     .order("created_at", { ascending: false })
     .limit(8);
+  const { data: lastRun } = await createAdminClient().from("cron_run_log").select("ran_at, outcome, summary").order("ran_at", { ascending: false }).limit(1).maybeSingle();
   return NextResponse.json({
+    lastRun: lastRun ?? null,
     configured: !!driveConfig(),
     connected: !!status,
     accountEmail: status?.accountEmail ?? null,

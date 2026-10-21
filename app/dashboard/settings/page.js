@@ -154,6 +154,25 @@ export default function SettingsPage() {
 
         <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mt-8 mb-1">Automatic emails</div>
         <p className="text-xs text-[#6E6E6E] mb-3">Click an email to change its wording, who it goes to and who is copied. Changes apply to the next email sent.</p>
+        <div className="note-in text-xs rounded-lg border border-[#E0E0E0] bg-white p-3 mb-3 flex items-start gap-2">
+          {status?.lastRun ? (
+            <>
+              <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${status.lastRun.outcome === "ok" ? "bg-[#2E7D46]" : "bg-[#C4551B]"}`} />
+              <div className="text-[#4D4D4D]">
+                Daily reminder job last ran <b className="text-[#111111]">{fmtTime(status.lastRun.ran_at)}</b>
+                {status.lastRun.outcome === "ok" && (
+                  <> - sent {status.lastRun.summary?.partsReminders ?? 0} parts, {status.lastRun.summary?.technicalReminders ?? 0} technical and {status.lastRun.summary?.returnedReminders ?? 0} returned-claim reminders.</>
+                )}
+                {status.lastRun.outcome === "error" && <> - some reminders failed: {(status.lastRun.summary?.errors || []).join("; ")}</>}
+                {status.lastRun.outcome === "unauthorized" && (
+                  <> - it was refused (wrong secret), so no reminders were sent.</>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-[#4D4D4D]">The daily reminder job has not been recorded yet. It runs every day at 9:00 AM Saudi time.</div>
+          )}
+        </div>
         <EmailTemplates />
 
         {status?.recent?.length > 0 && (

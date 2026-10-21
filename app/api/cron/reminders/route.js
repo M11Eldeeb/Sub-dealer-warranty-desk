@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplatedEmail, latestStatusEntry } from "@/lib/email-templates";
 
@@ -9,9 +10,34 @@ const DAY_MS = 24 * HOUR_MS;
 const SLACK_MS = HOUR_MS;
 const due = (sinceIso, waitMs, now) => now - new Date(sinceIso).getTime() >= waitMs - SLACK_MS;
 
+export const dynamic = "force-dynamic";
+
+/** Every run (and every refused call) is written down so Settings can show whether the daily job really ran. */
+async function logRun(outcome, summary) {
+  await createAdminClient().from("cron_run_log").insert({ outcome, summary }).then(() => undefined, () => undefined);
+}
+
+const same = (a, b) => {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+};
+
+/**
+ * Called every day at 06:00 UTC (9:00 AM Saudi time) by the database scheduler (pg_cron), which sends the shared
+ * secret kept in the cron_secret table. Vercel's own CRON_SECRET is accepted too. (Vercel's free plan can only
+ * promise "sometime in the hour", which is why the schedule lives in the database.)
+ */
+async function authorized(request) {
+  const header = request.headers.get("authorization") || "";
+  if (process.env.CRON_SECRET && same(header, `Bearer ${process.env.CRON_SECRET}`)) return true;
+  const { data } = await createAdminClient().from("cron_secret").select("secret").eq("id", 1).maybeSingle();
+  return !!data?.secret && same(header, `Bearer ${data.secret}`);
+}
+
 export async function GET(request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!(await authorized(request))) {
+    await logRun("unauthorized", { headerSent: !!request.headers.get("authorization") });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -113,5 +139,6 @@ export async function GET(request) {
     }
   }
 
+  await logRun(results.errors.length ? "error" : "ok", results);
   return NextResponse.json({ success: true, ...results });
 }
