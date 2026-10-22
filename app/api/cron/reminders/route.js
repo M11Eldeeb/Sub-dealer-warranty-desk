@@ -46,9 +46,12 @@ export async function GET(request) {
   const results = { partsReminders: 0, technicalReminders: 0, returnedReminders: 0, errors: [] };
 
   // ---------- Parts team ----------
-  // Every day (9:00 AM Saudi time) while any part is still outstanding (Waiting Action, ICT or VOR), starting
-  // 24h after approval. A part that is Supplied to Sub-Dealer (or cancelled / returned) is finished; once every
-  // part is finished the reminders stop. Wording and recipients come from the "Parts team reminder" email in Settings.
+  // While any part is outstanding (Waiting Action, ICT or VOR):
+  //  - a part nobody has touched (Waiting Action) is reminded every day
+  //  - a part that was started but is stuck (ICT or VOR) is reminded every 5 days
+  // The clock starts at approval and then restarts at each reminder. A claim with a Waiting Action part is reminded daily.
+  // A part that is Supplied to Sub-Dealer (or cancelled / returned) is finished; once every part is finished the
+  // reminders stop. Wording and recipients come from the "Parts team reminder" email in Settings.
   const OUTSTANDING = ["Waiting Action", "ICT", "VOR"];
   const { data: awaitingPartsClaims } = await admin
     .from("claims")
@@ -64,7 +67,8 @@ export async function GET(request) {
     if (outstanding.length === 0) continue;
 
     const since = claim.parts_reminder_sent_at || claim.awaiting_parts_since;
-    if (!due(since, DAY_MS, now)) continue;
+    const waitMs = outstanding.some((p) => p.status === "Waiting Action") ? DAY_MS : 5 * DAY_MS;
+    if (!due(since, waitMs, now)) continue;
 
     try {
       // The email lists only what is still outstanding, with its current status.
