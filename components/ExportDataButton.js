@@ -25,6 +25,7 @@ export default function ExportDataButton({ variant = "button", className = "" })
       const { data: claims, error } = await supabase
         .from("claims")
         .select("*, branches(name), claim_parts(*), claim_labor(*)")
+        .eq("kind", "claim")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

@@ -114,6 +114,7 @@ export async function GET(request) {
   const { data: returnedClaims } = await admin
     .from("claims")
     .select("id, branch_id, status, claim_number, work_order_number, dealer_work_order_number, vin, returned_since, last_returned_reminder_at, branches(name)")
+    .eq("kind", "claim")
     .in("status", Object.keys(RETURN_LABELS));
 
   for (const claim of returnedClaims || []) {

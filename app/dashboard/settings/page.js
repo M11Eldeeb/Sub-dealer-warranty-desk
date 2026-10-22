@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/ui";
 import DriveStatus from "@/components/DriveStatus";
 import EmailTemplates from "@/components/EmailTemplates";
-import { ChevronLeft, Mail, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
+import { ChevronLeft, Mail, CheckCircle2, AlertCircle, Loader2, Send, BadgeCheck, Lock, LockOpen } from "lucide-react";
 
 const FLAGS = {
   connected: ["ok", "The email sender is connected."],
@@ -30,6 +30,25 @@ export default function SettingsPage() {
   const [flag, setFlag] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [freeService, setFreeService] = useState(null);
+  const [togglingFs, setTogglingFs] = useState(false);
+  const [fsError, setFsError] = useState("");
+
+  const loadFreeService = () =>
+    fetch("/api/free-service/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setFreeService)
+      .catch(() => {});
+
+  const toggleFreeService = async () => {
+    setTogglingFs(true);
+    setFsError("");
+    const res = await fetch("/api/free-service/lock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ open: !freeService?.open }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setFsError(data.error || "Could not change it.");
+    await loadFreeService();
+    setTogglingFs(false);
+  };
 
   const loadStatus = () =>
     fetch("/api/google-mail/status", { cache: "no-store" })
@@ -49,6 +68,7 @@ export default function SettingsPage() {
       const p = new URLSearchParams(window.location.search);
       if (p.get("mail")) setFlag({ key: p.get("mail"), detail: p.get("detail") });
       await loadStatus();
+      await loadFreeService();
       setLoading(false);
     })();
   }, []);
@@ -92,6 +112,39 @@ export default function SettingsPage() {
         <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Google Drive</div>
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-4 mb-6">
           <DriveStatus role={profile?.role} />
+        </div>
+
+        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Free Service approvals</div>
+        <div className="bg-white border border-[#E0E0E0] rounded-lg p-5 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[#111111] text-white flex items-center justify-center shrink-0">
+              <BadgeCheck size={17} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-black uppercase tracking-wide text-sm text-[#111111]">Sub-dealer access</div>
+              <p className="text-xs text-[#6E6E6E] mt-0.5">
+                While locked, only the dealer and admins can see and create Free Service requests, so it can be tested safely. Open it when testing is done.
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm">
+                  {freeService?.open ? <LockOpen size={16} className="text-[#2E7D46]" /> : <Lock size={16} className="text-[#C4551B]" />}
+                  <span className="font-bold text-[#111111]">{freeService?.open ? "Open for sub-dealers" : "Locked for sub-dealers"}</span>
+                </div>
+                {isAdmin ? (
+                  <button
+                    onClick={toggleFreeService}
+                    disabled={togglingFs}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide text-white disabled:opacity-60 transition-colors ${freeService?.open ? "bg-[#111111] hover:bg-[#2A2A2A]" : "bg-[#E4002B] hover:bg-[#B8001F]"}`}
+                  >
+                    {togglingFs && <Loader2 size={13} className="animate-spin" />} {freeService?.open ? "Lock it again" : "Open for sub-dealers"}
+                  </button>
+                ) : (
+                  <span className="text-xs text-[#6E6E6E]">Only an admin can change this.</span>
+                )}
+              </div>
+              {fsError && <div className="note-in mt-2 text-xs text-[#C4551B]">{fsError}</div>}
+            </div>
+          </div>
         </div>
 
         <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Email</div>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import FreeServiceButton from "@/components/FreeServiceButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -45,6 +46,7 @@ export default function DealerDashboard() {
     const { data: claimsData } = await supabase
       .from("claims")
       .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name:labor_name, created_at)")
+      .eq("kind", "claim")
       .order("created_at", { ascending: false });
 
     setClaims(claimsData || []);
@@ -120,6 +122,7 @@ export default function DealerDashboard() {
               branches={branchList}
               sortOptions={SORT_OPTIONS}
             />
+            <FreeServiceButton />
           </div>
         </div>
 

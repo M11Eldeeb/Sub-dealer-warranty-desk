@@ -3,7 +3,7 @@ import { Children, cloneElement, isValidElement, useEffect, useRef, useState } f
 import Link from "next/link";
 import ExportDataButton from "@/components/ExportDataButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut } from "lucide-react";
+import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -187,6 +187,15 @@ function HeaderMenu({ profile, onSignOut }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const manager = profile?.role === "dealer" || profile?.role === "admin";
+  const [freeService, setFreeService] = useState(null);
+
+  useEffect(() => {
+    if (!profile?.role) return;
+    fetch("/api/free-service/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setFreeService)
+      .catch(() => {});
+  }, [profile?.role]);
 
   useEffect(() => {
     if (!open) return;
@@ -238,6 +247,12 @@ function HeaderMenu({ profile, onSignOut }) {
               <div className="text-sm font-bold truncate">{profile?.full_name}</div>
               <div className="text-[10px] uppercase tracking-wide text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
             </div>
+            {freeService?.canUse && (
+              <Link href="/dashboard/free-service" onClick={() => setOpen(false)} className={item}>
+                <BadgeCheck size={16} className="text-[#6E6E6E]" /> Free Service
+                {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[10px]">{freeService.pending}</span>}
+              </Link>
+            )}
             {manager && (
               <>
                 <Link href="/dashboard/users" onClick={() => setOpen(false)} className={item}>

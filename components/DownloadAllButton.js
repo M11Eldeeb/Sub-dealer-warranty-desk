@@ -70,6 +70,7 @@ export default function DownloadAllButton() {
       const { data: claims, error } = await supabase
         .from("claims")
         .select("*, branches(name), claim_parts(*), claim_labor(*), claim_attachments(*), claim_status_log(*)")
+        .eq("kind", "claim")
         .order("created_at", { ascending: true });
 
       if (error) throw error;

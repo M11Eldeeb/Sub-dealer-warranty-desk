@@ -306,20 +306,27 @@ export default function EmailTemplates() {
 
   return (
     <div className="space-y-3">
-      {data.templates.map((t) => (
-        <TemplateCard
-          key={t.key}
-          draft={drafts[t.key]}
-          saved={saved[t.key]}
-          setDraft={(d) => setDrafts((all) => ({ ...all, [t.key]: d }))}
-          users={data.users}
-          roles={data.roles}
-          placeholders={data.placeholders}
-          onSave={() => save(t.key)}
-          onReset={() => reset(t.key)}
-          onTest={() => test(t.key)}
-          state={states[t.key]}
-        />
+      {[...new Set(data.templates.map((t) => t.group))].map((group) => (
+        <div key={group} className="space-y-3">
+          <div className="text-[11px] font-black uppercase tracking-widest text-[#6E6E6E] pt-2">{group === "Claims" ? "Warranty claims" : group}</div>
+          {data.templates
+            .filter((t) => t.group === group)
+            .map((t) => (
+              <TemplateCard
+                key={t.key}
+                draft={drafts[t.key]}
+                saved={saved[t.key]}
+                setDraft={(d) => setDrafts((all) => ({ ...all, [t.key]: d }))}
+                users={data.users}
+                roles={data.roles}
+                placeholders={data.placeholders}
+                onSave={() => save(t.key)}
+                onReset={() => reset(t.key)}
+                onTest={() => test(t.key)}
+                state={states[t.key]}
+              />
+            ))}
+        </div>
       ))}
     </div>
   );
