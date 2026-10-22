@@ -118,7 +118,7 @@ export default function SubDealerDashboard() {
               branches={null}
               sortOptions={SORT_OPTIONS}
             />
-            <FreeServiceButton />
+            <FreeServiceButton role={profile?.role} userId={profile?.id} />
             <Link
               href="/claims/new"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-gradient-to-r from-[#FF2447] to-[#E4002B] hover:shadow-lg hover:shadow-[#E4002B]/25 active:scale-95 transition-all"

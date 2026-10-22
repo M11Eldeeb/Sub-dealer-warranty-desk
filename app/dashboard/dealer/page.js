@@ -122,7 +122,7 @@ export default function DealerDashboard() {
               branches={branchList}
               sortOptions={SORT_OPTIONS}
             />
-            <FreeServiceButton />
+            <FreeServiceButton role={profile?.role} userId={profile?.id} />
           </div>
         </div>
 

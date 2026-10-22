@@ -17,17 +17,16 @@ export async function GET() {
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
   const admin = createAdminClient();
-  const { data: setting } = await admin.from("app_settings").select("value").eq("key", "free_service_open").maybeSingle();
-  const globalOpen = setting?.value === true;
-  const { data: tester } = await admin.from("free_service_access").select("user_id").eq("user_id", user.id).maybeSingle();
-  const open = globalOpen || !!tester;
-
   const role = profile?.role;
-  const canUse = role === "admin" || role === "dealer" || (role === "sub_dealer" && open);
-  let pending = null;
-  if (role === "admin" || role === "dealer") {
-    const { count } = await admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "free_service").in("status", ["submitted", "invoice_submitted"]);
-    pending = count ?? 0;
-  }
-  return NextResponse.json({ open, globalOpen, canUse, role, pending });
+  const isStaff = role === "admin" || role === "dealer";
+  const [{ data: setting }, { data: tester }, pendingResult] = await Promise.all([
+    admin.from("app_settings").select("value").eq("key", "free_service_open").maybeSingle(),
+    admin.from("free_service_access").select("user_id").eq("user_id", user.id).maybeSingle(),
+    isStaff ? admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "free_service").in("status", ["submitted", "invoice_submitted"]) : Promise.resolve(null),
+  ]);
+  const globalOpen = setting?.value === true;
+  const open = globalOpen || !!tester;
+  const canUse = isStaff || (role === "sub_dealer" && open);
+  const pending = isStaff ? pendingResult?.count ?? 0 : null;
+  return NextResponse.json({ userId: user.id, open, globalOpen, canUse, role, pending });
 }

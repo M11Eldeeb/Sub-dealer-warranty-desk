@@ -2,6 +2,7 @@
 import { Children, cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ExportDataButton from "@/components/ExportDataButton";
+import { useFreeService } from "@/lib/use-free-service";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck } from "lucide-react";
 
@@ -187,15 +188,7 @@ function HeaderMenu({ profile, onSignOut }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const manager = profile?.role === "dealer" || profile?.role === "admin";
-  const [freeService, setFreeService] = useState(null);
-
-  useEffect(() => {
-    if (!profile?.role) return;
-    fetch("/api/free-service/status", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setFreeService)
-      .catch(() => {});
-  }, [profile?.role]);
+  const freeService = useFreeService(profile?.role, profile?.id);
 
   useEffect(() => {
     if (!open) return;
