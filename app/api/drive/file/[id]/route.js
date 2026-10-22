@@ -10,8 +10,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * Serves a claim attachment. Access is decided by the database: the attachment row is read as the
  * signed-in user, so nobody gets another branch's file. Files kept in Google Drive are streamed from
- * there (Range supported, so videos can seek); older files still in Supabase storage are sent to a
- * short-lived signed link. Add ?download=1 to force a download instead of showing it.
+ * there (Range supported, so videos can seek). Add ?download=1 to force a download instead of showing it.
  */
 export async function GET(request, { params }) {
   const { id } = params;
@@ -26,10 +25,7 @@ export async function GET(request, { params }) {
   const { data: att } = await supabase.from("claim_attachments").select("id, file_path, file_name").eq("id", id).maybeSingle();
   if (!att) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
-  if (!att.file_path.startsWith("drive:")) {
-    const { data } = await supabase.storage.from("evidence").createSignedUrl(att.file_path, 300);
-    return data?.signedUrl ? NextResponse.redirect(data.signedUrl) : NextResponse.json({ error: "Not found." }, { status: 404 });
-  }
+  if (!att.file_path.startsWith("drive:")) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
   let upstream;
   try {

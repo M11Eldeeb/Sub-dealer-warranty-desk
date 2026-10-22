@@ -12,8 +12,8 @@ const MAX_FILES = 60;
  * Step 1 of attaching files: makes sure the claim's Drive folder exists (Sub Dealer Claims / <branch> /
  * <work orders>) and opens one upload session per file. The browser then sends each file straight to Google.
  * Access is decided by the database: the claim is read as the signed-in user.
- * If Google Drive is not connected (or unreachable) the answer is { fallback: true } and the page keeps
- * using the old Supabase storage, so nobody is blocked from attaching evidence.
+ * Files only ever go to Google Drive. If it is not connected or cannot be reached, the answer is an error the
+ * person sees (nothing is stored in Supabase).
  */
 export async function POST(request) {
   const supabase = createClient();
@@ -37,7 +37,7 @@ export async function POST(request) {
   const claim = await fetchClaimForFolder(supabase, claimId);
   if (!claim) return NextResponse.json({ error: "Claim not found." }, { status: 404 });
 
-  if (!(await getDriveStatus())) return NextResponse.json({ fallback: true, reason: "not-connected" });
+  if (!(await getDriveStatus())) return NextResponse.json({ error: "Google Drive is not connected, so files cannot be attached right now. Please tell an admin to connect it in Settings." }, { status: 503 });
 
   const origin = request.headers.get("origin") || new URL(request.url).origin;
   try {
@@ -55,7 +55,7 @@ export async function POST(request) {
     );
     return NextResponse.json({ sessions });
   } catch (e) {
-    console.error("Drive upload session failed, falling back to Supabase storage:", e instanceof Error ? e.message : e);
-    return NextResponse.json({ fallback: true, reason: e instanceof DriveError ? e.message : "drive-error" });
+    console.error("Drive upload session failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: e instanceof DriveError ? e.message : "Google Drive could not be reached - please try again in a moment." }, { status: 502 });
   }
 }

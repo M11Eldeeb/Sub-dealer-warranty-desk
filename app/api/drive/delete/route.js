@@ -10,7 +10,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * Removes one attachment. The row is deleted AS THE SIGNED-IN USER, so the database rules decide who may remove
  * evidence at which stage, exactly as before; only if that worked is the Drive file moved to the Drive trash
- * (still recoverable there for 30 days). Older files in Supabase storage are removed from there.
+ * (still recoverable there for 30 days).
  */
 export async function POST(request) {
   const supabase = createClient();
@@ -31,8 +31,6 @@ export async function POST(request) {
 
   if (att.file_path.startsWith("drive:")) {
     await trashFile(att.file_path.slice("drive:".length)).catch((e) => console.error("Could not trash the Drive file:", e instanceof Error ? e.message : e));
-  } else {
-    await supabase.storage.from("evidence").remove([att.file_path]);
   }
   return NextResponse.json({ ok: true });
 }
