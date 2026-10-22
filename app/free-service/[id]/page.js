@@ -7,6 +7,13 @@ import { FsStatusTag, Fact, SavedFiles, formatSar } from "@/components/free-serv
 import { uploadEvidence, removeAttachment, syncClaimFolder } from "@/lib/evidence-upload";
 import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock } from "lucide-react";
 
+// Work orders are stored with the branch prefix (BAS-123); the edit box shows only the number after it.
+const stripBranchPrefix = (value, abbreviation) => {
+  const v = String(value || "").trim();
+  const p = abbreviation ? `${abbreviation}-` : "";
+  return p && v.toUpperCase().startsWith(p.toUpperCase()) ? v.slice(p.length).trim() : v;
+};
+
 export default function FreeServiceDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -32,13 +39,13 @@ export default function FreeServiceDetailPage() {
   const [edit, setEdit] = useState({ workOrder: "", vin: "", mileage: "", service: "", comment: "" });
 
   const load = async () => {
-    const { data: c } = await supabase.from("claims").select("*, branches(name)").eq("id", params.id).eq("kind", "free_service").maybeSingle();
+    const { data: c } = await supabase.from("claims").select("*, branches(name, abbreviation)").eq("id", params.id).eq("kind", "free_service").maybeSingle();
     if (!c) {
       setMissing(true);
       return false;
     }
     setClaim(c);
-    setEdit({ workOrder: c.work_order_number || "", vin: c.vin || "", mileage: String(c.mileage ?? ""), service: c.service_requested || "", comment: c.comment || "" });
+    setEdit({ workOrder: stripBranchPrefix(c.work_order_number || "", c.branches?.abbreviation), vin: c.vin || "", mileage: String(c.mileage ?? ""), service: c.service_requested || "", comment: c.comment || "" });
     const [{ data: a }, { data: l }] = await Promise.all([
       supabase.from("claim_attachments").select("*").eq("claim_id", c.id).order("uploaded_at", { ascending: true }),
       supabase.from("claim_status_log").select("*").eq("claim_id", c.id).order("at", { ascending: false }),
@@ -157,10 +164,11 @@ export default function FreeServiceDetailPage() {
     });
   const rejectIt = () => step("reject", { patch: { status: "rejected" }, to: "rejected", logText: note.trim(), event: "rejected", reason: note.trim() });
 
+  const woPrefix = claim.branches?.abbreviation ? `${claim.branches.abbreviation}-` : "";
   const editValid = edit.workOrder.trim() && edit.vin.trim() && edit.service.trim() && edit.mileage !== "" && Number(edit.mileage) >= 0;
   const resubmit = () =>
     step("resubmit", {
-      patch: { status: "submitted", work_order_number: edit.workOrder.trim(), vin: edit.vin.trim().toUpperCase(), mileage: Number(edit.mileage), service_requested: edit.service.trim(), comment: edit.comment.trim() || null },
+      patch: { status: "submitted", work_order_number: `${woPrefix}${stripBranchPrefix(edit.workOrder, woPrefix.slice(0, -1))}`, vin: edit.vin.trim().toUpperCase(), mileage: Number(edit.mileage), service_requested: edit.service.trim(), comment: edit.comment.trim() || null },
       to: "submitted",
       logText: "Corrected and resubmitted.",
       event: "submitted",
@@ -258,7 +266,10 @@ export default function FreeServiceDetailPage() {
           {evidenceEditable ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Field label="Work order (sub-dealer)">
-                <input className="input" value={edit.workOrder} onChange={(e) => setEdit({ ...edit, workOrder: e.target.value })} />
+                <div className="flex">
+                  {woPrefix && <span className="flex items-center px-3 rounded-l border border-r-0 border-[#E0E0E0] bg-[#F1F2F4] text-sm font-mono font-bold text-[#4D4D4D]">{woPrefix}</span>}
+                  <input className={`input ${woPrefix ? "rounded-l-none" : ""}`} value={edit.workOrder} onChange={(e) => setEdit({ ...edit, workOrder: e.target.value })} />
+                </div>
               </Field>
               <Field label="VIN">
                 <input className="input font-mono uppercase" value={edit.vin} onChange={(e) => setEdit({ ...edit, vin: e.target.value })} />

@@ -7,6 +7,12 @@ import { FilePicker } from "@/components/free-service";
 import { uploadEvidence } from "@/lib/evidence-upload";
 import { ChevronLeft, Loader2, Send, Lock } from "lucide-react";
 
+// "bas-123" typed after the BAS- box becomes "123", so the prefix is never doubled.
+const stripPrefix = (value, prefix) => {
+  const v = value.trim();
+  return prefix && v.toUpperCase().startsWith(prefix.toUpperCase()) ? v.slice(prefix.length).trim() : v;
+};
+
 export default function NewFreeServicePage() {
   const router = useRouter();
   const supabase = createClient();
@@ -70,7 +76,7 @@ export default function NewFreeServicePage() {
       p_branch_id: branchId,
       p_vin: vin.trim().toUpperCase(),
       p_mileage: Number(mileage),
-      p_work_order: `${prefix}${workOrder.trim()}`,
+      p_work_order: `${prefix}${stripPrefix(workOrder, prefix)}`,
       p_service: service.trim(),
       p_comment: comment.trim(),
     });
