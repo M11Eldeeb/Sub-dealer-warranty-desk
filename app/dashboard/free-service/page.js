@@ -41,7 +41,7 @@ export default function FreeServiceListPage() {
 
       const { data } = await supabase
         .from("claims")
-        .select("id, claim_number, status, vin, mileage, work_order_number, dealer_work_order_number, approved_amount, created_at, updated_at, branches(name), claim_attachments(count)")
+        .select("id, claim_number, status, vin, mileage, service_requested, work_order_number, dealer_work_order_number, approved_amount, created_at, updated_at, branches(name), claim_attachments(count)")
         .eq("kind", "free_service")
         .order("updated_at", { ascending: false });
       setRows(data || []);
@@ -148,6 +148,7 @@ export default function FreeServiceListPage() {
                           <div className="font-bold text-[#111111] mt-0.5 group-hover:text-[#E4002B] transition-colors">
                             WO# {[r.work_order_number, r.dealer_work_order_number].filter(Boolean).join(" / ")}
                           </div>
+                          {r.service_requested && <div className="text-sm text-[#262626] mt-0.5">{r.service_requested}</div>}
                           <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
                             {r.vin} · {Number(r.mileage ?? 0).toLocaleString("en-US")} km
                           </div>

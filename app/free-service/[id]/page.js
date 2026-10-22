@@ -29,7 +29,7 @@ export default function FreeServiceDetailPage() {
   const [fileError, setFileError] = useState({});
   const [message, setMessage] = useState(null); // { ok, text }
 
-  const [edit, setEdit] = useState({ workOrder: "", vin: "", mileage: "" });
+  const [edit, setEdit] = useState({ workOrder: "", vin: "", mileage: "", service: "", comment: "" });
 
   const load = async () => {
     const { data: c } = await supabase.from("claims").select("*, branches(name)").eq("id", params.id).eq("kind", "free_service").maybeSingle();
@@ -38,7 +38,7 @@ export default function FreeServiceDetailPage() {
       return false;
     }
     setClaim(c);
-    setEdit({ workOrder: c.work_order_number || "", vin: c.vin || "", mileage: String(c.mileage ?? "") });
+    setEdit({ workOrder: c.work_order_number || "", vin: c.vin || "", mileage: String(c.mileage ?? ""), service: c.service_requested || "", comment: c.comment || "" });
     const [{ data: a }, { data: l }] = await Promise.all([
       supabase.from("claim_attachments").select("*").eq("claim_id", c.id).order("uploaded_at", { ascending: true }),
       supabase.from("claim_status_log").select("*").eq("claim_id", c.id).order("at", { ascending: false }),
@@ -157,10 +157,10 @@ export default function FreeServiceDetailPage() {
     });
   const rejectIt = () => step("reject", { patch: { status: "rejected" }, to: "rejected", logText: note.trim(), event: "rejected", reason: note.trim() });
 
-  const editValid = edit.workOrder.trim() && edit.vin.trim() && edit.mileage !== "" && Number(edit.mileage) >= 0;
+  const editValid = edit.workOrder.trim() && edit.vin.trim() && edit.service.trim() && edit.mileage !== "" && Number(edit.mileage) >= 0;
   const resubmit = () =>
     step("resubmit", {
-      patch: { status: "submitted", work_order_number: edit.workOrder.trim(), vin: edit.vin.trim().toUpperCase(), mileage: Number(edit.mileage) },
+      patch: { status: "submitted", work_order_number: edit.workOrder.trim(), vin: edit.vin.trim().toUpperCase(), mileage: Number(edit.mileage), service_requested: edit.service.trim(), comment: edit.comment.trim() || null },
       to: "submitted",
       logText: "Corrected and resubmitted.",
       event: "submitted",
@@ -266,6 +266,16 @@ export default function FreeServiceDetailPage() {
               <Field label="Mileage (km)">
                 <input className="input" type="number" min="0" inputMode="numeric" value={edit.mileage} onChange={(e) => setEdit({ ...edit, mileage: e.target.value })} />
               </Field>
+              <div className="sm:col-span-3">
+                <Field label="Service requested">
+                  <input className="input" value={edit.service} onChange={(e) => setEdit({ ...edit, service: e.target.value })} />
+                </Field>
+              </div>
+              <div className="sm:col-span-3">
+                <Field label="Comment (optional)">
+                  <textarea rows={2} className="input resize-none" value={edit.comment} onChange={(e) => setEdit({ ...edit, comment: e.target.value })} />
+                </Field>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
@@ -276,6 +286,14 @@ export default function FreeServiceDetailPage() {
               <Fact label="Work order (dealer)" value={claim.dealer_work_order_number} mono />
               <Fact label="Approved amount" value={claim.approved_amount != null ? formatSar(claim.approved_amount) : null} />
               <Fact label="Requested" value={fmt(claim.created_at)} />
+              <div className="col-span-2 sm:col-span-3">
+                <Fact label="Service requested" value={claim.service_requested} />
+              </div>
+              {claim.comment && (
+                <div className="col-span-2 sm:col-span-3">
+                  <Fact label="Comment" value={claim.comment} />
+                </div>
+              )}
             </div>
           )}
         </section>

@@ -37,7 +37,7 @@ export async function POST(request) {
   const admin = createAdminClient();
   const { data: claim } = await admin
     .from("claims")
-    .select("id, kind, status, branch_id, claim_number, vin, mileage, work_order_number, dealer_work_order_number, approved_amount, branches(name)")
+    .select("id, kind, status, branch_id, claim_number, vin, mileage, service_requested, work_order_number, dealer_work_order_number, approved_amount, branches(name)")
     .eq("id", claimId)
     .single();
   if (!claim || claim.kind !== "free_service") return NextResponse.json({ error: "Not found." }, { status: 404 });

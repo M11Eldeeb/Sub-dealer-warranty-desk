@@ -18,7 +18,9 @@ export async function GET() {
 
   const admin = createAdminClient();
   const { data: setting } = await admin.from("app_settings").select("value").eq("key", "free_service_open").maybeSingle();
-  const open = setting?.value === true;
+  const globalOpen = setting?.value === true;
+  const { data: tester } = await admin.from("free_service_access").select("user_id").eq("user_id", user.id).maybeSingle();
+  const open = globalOpen || !!tester;
 
   const role = profile?.role;
   const canUse = role === "admin" || role === "dealer" || (role === "sub_dealer" && open);
@@ -27,5 +29,5 @@ export async function GET() {
     const { count } = await admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "free_service").in("status", ["submitted", "invoice_submitted"]);
     pending = count ?? 0;
   }
-  return NextResponse.json({ open, canUse, role, pending });
+  return NextResponse.json({ open, globalOpen, canUse, role, pending });
 }

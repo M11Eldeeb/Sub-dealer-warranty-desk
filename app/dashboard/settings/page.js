@@ -33,6 +33,20 @@ export default function SettingsPage() {
   const [freeService, setFreeService] = useState(null);
   const [togglingFs, setTogglingFs] = useState(false);
   const [fsError, setFsError] = useState("");
+  const [testers, setTesters] = useState([]);
+
+  const loadTesters = () =>
+    fetch("/api/free-service/testers", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setTesters(d.users))
+      .catch(() => {});
+
+  const setTester = async (userId, allowed) => {
+    setTesters((list) => list.map((u) => (u.id === userId ? { ...u, allowed } : u)));
+    const res = await fetch("/api/free-service/testers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, allowed }) });
+    if (!res.ok) setFsError((await res.json().catch(() => ({}))).error || "Could not save.");
+    await loadTesters();
+  };
 
   const loadFreeService = () =>
     fetch("/api/free-service/status", { cache: "no-store" })
@@ -43,7 +57,7 @@ export default function SettingsPage() {
   const toggleFreeService = async () => {
     setTogglingFs(true);
     setFsError("");
-    const res = await fetch("/api/free-service/lock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ open: !freeService?.open }) });
+    const res = await fetch("/api/free-service/lock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ open: !freeService?.globalOpen }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) setFsError(data.error || "Could not change it.");
     await loadFreeService();
@@ -69,6 +83,7 @@ export default function SettingsPage() {
       if (p.get("mail")) setFlag({ key: p.get("mail"), detail: p.get("detail") });
       await loadStatus();
       await loadFreeService();
+      if (prof.role === "admin") await loadTesters();
       setLoading(false);
     })();
   }, []);
@@ -127,22 +142,40 @@ export default function SettingsPage() {
               </p>
               <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 text-sm">
-                  {freeService?.open ? <LockOpen size={16} className="text-[#2E7D46]" /> : <Lock size={16} className="text-[#C4551B]" />}
-                  <span className="font-bold text-[#111111]">{freeService?.open ? "Open for sub-dealers" : "Locked for sub-dealers"}</span>
+                  {freeService?.globalOpen ? <LockOpen size={16} className="text-[#2E7D46]" /> : <Lock size={16} className="text-[#C4551B]" />}
+                  <span className="font-bold text-[#111111]">{freeService?.globalOpen ? "Open for all sub-dealers" : "Locked for sub-dealers"}</span>
                 </div>
                 {isAdmin ? (
                   <button
                     onClick={toggleFreeService}
                     disabled={togglingFs}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide text-white disabled:opacity-60 transition-colors ${freeService?.open ? "bg-[#111111] hover:bg-[#2A2A2A]" : "bg-[#E4002B] hover:bg-[#B8001F]"}`}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide text-white disabled:opacity-60 transition-colors ${freeService?.globalOpen ? "bg-[#111111] hover:bg-[#2A2A2A]" : "bg-[#E4002B] hover:bg-[#B8001F]"}`}
                   >
-                    {togglingFs && <Loader2 size={13} className="animate-spin" />} {freeService?.open ? "Lock it again" : "Open for sub-dealers"}
+                    {togglingFs && <Loader2 size={13} className="animate-spin" />} {freeService?.globalOpen ? "Lock it again" : "Open for all sub-dealers"}
                   </button>
                 ) : (
                   <span className="text-xs text-[#6E6E6E]">Only an admin can change this.</span>
                 )}
               </div>
               {fsError && <div className="note-in mt-2 text-xs text-[#C4551B]">{fsError}</div>}
+              {isAdmin && testers.length > 0 && (
+                <div className="mt-4 border-t border-[#EEEEEE] pt-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">
+                    Test accounts{freeService?.globalOpen ? " (not needed while it is open for everyone)" : " - can use Free Service while it is locked"}
+                  </div>
+                  <ul className="divide-y divide-[#F1F1F1]">
+                    {testers.map((u) => (
+                      <li key={u.id}>
+                        <label className="flex items-center gap-2 py-2 text-sm cursor-pointer">
+                          <input type="checkbox" checked={u.allowed} onChange={(e) => setTester(u.id, e.target.checked)} />
+                          <span className="font-medium text-[#111111]">{u.name}</span>
+                          <span className="text-xs text-[#6E6E6E]">{u.branch}</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>

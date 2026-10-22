@@ -20,6 +20,8 @@ export default function NewFreeServicePage() {
   const [workOrder, setWorkOrder] = useState("");
   const [vin, setVin] = useState("");
   const [mileage, setMileage] = useState("");
+  const [service, setService] = useState("");
+  const [comment, setComment] = useState("");
   const [files, setFiles] = useState([]);
 
   const [saving, setSaving] = useState(false);
@@ -57,7 +59,7 @@ export default function NewFreeServicePage() {
   const branch = branches.find((b) => b.id === branchId);
   const prefix = branch?.abbreviation ? `${branch.abbreviation}-` : "";
   const isStaff = profile && profile.role !== "sub_dealer";
-  const canSubmit = !!branchId && workOrder.trim() && vin.trim() && mileage !== "" && Number(mileage) >= 0 && files.length > 0 && !saving;
+  const canSubmit = !!branchId && workOrder.trim() && vin.trim() && service.trim() && mileage !== "" && Number(mileage) >= 0 && files.length > 0 && !saving;
 
   const submit = async () => {
     if (!canSubmit) return;
@@ -69,6 +71,8 @@ export default function NewFreeServicePage() {
       p_vin: vin.trim().toUpperCase(),
       p_mileage: Number(mileage),
       p_work_order: `${prefix}${workOrder.trim()}`,
+      p_service: service.trim(),
+      p_comment: comment.trim(),
     });
     if (createError || !id) {
       setSaving(false);
@@ -146,6 +150,12 @@ export default function NewFreeServicePage() {
                   <input type="number" min="0" inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="45000" className="input" disabled={saving} />
                 </Field>
               </div>
+              <Field label="Service requested">
+                <input value={service} onChange={(e) => setService(e.target.value)} placeholder="e.g. 10,000 km free service" className="input" disabled={saving} />
+              </Field>
+              <Field label="Comment (optional)">
+                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Anything the dealer should know..." className="input resize-none" disabled={saving} />
+              </Field>
               <Field label="Attachments">
                 <FilePicker files={files} onChange={setFiles} disabled={saving} />
               </Field>
