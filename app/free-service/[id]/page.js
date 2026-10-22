@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Header, fmt } from "@/components/ui";
-import { FsStatusTag, Fact, SavedFiles, formatSar } from "@/components/free-service";
+import { FsStatusTag, Fact, SavedFiles, formatSar, FS_STATUS } from "@/components/free-service";
 import { uploadEvidence, removeAttachment, syncClaimFolder } from "@/lib/evidence-upload";
 import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock } from "lucide-react";
 
@@ -62,7 +62,7 @@ export default function FreeServiceDetailPage() {
       } = await supabase.auth.getUser();
       if (!user) return router.push("/login");
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof || !["sub_dealer", "dealer", "admin"].includes(prof.role)) return router.push("/");
+      if (!prof || !["sub_dealer", "dealer", "admin", "manager"].includes(prof.role)) return router.push("/");
       setProfile(prof);
       await load();
       const failed = new URLSearchParams(window.location.search).get("uploadFailed");
@@ -84,7 +84,8 @@ export default function FreeServiceDetailPage() {
     );
 
   const isSub = profile?.role === "sub_dealer";
-  const isStaff = !isSub;
+  const isViewer = profile?.role === "manager"; // read only: no decisions, no edits
+  const isStaff = !isSub && !isViewer;
   const back = isSub ? "/dashboard/free-service" : "/dashboard/free-service";
 
   if (missing || !claim)
@@ -199,6 +200,7 @@ export default function FreeServiceDetailPage() {
 
   // ---- what happens next, in words ----------------------------------------------------------
   const banner = (() => {
+    if (isViewer) return status === "rejected" || status === "returned" || status === "invoice_returned" ? { tone: status === "rejected" ? "bad" : "warn", title: FS_STATUS[status]?.label, text: latestNote(status) } : { tone: "info", title: FS_STATUS[status]?.label || status, text: "You can view this request but not change it." };
     if (status === "submitted") return isSub ? { tone: "info", title: "Waiting for the dealer", text: "Your request was sent. You will get an email as soon as it is approved, returned or rejected." } : { tone: "action", title: "Needs your decision", text: "Review the details and files below, then approve, return for edit or reject." };
     if (status === "returned") return isSub ? { tone: "warn", title: "Returned for edit", text: latestNote("returned"), hint: "Correct the details or files below, then resubmit." } : { tone: "info", title: "Waiting for the sub-dealer", text: "Returned for edit.", hint: latestNote("returned") };
     if (status === "approved") return isSub ? { tone: "good", title: `Approved — ${formatSar(claim.approved_amount)}`, text: "Upload your invoice below so we can complete the request." } : { tone: "info", title: "Approved — waiting for the invoice", text: `The sub-dealer was asked to upload the invoice (${formatSar(claim.approved_amount)}).` };

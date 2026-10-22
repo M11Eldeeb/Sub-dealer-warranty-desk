@@ -876,7 +876,7 @@ export default function ClaimDetailPage() {
           onClick={() => {
             router.refresh();
             const target =
-              profile?.role === "dealer" || profile?.role === "admin"
+              profile?.role === "dealer" || profile?.role === "admin" || profile?.role === "manager"
                 ? "/dashboard/dealer"
                 : profile?.role === "parts_team"
                 ? "/dashboard/parts-team"

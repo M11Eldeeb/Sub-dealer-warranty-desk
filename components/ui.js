@@ -164,6 +164,8 @@ export function Header({ profile, onSignOut }) {
             <div className="text-[10px] text-[#ADADAD] uppercase tracking-wide mt-0.5">
               {profile?.role === "admin"
                 ? "Admin Console"
+                : profile?.role === "manager"
+                ? "Manager Console (view only)"
                 : profile?.role === "dealer"
                 ? "Dealer Console"
                 : profile?.role === "parts_team"
@@ -187,7 +189,8 @@ export function Header({ profile, onSignOut }) {
 function HeaderMenu({ profile, onSignOut }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const manager = profile?.role === "dealer" || profile?.role === "admin";
+  const staff = profile?.role === "dealer" || profile?.role === "admin";
+  const viewer = profile?.role === "manager"; // managers can look at everything and change nothing
   const freeService = useFreeService(profile?.role, profile?.id);
 
   useEffect(() => {
@@ -246,7 +249,13 @@ function HeaderMenu({ profile, onSignOut }) {
                 {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[10px]">{freeService.pending}</span>}
               </Link>
             )}
-            {manager && (
+            {viewer && (
+              <>
+                <ExportDataButton variant="menu" className={item} />
+                <div className="border-t border-[#EEEEEE]" />
+              </>
+            )}
+            {staff && (
               <>
                 <Link href="/dashboard/users" onClick={() => setOpen(false)} className={item}>
                   <Users size={16} className="text-[#6E6E6E]" /> User settings

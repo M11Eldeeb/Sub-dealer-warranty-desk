@@ -29,7 +29,7 @@ export default function FreeServiceListPage() {
       } = await supabase.auth.getUser();
       if (!user) return router.push("/login");
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof || !["sub_dealer", "dealer", "admin"].includes(prof.role)) return router.push("/");
+      if (!prof || !["sub_dealer", "dealer", "admin", "manager"].includes(prof.role)) return router.push("/");
       setProfile(prof);
       setFilter(prof.role === "sub_dealer" ? "sub_dealer" : "dealer");
 
@@ -98,7 +98,7 @@ export default function FreeServiceListPage() {
             <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Free Service approvals</h2>
             <p className="text-sm text-[#6E6E6E]">Request approval for a free service, then upload the invoice once it is approved.</p>
           </div>
-          {!locked && (
+          {!locked && profile?.role !== "manager" && (
             <Link
               href="/free-service/new"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-gradient-to-r from-[#FF2447] to-[#C4001F] hover:opacity-95 transition-opacity"

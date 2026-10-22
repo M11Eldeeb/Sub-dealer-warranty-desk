@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/ui";
 import { ChevronLeft, UserPlus, KeyRound, Trash2, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
 
-const ROLE_ORDER = ["admin", "dealer", "technical_team", "parts_team", "sub_dealer"];
-const ROLE_LABEL = { admin: "Admin", dealer: "Dealer", sub_dealer: "Sub-Dealer", parts_team: "Parts Team", technical_team: "Technical Team" };
+const ROLE_ORDER = ["manager", "admin", "dealer", "technical_team", "parts_team", "sub_dealer"];
+const ROLE_LABEL = { admin: "Admin", manager: "Manager (view only)", dealer: "Dealer", sub_dealer: "Sub-Dealer", parts_team: "Parts Team", technical_team: "Technical Team" };
 
 export default function UsersPage() {
   const router = useRouter();

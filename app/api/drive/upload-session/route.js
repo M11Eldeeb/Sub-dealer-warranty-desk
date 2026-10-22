@@ -22,6 +22,9 @@ export async function POST(request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role === "manager") return NextResponse.json({ error: "Managers can view but not change anything." }, { status: 403 });
+
   const body = await request.json().catch(() => null);
   const claimId = body?.claimId;
   const files = Array.isArray(body?.files) ? body.files : [];

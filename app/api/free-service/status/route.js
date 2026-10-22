@@ -26,7 +26,7 @@ export async function GET() {
   ]);
   const globalOpen = setting?.value === true;
   const open = globalOpen || !!tester;
-  const canUse = isStaff || (role === "sub_dealer" && open);
+  const canUse = isStaff || role === "manager" || (role === "sub_dealer" && open);
   const pending = isStaff ? pendingResult?.count ?? 0 : null;
   return NextResponse.json({ userId: user.id, open, globalOpen, canUse, role, pending });
 }

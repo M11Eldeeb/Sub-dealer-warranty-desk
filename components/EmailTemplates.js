@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Loader2, Save, Send, RotateCcw, CheckCircle2, AlertCircle } from "lucide-react";
 
-const ROLE_LABEL = { admin: "Admin", dealer: "Dealer", technical_team: "Technical Team", parts_team: "Parts Team", sub_dealer: "Sub-Dealer" };
+const ROLE_LABEL = { admin: "Admin", manager: "Manager", dealer: "Dealer", technical_team: "Technical Team", parts_team: "Parts Team", sub_dealer: "Sub-Dealer" };
 
 const toDraft = (t) => ({
   ...t,
