@@ -9,7 +9,7 @@ import { ChevronLeft, Plus, Search, Paperclip, Lock, Inbox } from "lucide-react"
 
 const WITH_DEALER = ["submitted", "invoice_submitted"];
 const WITH_SUB_DEALER = ["returned", "invoice_returned", "approved"];
-const FINISHED = ["closed", "rejected"];
+const FINISHED = ["closed", "rejected", "cancelled"];
 
 export default function FreeServiceListPage() {
   const router = useRouter();
@@ -98,7 +98,7 @@ export default function FreeServiceListPage() {
             <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Free Service approvals</h2>
             <p className="text-sm text-[#6E6E6E]">Request approval for a free service, then upload the invoice once it is approved.</p>
           </div>
-          {!locked && profile?.role !== "manager" && (
+          {!locked && profile?.role === "sub_dealer" && (
             <Link
               href="/free-service/new"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-gradient-to-r from-[#FF2447] to-[#C4001F] hover:opacity-95 transition-opacity"

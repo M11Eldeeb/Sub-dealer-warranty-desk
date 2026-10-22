@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Header, fmt } from "@/components/ui";
-import { FsStatusTag, Fact, SavedFiles, formatSar, FS_STATUS } from "@/components/free-service";
+import { FsStatusTag, Fact, SavedFiles, formatSar, FS_STATUS, RequiredDocsEditor, UploadProgress, docOf, docFileName, missingDocs } from "@/components/free-service";
 import { uploadEvidence, removeAttachment, syncClaimFolder } from "@/lib/evidence-upload";
-import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock } from "lucide-react";
+import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock, Ban } from "lucide-react";
 
 // Work orders are stored with the branch prefix (BAS-123); the edit box shows only the number after it.
 const stripBranchPrefix = (value, abbreviation) => {
@@ -33,19 +33,21 @@ export default function FreeServiceDetailPage() {
   const [dealerWO, setDealerWO] = useState("");
   const [amount, setAmount] = useState("");
   const [uploadingStage, setUploadingStage] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [fileError, setFileError] = useState({});
   const [message, setMessage] = useState(null); // { ok, text }
 
   const [edit, setEdit] = useState({ workOrder: "", vin: "", mileage: "", service: "", comment: "" });
 
-  const load = async () => {
+  const load = async (resetEdit = false) => {
     const { data: c } = await supabase.from("claims").select("*, branches(name, abbreviation)").eq("id", params.id).eq("kind", "free_service").maybeSingle();
     if (!c) {
       setMissing(true);
       return false;
     }
     setClaim(c);
-    setEdit({ workOrder: stripBranchPrefix(c.work_order_number || "", c.branches?.abbreviation), vin: c.vin || "", mileage: String(c.mileage ?? ""), service: c.service_requested || "", comment: c.comment || "" });
+    if (resetEdit) setEdit({ workOrder: stripBranchPrefix(c.work_order_number || "", c.branches?.abbreviation), vin: c.vin || "", mileage: String(c.mileage ?? ""), service: c.service_requested || "", comment: c.comment || "" });
     const [{ data: a }, { data: l }] = await Promise.all([
       supabase.from("claim_attachments").select("*").eq("claim_id", c.id).order("uploaded_at", { ascending: true }),
       supabase.from("claim_status_log").select("*").eq("claim_id", c.id).order("at", { ascending: false }),
@@ -64,7 +66,7 @@ export default function FreeServiceDetailPage() {
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       if (!prof || !["sub_dealer", "dealer", "admin", "manager"].includes(prof.role)) return router.push("/");
       setProfile(prof);
-      await load();
+      await load(true);
       const failed = new URLSearchParams(window.location.search).get("uploadFailed");
       if (failed) setFileError({ evidence_before: `These files did not upload: ${failed}. Add them again below.` });
       setLoading(false);
@@ -133,7 +135,7 @@ export default function FreeServiceDetailPage() {
       await addLog(status, to, logText);
       if (after) await after();
       const warning = await notify(event, reason);
-      await load();
+      await load(true);
       setMode(null);
       setNote("");
       setMessage(warning ? { ok: false, text: warning } : null);
@@ -166,7 +168,8 @@ export default function FreeServiceDetailPage() {
   const rejectIt = () => step("reject", { patch: { status: "rejected" }, to: "rejected", logText: note.trim(), event: "rejected", reason: note.trim() });
 
   const woPrefix = claim.branches?.abbreviation ? `${claim.branches.abbreviation}-` : "";
-  const editValid = edit.workOrder.trim() && edit.vin.trim() && edit.service.trim() && edit.mileage !== "" && Number(edit.mileage) >= 0;
+  const docsMissing = missingDocs(evidence);
+  const editValid = edit.workOrder.trim() && edit.vin.trim() && edit.service.trim() && edit.mileage !== "" && Number(edit.mileage) >= 0 && docsMissing.length === 0;
   const resubmit = () =>
     step("resubmit", {
       patch: { status: "submitted", work_order_number: `${woPrefix}${stripBranchPrefix(edit.workOrder, woPrefix.slice(0, -1))}`, vin: edit.vin.trim().toUpperCase(), mileage: Number(edit.mileage), service_requested: edit.service.trim(), comment: edit.comment.trim() || null },
@@ -174,16 +177,20 @@ export default function FreeServiceDetailPage() {
       logText: "Corrected and resubmitted.",
       event: "submitted",
     });
+  const cancelIt = () => step("cancel", { patch: { status: "cancelled" }, to: "cancelled", logText: "Cancelled by the sub-dealer.", event: "cancelled" });
   const submitInvoice = () => step("invoice", { patch: { status: "invoice_submitted" }, to: "invoice_submitted", logText: "Invoice uploaded.", event: "invoice_submitted" });
 
-  const addFiles = async (stage, files) => {
+  const addFiles = async (stage, files, nameOf = (file) => file.name) => {
     setUploadingStage(stage);
+    setUploadProgress({ current: 0, total: files.length, fraction: 0 });
     setFileError((e) => ({ ...e, [stage]: "" }));
-    const { failed } = await uploadEvidence({ supabase, claimId: claim.id, uploadedBy: profile.id, stage, items: files.map((file) => ({ file, name: file.name })) });
+    const { failed } = await uploadEvidence({ supabase, claimId: claim.id, uploadedBy: profile.id, stage, items: files.map((file) => ({ file, name: nameOf(file) })), onProgress: setUploadProgress });
     if (failed.length) setFileError((e) => ({ ...e, [stage]: failed.map((f) => `${f.name}: ${f.message}`).join("; ") }));
-    await load();
+    await load(); // the typed-in details stay as they are
     setUploadingStage(null);
+    setUploadProgress(null);
   };
+  const addDocFile = (doc, file) => addFiles("evidence_before", [file], (f) => docFileName(doc, f));
   const removeFile = async (stage, att) => {
     setFileError((e) => ({ ...e, [stage]: "" }));
     try {
@@ -194,12 +201,15 @@ export default function FreeServiceDetailPage() {
     await load();
   };
 
+  const uploading = !!uploadingStage; // the buttons that send things stay faded until every file is saved
+  const canCancel = isSub && ["returned", "invoice_returned"].includes(status);
   const evidenceEditable = isSub && status === "returned";
   const invoiceEditable = isSub && ["approved", "invoice_returned"].includes(status);
   const showInvoice = ["approved", "invoice_submitted", "invoice_returned", "closed"].includes(status);
 
   // ---- what happens next, in words ----------------------------------------------------------
   const banner = (() => {
+    if (status === "cancelled") return { tone: "info", title: "Cancelled", text: isSub ? "You cancelled this request." : "The sub-dealer cancelled this request." };
     if (isViewer) return status === "rejected" || status === "returned" || status === "invoice_returned" ? { tone: status === "rejected" ? "bad" : "warn", title: FS_STATUS[status]?.label, text: latestNote(status) } : { tone: "info", title: FS_STATUS[status]?.label || status, text: "You can view this request but not change it." };
     if (status === "submitted") return isSub ? { tone: "info", title: "Waiting for the dealer", text: "Your request was sent. You will get an email as soon as it is approved, returned or rejected." } : { tone: "action", title: "Needs your decision", text: "Review the details and files below, then approve, return for edit or reject." };
     if (status === "returned") return isSub ? { tone: "warn", title: "Returned for edit", text: latestNote("returned"), hint: "Correct the details or files below, then resubmit." } : { tone: "info", title: "Waiting for the sub-dealer", text: "Returned for edit.", hint: latestNote("returned") };
@@ -208,6 +218,7 @@ export default function FreeServiceDetailPage() {
     if (status === "invoice_returned") return isSub ? { tone: "warn", title: "Invoice returned", text: latestNote("invoice_returned"), hint: "Upload the corrected invoice below and send it again." } : { tone: "info", title: "Waiting for a corrected invoice", text: latestNote("invoice_returned") };
     if (status === "closed") return { tone: "good", title: "Completed", text: `Approved amount ${formatSar(claim.approved_amount)}. Nothing more to do.` };
     if (status === "rejected") return { tone: "bad", title: "Rejected", text: latestNote("rejected") };
+    if (status === "cancelled") return { tone: "info", title: "Cancelled", text: isSub ? "You cancelled this request." : "The sub-dealer cancelled this request." };
     return null;
   })();
   const tones = {
@@ -284,11 +295,6 @@ export default function FreeServiceDetailPage() {
                   <input className="input" value={edit.service} onChange={(e) => setEdit({ ...edit, service: e.target.value })} />
                 </Field>
               </div>
-              <div className="sm:col-span-3">
-                <Field label="Comment (optional)">
-                  <textarea rows={2} className="input resize-none" value={edit.comment} onChange={(e) => setEdit({ ...edit, comment: e.target.value })} />
-                </Field>
-              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
@@ -314,14 +320,27 @@ export default function FreeServiceDetailPage() {
         {/* Files */}
         <SavedFiles
           title="Supporting files"
-          hint={evidenceEditable ? "Add or remove files, then resubmit." : "Files sent with the request."}
-          attachments={evidence}
+          hint={evidenceEditable ? "Make sure all four required files are there, then resubmit." : "Files sent with the request."}
+          attachments={evidenceEditable ? evidence.filter((a) => !docOf(a.file_name)) : evidence}
           editable={evidenceEditable}
           uploading={uploadingStage === "evidence_before"}
           error={fileError.evidence_before}
           onAdd={(files) => addFiles("evidence_before", files)}
           onRemove={(a) => removeFile("evidence_before", a)}
-        />
+          zipName={`${claim.claim_number} - ${claim.work_order_number} - supporting files`}
+          emptyText={evidenceEditable ? "No other files." : "Nothing attached yet."}
+        >
+          {evidenceEditable && <RequiredDocsEditor attachments={evidence} uploading={uploading} onAddDoc={addDocFile} onRemove={(a) => removeFile("evidence_before", a)} />}
+          {evidenceEditable && evidence.some((a) => !docOf(a.file_name)) && <div className="mt-4 text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E]">Other files</div>}
+        </SavedFiles>
+
+        {evidenceEditable && (
+          <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
+            <h3 className="text-xs font-black uppercase tracking-widest text-[#111111]">Comment (optional)</h3>
+            <p className="text-xs text-[#6E6E6E] mt-0.5">Anything the dealer should know. It stays here while you add files.</p>
+            <textarea rows={3} className="input resize-none mt-3" value={edit.comment} onChange={(e) => setEdit({ ...edit, comment: e.target.value })} placeholder="Add a comment..." />
+          </section>
+        )}
 
         {showInvoice && (
           <SavedFiles
@@ -333,22 +352,50 @@ export default function FreeServiceDetailPage() {
             error={fileError.after_repair}
             onAdd={(files) => addFiles("after_repair", files)}
             onRemove={(a) => removeFile("after_repair", a)}
+            zipName={`${claim.claim_number} - ${claim.work_order_number} - invoice`}
             emptyText="No invoice uploaded yet."
           />
         )}
 
         {/* Sub-dealer actions */}
+        {uploading && <UploadProgress progress={uploadProgress} />}
         {evidenceEditable && (
           <ActionBar>
-            <PrimaryButton onClick={resubmit} disabled={!!busy || !editValid || evidence.length === 0} loading={busy === "resubmit"} icon={Send} label="Resubmit for approval" />
-            {evidence.length === 0 && <span className="text-xs text-[#6E6E6E]">Keep at least one file attached.</span>}
+            <PrimaryButton onClick={resubmit} disabled={!!busy || uploading || !editValid} loading={busy === "resubmit"} icon={Send} label="Resubmit for approval" />
+            {uploading ? (
+              <span className="text-xs text-[#6E6E6E]">Waiting for the upload to finish…</span>
+            ) : (
+              docsMissing.length > 0 && <span className="text-xs text-[#C4551B]">Still needed: {docsMissing.map((d) => d.label).join(", ")}.</span>
+            )}
           </ActionBar>
         )}
         {invoiceEditable && (
           <ActionBar>
-            <PrimaryButton onClick={submitInvoice} disabled={!!busy || invoices.length === 0} loading={busy === "invoice"} icon={Receipt} label="Send invoice for review" />
-            {invoices.length === 0 && <span className="text-xs text-[#6E6E6E]">Upload the invoice first.</span>}
+            <PrimaryButton onClick={submitInvoice} disabled={!!busy || uploading || invoices.length === 0} loading={busy === "invoice"} icon={Receipt} label="Send invoice for review" />
+            {uploading ? <span className="text-xs text-[#6E6E6E]">Waiting for the upload to finish…</span> : invoices.length === 0 && <span className="text-xs text-[#6E6E6E]">Upload the invoice first.</span>}
           </ActionBar>
+        )}
+        {canCancel && (
+          <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
+            {!confirmCancel ? (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-sm text-[#4D4D4D]">No longer needed? You can cancel this request. It moves to History.</p>
+                <button onClick={() => setConfirmCancel(true)} disabled={!!busy || uploading} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#F2C9C5] text-xs font-bold uppercase tracking-wide text-[#B23A32] hover:bg-[#FAE4E2] disabled:opacity-40 transition-colors">
+                  <Ban size={13} /> Cancel request
+                </button>
+              </div>
+            ) : (
+              <div className="note-in space-y-3">
+                <p className="text-sm text-[#262626]">Cancel this Free Service request? The dealer is told, and you cannot reopen it - you would need to send a new request.</p>
+                <div className="flex gap-2 flex-wrap">
+                  <PrimaryButton onClick={cancelIt} disabled={!!busy} loading={busy === "cancel"} icon={Ban} label="Yes, cancel it" color="#B23A32" />
+                  <button onClick={() => setConfirmCancel(false)} disabled={!!busy} className="px-4 py-2.5 rounded border border-[#E0E0E0] text-xs font-bold uppercase tracking-wide text-[#4D4D4D] hover:border-[#111111]">
+                    Keep it
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
         {/* Dealer / admin decision */}

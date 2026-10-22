@@ -4,7 +4,7 @@ import Link from "next/link";
 import ExportDataButton from "@/components/ExportDataButton";
 import { useFreeService } from "@/lib/use-free-service";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck } from "lucide-react";
+import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -243,6 +243,11 @@ function HeaderMenu({ profile, onSignOut }) {
               <div className="text-sm font-bold truncate">{profile?.full_name}</div>
               <div className="text-[10px] uppercase tracking-wide text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
             </div>
+            {(staff || viewer || profile?.role === "sub_dealer") && (
+              <Link href={profile?.role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer"} onClick={() => setOpen(false)} className={item}>
+                <ClipboardList size={16} className="text-[#6E6E6E]" /> Warranty Claims
+              </Link>
+            )}
             {freeService?.canUse && (
               <Link href="/dashboard/free-service" onClick={() => setOpen(false)} className={item}>
                 <BadgeCheck size={16} className="text-[#6E6E6E]" /> Free Service

@@ -14,6 +14,7 @@ const EVENTS = {
   invoice_submitted: { key: "fs_invoice_submitted", status: "invoice_submitted", by: ["sub_dealer", "dealer", "admin"] },
   invoice_returned: { key: "fs_invoice_returned", status: "invoice_returned", by: ["dealer", "admin"] },
   completed: { key: "fs_completed", status: "closed", by: ["dealer", "admin"] },
+  cancelled: { key: "fs_cancelled", status: "cancelled", by: ["sub_dealer"] },
 };
 
 /** Sends the e-mail for a step of a Free Service request. A failed e-mail never blocks the step itself. */
