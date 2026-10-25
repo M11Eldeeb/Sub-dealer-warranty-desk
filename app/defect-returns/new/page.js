@@ -7,8 +7,8 @@ import { LoadingShell, Header } from "@/components/ui";
 import { ResponsiveRows } from "@/components/defect-returns";
 import { ChevronLeft, Search, Loader2, Send, PackageCheck, CheckCircle2 } from "lucide-react";
 
-// Claims whose replacement part has arrived - from then on the defective one can be sent back.
-const ELIGIBLE = ["parts_arrived", "parts_return", "repair_returned", "repair_submitted", "closed"];
+// Only closed claims: the defective parts are sent back once the claim is finished.
+const ELIGIBLE = ["closed"];
 
 export default function NewDefectReturnPage() {
   usePageTitle("New defected parts return");
@@ -161,7 +161,7 @@ export default function NewDefectReturnPage() {
             {availableCount === 0 && claims.length === 0 ? (
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-8 text-center text-[#6E6E6E]">
                 <PackageCheck className="mx-auto mb-2" size={26} />
-                No claim has defective parts waiting to be returned. A claim shows up here once its replacement part has arrived.
+                No claim has defective parts waiting to be returned. A claim shows up here once it is closed.
               </div>
             ) : (
               <>
