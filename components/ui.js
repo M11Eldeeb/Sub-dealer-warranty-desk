@@ -18,19 +18,19 @@ export const PART_STATUS_OPTIONS = ["Waiting Action", "ICT", "Supplied to Sub-De
 export const SUPPLYING_LOCATIONS = ["Heraa Jeddah", "Al Qassim", "Jizan", "Riyadh"];
 
 export const STATUS = {
-  draft: { label: "Draft", color: "#8A8F98", bg: "#F1F2F4" },
-  submitted: { label: "Submitted", color: "#C77700", bg: "#FCF1DA" },
-  waiting_pa: { label: "Waiting PA", color: "#B45309", bg: "#FDF0DC" },
-  returned: { label: "Returned for Edit", color: "#C4551B", bg: "#FDEBE0" },
+  draft: { label: "Draft", color: "#656970", bg: "#F1F2F4" },
+  submitted: { label: "Submitted", color: "#9A5C00", bg: "#FCF1DA" },
+  waiting_pa: { label: "Waiting PA", color: "#AB4F09", bg: "#FDF0DC" },
+  returned: { label: "Returned for Edit", color: "#A84917", bg: "#FDEBE0" },
   rejected: { label: "Rejected", color: "#B23A32", bg: "#FAE4E2" },
   approved: { label: "Approved", color: "#2A62B0", bg: "#E4EDFA" },
   technical_review: { label: "Technical Review", color: "#6D28D9", bg: "#EDE7FC" },
   awaiting_parts: { label: "Awaiting Parts", color: "#5B4FB0", bg: "#EAE7FA" },
-  parts_arrived: { label: "Parts Arrived", color: "#1E7A6B", bg: "#E1F2EE" },
-  parts_return: { label: "Parts Return", color: "#C4551B", bg: "#FDEBE0" },
-  repair_returned: { label: "After Repair Returned", color: "#C4551B", bg: "#FDEBE0" },
+  parts_arrived: { label: "Parts Arrived", color: "#1D7466", bg: "#E1F2EE" },
+  parts_return: { label: "Parts Return", color: "#A84917", bg: "#FDEBE0" },
+  repair_returned: { label: "After Repair Returned", color: "#A84917", bg: "#FDEBE0" },
   repair_submitted: { label: "After Repair Submitted", color: "#0E7490", bg: "#E0F2FE" },
-  closed: { label: "Closed", color: "#2E7D46", bg: "#E5F3E8" },
+  closed: { label: "Closed", color: "#2C7743", bg: "#E5F3E8" },
 };
 
 export function firstPartName(parts) {
@@ -65,7 +65,7 @@ export function isAgeing(claim) {
 
 export function AgeingBadge({ days }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2]">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2]">
       ⚠ Ageing — {days}d
     </span>
   );
@@ -73,7 +73,7 @@ export function AgeingBadge({ days }) {
 
 export function ReturnedDaysBadge({ days }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide text-[#C4551B] bg-[#FDEBE0]">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide text-[#C4551B] bg-[#FDEBE0]">
       Returned {days} day{days === 1 ? "" : "s"} ago
     </span>
   );
@@ -100,8 +100,8 @@ export function getPartsSummary(parts) {
   const resolved = supplied + cancelled;
 
   if (cancelled === total) return { label: "Parts Cancelled", color: "#B23A32", bg: "#FAE4E2" };
-  if (resolved === total) return { label: "All Parts Supplied", color: "#1E7A6B", bg: "#E1F2EE" };
-  if (resolved === 0) return { label: "Waiting Shipment", color: "#C77700", bg: "#FCF1DA" };
+  if (resolved === total) return { label: "All Parts Supplied", color: "#1D7466", bg: "#E1F2EE" };
+  if (resolved === 0) return { label: "Waiting Shipment", color: "#9A5C00", bg: "#FCF1DA" };
   return { label: `Partially Supplied (${resolved}/${total})`, color: "#5B4FB0", bg: "#EAE7FA" };
 }
 
@@ -148,11 +148,11 @@ export function StatusTag({ status, parts, returnRequests }) {
 export function Header({ profile, onSignOut }) {
   return (
     <div
-      className="sticky top-0 z-40 bg-[#111111] text-white px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5"
+      className="app-header sticky top-0 z-40 bg-[#111111] text-white px-4 sm:px-6 pb-3 sm:pb-4 sm:pt-4 border-b border-white/5"
       style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
     >
       <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <Link href="/" title="Back to the main page" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+        <Link href="/" title="Back to the main page" className="flex items-center gap-2.5 py-1.5 sm:py-0 hover:opacity-90 transition-opacity">
           <div
             className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2447] to-[#B8001F] flex items-center justify-center"
             style={{ boxShadow: "0 4px 12px -2px rgba(228,0,43,0.6)" }}
@@ -161,7 +161,7 @@ export function Header({ profile, onSignOut }) {
           </div>
           <div>
             <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
-            <div className="text-[10px] text-[#ADADAD] uppercase tracking-wide mt-0.5">
+            <div className="text-[11px] text-[#ADADAD] uppercase tracking-wide mt-0.5">
               {profile?.role === "admin"
                 ? "Admin Console"
                 : profile?.role === "manager"
@@ -207,7 +207,7 @@ function HeaderMenu({ profile, onSignOut }) {
     };
   }, [open]);
 
-  const item = "no-press w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-[#111111] hover:bg-[#F4F4F4] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+  const item = "no-press menu-row w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-[#111111] hover:bg-[#F4F4F4] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
 
   return (
     <div className="relative" ref={ref}>
@@ -215,7 +215,7 @@ function HeaderMenu({ profile, onSignOut }) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Menu"
         aria-expanded={open}
-        className="w-9 h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors"
+        className="no-press tap-icon sm:min-w-0 sm:min-h-0 w-11 h-11 sm:w-9 sm:h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-colors"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
@@ -241,7 +241,7 @@ function HeaderMenu({ profile, onSignOut }) {
           >
             <div className="px-3.5 py-3 border-b border-[#EEEEEE] bg-[#FAFAFA]">
               <div className="text-sm font-bold truncate">{profile?.full_name}</div>
-              <div className="text-[10px] uppercase tracking-wide text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
+              <div className="text-[11px] uppercase tracking-wide text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
             </div>
             {(staff || viewer || profile?.role === "sub_dealer") && (
               <Link href={profile?.role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer"} onClick={() => setOpen(false)} className={item}>
@@ -251,7 +251,7 @@ function HeaderMenu({ profile, onSignOut }) {
             {freeService?.canUse && (
               <Link href="/dashboard/free-service" onClick={() => setOpen(false)} className={item}>
                 <BadgeCheck size={16} className="text-[#6E6E6E]" /> Free Service
-                {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[10px]">{freeService.pending}</span>}
+                {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[11px]">{freeService.pending}</span>}
               </Link>
             )}
             {viewer && (
@@ -310,7 +310,7 @@ export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
             <span className="relative flex items-center gap-1.5">
               {label}
               {count !== undefined && (
-                <span className={`px-1.5 rounded-full text-[10px] transition-colors ${active ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{count}</span>
+                <span className={`px-1.5 rounded-full text-[11px] transition-colors ${active ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{count}</span>
               )}
             </span>
           </button>

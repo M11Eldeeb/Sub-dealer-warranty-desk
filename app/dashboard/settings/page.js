@@ -160,7 +160,7 @@ export default function SettingsPage() {
               {fsError && <div className="note-in mt-2 text-xs text-[#C4551B]">{fsError}</div>}
               {isAdmin && testers.length > 0 && (
                 <div className="mt-4 border-t border-[#EEEEEE] pt-3">
-                  <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">
                     Test accounts{freeService?.globalOpen ? " (not needed while it is open for everyone)" : " - can use Free Service while it is locked"}
                   </div>
                   <ul className="divide-y divide-[#F1F1F1]">

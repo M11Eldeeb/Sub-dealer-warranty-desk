@@ -112,7 +112,7 @@ export default function DealerDashboard() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search claims or branches..."
-                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
+                className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
               />
             </div>
             <ClaimsToolbar

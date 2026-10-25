@@ -190,3 +190,62 @@ button:not(:disabled):not(.no-press):active {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Touch, focus and device polish (Apple HIG foundations, applied to the web) ------------------------- */
+
+html {
+  -webkit-text-size-adjust: 100%; /* iOS does not inflate text on rotate */
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent; /* our own press feedback replaces the grey flash */
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+/* No 300ms tap delay or accidental double-tap zoom on controls. */
+a,
+button,
+select,
+summary,
+[role="button"],
+label {
+  touch-action: manipulation;
+}
+
+/* A clear ring for keyboard users, never for mouse or touch. */
+:focus-visible {
+  outline: 2px solid #e4002b;
+  outline-offset: 2px;
+}
+.input:focus-visible {
+  outline: none; /* inputs already have their own ring */
+}
+
+/* The dark bar clears the phone's notch / status bar. */
+@media (max-width: 639px) {
+  .app-header {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+}
+
+/* Phones: Apple's default control size is 44 x 44. */
+@media (max-width: 639px) {
+  button:not(.no-press):not(.tap-auto),
+  select.input,
+  input.input:not([type="checkbox"]):not([type="radio"]),
+  a[class*="rounded"][class*="font-bold"] {
+    min-height: 44px;
+  }
+  .tap-icon {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .menu-row {
+    min-height: 48px;
+  }
+}

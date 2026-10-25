@@ -263,7 +263,7 @@ export default function PartsTeamDashboard() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search parts, claims, WO#, branch..."
-                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
+                className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
               />
             </div>
             <ClaimsToolbar
@@ -329,12 +329,12 @@ export default function PartsTeamDashboard() {
                       Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence.
                     </div>
                     <input type="file" multiple onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))} className="text-xs" />
-                    {requisitionFiles.length > 0 && <div className="text-[10px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>}
+                    {requisitionFiles.length > 0 && <div className="text-[11px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>}
                     <div className="flex gap-2">
                       <button
                         onClick={confirmPartStatusWithRequisition}
                         disabled={!requisitionFiles.length || requisitionUploading}
-                        className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                        className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                       >
                         {requisitionUploading && <Loader2 size={11} className="animate-spin" />}
                         {requisitionUploading ? "Uploading…" : "Confirm"}
@@ -345,7 +345,7 @@ export default function PartsTeamDashboard() {
                           setRequisitionFiles([]);
                         }}
                         disabled={requisitionUploading}
-                        className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
+                        className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
                       >
                         Cancel
                       </button>
@@ -396,7 +396,7 @@ export default function PartsTeamDashboard() {
                   )}
                 </div>
 
-                <div className="text-[10px] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>
+                <div className="text-[11px] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>
 
                 {p.status === "Parts Return" && returnRequestsForPart.map((r) => (
                   <div key={r.id} className="mt-2 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">

@@ -128,7 +128,7 @@ export default function ClaimsToolbar({
             <SlidersHorizontal size={13} />
             Filter
             {activeFilterCount > 0 && (
-              <span className="bg-[#E4002B] text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+              <span className="bg-[#E4002B] text-white rounded-full w-4 h-4 flex items-center justify-center text-[11px]">
                 {activeFilterCount}
               </span>
             )}

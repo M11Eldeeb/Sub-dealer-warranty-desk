@@ -124,7 +124,7 @@ export default function FreeServiceListPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search work order, VIN or branch..."
-                  className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-72"
+                  className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-72"
                 />
               </div>
             </div>

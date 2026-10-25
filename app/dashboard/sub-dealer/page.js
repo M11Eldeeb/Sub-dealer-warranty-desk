@@ -108,7 +108,7 @@ export default function SubDealerDashboard() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search claims..."
-                className="pl-8 pr-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-auto"
+                className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-auto"
               />
             </div>
             <ClaimsToolbar

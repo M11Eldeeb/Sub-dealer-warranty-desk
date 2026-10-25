@@ -331,7 +331,7 @@ export default function FreeServiceDetailPage() {
           emptyText={evidenceEditable ? "No other files." : "Nothing attached yet."}
         >
           {evidenceEditable && <RequiredDocsEditor attachments={evidence} uploading={uploading} onAddDoc={addDocFile} onRemove={(a) => removeFile("evidence_before", a)} />}
-          {evidenceEditable && evidence.some((a) => !docOf(a.file_name)) && <div className="mt-4 text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E]">Other files</div>}
+          {evidenceEditable && evidence.some((a) => !docOf(a.file_name)) && <div className="mt-4 text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">Other files</div>}
         </SavedFiles>
 
         {evidenceEditable && (

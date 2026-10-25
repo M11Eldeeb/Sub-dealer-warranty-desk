@@ -5,20 +5,20 @@ import { attachmentUrl } from "@/lib/evidence-upload";
 
 /** Free Service statuses: wording the sub-dealer and the dealer both understand. */
 export const FS_STATUS = {
-  submitted: { label: "Awaiting approval", color: "#C77700", bg: "#FCF1DA" },
-  returned: { label: "Returned for edit", color: "#C4551B", bg: "#FDEBE0" },
+  submitted: { label: "Awaiting approval", color: "#9A5C00", bg: "#FCF1DA" },
+  returned: { label: "Returned for edit", color: "#A84917", bg: "#FDEBE0" },
   rejected: { label: "Rejected", color: "#B23A32", bg: "#FAE4E2" },
   approved: { label: "Approved · invoice needed", color: "#2A62B0", bg: "#E4EDFA" },
   invoice_submitted: { label: "Invoice under review", color: "#0E7490", bg: "#E0F2FE" },
-  invoice_returned: { label: "Invoice returned", color: "#C4551B", bg: "#FDEBE0" },
-  closed: { label: "Completed", color: "#1E7A6B", bg: "#E1F2EE" },
-  cancelled: { label: "Cancelled", color: "#6E6E6E", bg: "#F1F2F4" },
+  invoice_returned: { label: "Invoice returned", color: "#A84917", bg: "#FDEBE0" },
+  closed: { label: "Completed", color: "#1D7466", bg: "#E1F2EE" },
+  cancelled: { label: "Cancelled", color: "#696969", bg: "#F1F2F4" },
 };
 
 export function FsStatusTag({ status }) {
-  const s = FS_STATUS[status] || { label: status, color: "#6E6E6E", bg: "#F1F2F4" };
+  const s = FS_STATUS[status] || { label: status, color: "#696969", bg: "#F1F2F4" };
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: s.color, background: s.bg }}>
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: s.color, background: s.bg }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
       {s.label}
     </span>
@@ -70,7 +70,7 @@ export function UploadProgress({ progress }) {
 export function Fact({ label, value, mono }) {
   return (
     <div className="min-w-0">
-      <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E]">{label}</div>
+      <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">{label}</div>
       <div className={`mt-0.5 text-sm text-[#111111] break-words ${mono ? "font-mono" : "font-medium"}`}>{value || "—"}</div>
     </div>
   );
@@ -105,7 +105,7 @@ export function DocSlot({ doc, file, onChange, disabled }) {
           <div className="text-xs text-[#6E6E6E] truncate">{file ? file.name : doc.hint}</div>
         </div>
         {file ? (
-          <button type="button" onClick={() => onChange(null)} disabled={disabled} title="Remove" className="no-press p-1.5 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0 disabled:opacity-50">
+          <button type="button" onClick={() => onChange(null)} disabled={disabled} title="Remove" className="no-press tap-icon p-1.5 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0 disabled:opacity-50">
             <X size={15} />
           </button>
         ) : (
@@ -181,7 +181,7 @@ export function FilePicker({ files, onChange, disabled, label = "Attach files", 
               <Paperclip size={14} className="text-[#6E6E6E] shrink-0" />
               <span className="truncate flex-1 min-w-0">{f.name}</span>
               <span className="text-[11px] text-[#6E6E6E] shrink-0">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
-              <button type="button" onClick={() => onChange(files.filter((_, idx) => idx !== i))} disabled={disabled} title="Remove" className="no-press p-1 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0">
+              <button type="button" onClick={() => onChange(files.filter((_, idx) => idx !== i))} disabled={disabled} title="Remove" className="no-press tap-icon p-1 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0">
                 <X size={14} />
               </button>
             </li>
@@ -254,7 +254,7 @@ function FileRow({ a, editable, onRemove }) {
         {isImageName(a.file_name) ? <img src={attachmentUrl(a.id)} alt="" className="w-full h-full object-cover" loading="lazy" /> : <FileText size={20} className="text-[#6E6E6E]" />}
       </a>
       <div className="min-w-0 flex-1">
-        {doc && <div className="text-[10px] font-black uppercase tracking-wide text-[#E4002B]">{doc.label}</div>}
+        {doc && <div className="text-[11px] font-black uppercase tracking-wide text-[#E4002B]">{doc.label}</div>}
         <div className="text-sm font-medium text-[#111111] truncate" title={shown}>
           {shown}
         </div>
@@ -268,7 +268,7 @@ function FileRow({ a, editable, onRemove }) {
         </div>
       </div>
       {editable && (
-        <button type="button" onClick={() => onRemove(a)} title="Remove" className="no-press p-1.5 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0">
+        <button type="button" onClick={() => onRemove(a)} title="Remove" className="no-press tap-icon p-1.5 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0">
           <X size={15} />
         </button>
       )}
@@ -392,7 +392,7 @@ function DocUploadRow({ doc, have, uploading, onAddDoc, onRemove }) {
           <a href={attachmentUrl(a.id)} target="_blank" rel="noreferrer" className="truncate text-[#4D4D4D] hover:text-[#E4002B] underline-offset-2 hover:underline min-w-0 flex-1">
             {a.file_name.slice(doc.label.length + 3)}
           </a>
-          <button type="button" onClick={() => onRemove(a)} title="Remove" className="no-press p-1 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0">
+          <button type="button" onClick={() => onRemove(a)} title="Remove" className="no-press tap-icon p-1 rounded text-[#B23A32] hover:bg-[#FAE4E2] shrink-0">
             <X size={14} />
           </button>
         </div>

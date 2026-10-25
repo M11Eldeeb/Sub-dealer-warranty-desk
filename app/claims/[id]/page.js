@@ -1069,12 +1069,12 @@ export default function ClaimDetailPage() {
                       {(p.supplying_location || p.superseding_part_number) && (
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {p.supplying_location && (
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-[#5B4FB0] bg-[#EAE7FA] px-2 py-0.5 rounded-full">
+                            <span className="text-[11px] font-bold uppercase tracking-wide text-[#5B4FB0] bg-[#EAE7FA] px-2 py-0.5 rounded-full">
                               From {p.supplying_location}
                             </span>
                           )}
                           {p.superseding_part_number && (
-                            <span className="text-[10px] font-mono text-[#6E6E6E] bg-[#F1F2F4] px-2 py-0.5 rounded-full">
+                            <span className="text-[11px] font-mono text-[#6E6E6E] bg-[#F1F2F4] px-2 py-0.5 rounded-full">
                               Superseded by {p.superseding_part_number}
                             </span>
                           )}
@@ -1091,7 +1091,7 @@ export default function ClaimDetailPage() {
                             {(role === "dealer" || role === "parts_team" || role === "admin") && (
                               <button
                                 onClick={() => resolveReturnRequest(r)}
-                                className="shrink-0 px-2 py-1 rounded font-bold text-[10px] uppercase tracking-wide bg-white border border-[#C4551B] text-[#C4551B] hover:bg-[#FDEBE0]"
+                                className="shrink-0 px-2 py-1 rounded font-bold text-[11px] uppercase tracking-wide bg-white border border-[#C4551B] text-[#C4551B] hover:bg-[#FDEBE0]"
                               >
                                 Mark Resolved
                               </button>
@@ -1448,13 +1448,13 @@ export default function ClaimDetailPage() {
                           className="text-xs"
                         />
                         {requisitionFiles.length > 0 && (
-                          <div className="text-[10px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>
+                          <div className="text-[11px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>
                         )}
                         <div className="flex gap-2">
                           <button
                             onClick={() => confirmPartStatusWithRequisition(p)}
                             disabled={!requisitionFiles.length || actionLoading !== null}
-                            className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                            className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                           >
                             {actionLoading === "partReq" && <Loader2 size={11} className="animate-spin" />}
                             {actionLoading === "partReq" ? "Uploading…" : "Confirm"}
@@ -1465,7 +1465,7 @@ export default function ClaimDetailPage() {
                               setRequisitionFiles([]);
                             }}
                             disabled={actionLoading !== null}
-                            className="px-3 py-1.5 rounded font-bold text-[10px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
+                            className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
                           >
                             Cancel
                           </button>
@@ -1958,7 +1958,7 @@ function Field({ label, children }) {
 function Info({ label, value, mono }) {
   return (
     <div>
-      <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E]">{label}</div>
+      <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">{label}</div>
       <div className={`text-[#111111] ${mono ? "font-mono text-xs mt-0.5" : ""}`}>{value}</div>
     </div>
   );

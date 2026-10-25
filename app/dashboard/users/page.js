@@ -170,7 +170,7 @@ export default function UsersPage() {
             <div>
               {groups.map((g) => (
                 <div key={g.role}>
-                  <div className="px-4 py-2 bg-[#FAFAFA] border-b border-[#EEEEEE] text-[10px] font-black uppercase tracking-widest text-[#6E6E6E]">
+                  <div className="px-4 py-2 bg-[#FAFAFA] border-b border-[#EEEEEE] text-[11px] font-black uppercase tracking-widest text-[#6E6E6E]">
                     {ROLE_LABEL[g.role] || g.role} <span className="font-bold">({g.members.length})</span>
                   </div>
                   <ul className="divide-y divide-[#EEEEEE] border-b border-[#EEEEEE] last:border-b-0">
@@ -179,7 +179,7 @@ export default function UsersPage() {
                   <div className="min-w-0">
                     <div className="font-bold text-sm text-[#111111] truncate">
                       {u.fullName}
-                      {u.id === me && <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E]">you</span>}
+                      {u.id === me && <span className="ml-2 text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">you</span>}
                     </div>
                     <div className="text-xs text-[#6E6E6E] truncate">{u.email || "no email"}</div>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">

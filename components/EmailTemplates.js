@@ -42,7 +42,7 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel, branchL
     <div className="border border-[#EEEEEE] rounded-lg p-3 space-y-3">
       <div className="text-xs font-black uppercase tracking-wide text-[#111111]">{title}</div>
       <div>
-        <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Everyone with the role</div>
+        <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Everyone with the role</div>
         <div className="flex flex-wrap gap-1.5">
           {roles.map((r) => (
             <button key={r} type="button" onClick={() => set({ roles: toggle(list.roles, r) })} className={chip(list.roles.includes(r))}>
@@ -52,7 +52,7 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel, branchL
         </div>
       </div>
       <div>
-        <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Specific people</div>
+        <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Specific people</div>
         <div className="flex flex-wrap gap-1.5">
           {users.map((u) => (
             <button key={u.id} type="button" onClick={() => set({ users: toggle(list.users, u.id) })} title={u.email} className={chip(list.users.includes(u.id))}>
@@ -74,7 +74,7 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel, branchL
         </label>
       )}
       <div>
-        <div className="text-[10px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Other email addresses (separate with commas)</div>
+        <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Other email addresses (separate with commas)</div>
         <input
           value={list.extraText}
           onChange={(e) => set({ extraText: e.target.value })}
@@ -116,8 +116,8 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-black uppercase tracking-wide text-sm text-[#111111]">{draft.label}</span>
-            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${draft.enabled ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-[#F1F2F4] text-[#6E6E6E]"}`}>{draft.enabled ? "On" : "Off"}</span>
-            {dirty && <span className="text-[10px] font-bold uppercase tracking-wide text-[#C4551B]">Unsaved changes</span>}
+            <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${draft.enabled ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-[#F1F2F4] text-[#6E6E6E]"}`}>{draft.enabled ? "On" : "Off"}</span>
+            {dirty && <span className="text-[11px] font-bold uppercase tracking-wide text-[#C4551B]">Unsaved changes</span>}
           </div>
           <div className="text-xs text-[#6E6E6E] mt-0.5">{draft.when}</div>
           <div className="text-xs text-[#4D4D4D] mt-1 truncate">
