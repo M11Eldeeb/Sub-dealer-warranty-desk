@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned, defectedSummary } from "@/components/ui";
 import FreeServiceButton from "@/components/FreeServiceButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Plus, Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -46,7 +46,7 @@ export default function SubDealerDashboard() {
 
     const { data: claimsData } = await supabase
       .from("claims")
-      .select("*, claim_attachments(count), claim_parts(name, status, created_at), claim_labor(name:labor_name, created_at)")
+      .select("*, claim_attachments(count), claim_parts(name, status, created_at, defected_arrived_at), claim_labor(name:labor_name, created_at)")
       .eq("branch_id", prof.branch_id)
       .eq("kind", "claim")
       .order("created_at", { ascending: false });
@@ -169,11 +169,23 @@ export default function SubDealerDashboard() {
                         {c.claim_parts.filter((p) => p.status === "Supplied to Sub-Dealer" || p.status === "Cancelled").length}/{c.claim_parts.length} resolved
                       </span>
                     )}
-                    {c.defected_part_arrived && (
-                      <span className="flex items-center gap-1 text-[#5B4FB0] font-bold">
-                        <CheckCircle2 size={12} /> Defected Part Arrived
-                      </span>
-                    )}
+                    {(() => {
+                      const d = defectedSummary(c);
+                      if (!d) return null;
+                      if (d.all)
+                        return (
+                          <span className="flex items-center gap-1 text-[#5B4FB0] font-bold">
+                            <CheckCircle2 size={12} /> Defected Part Arrived
+                          </span>
+                        );
+                      if (d.arrived > 0)
+                        return (
+                          <span className="flex items-center gap-1 text-[#5B4FB0] font-bold">
+                            <CheckCircle2 size={12} /> Defected parts: {d.arrived}/{d.total} arrived to dealer
+                          </span>
+                        );
+                      return null;
+                    })()}
                     <span className="ml-auto">{fmt(c.created_at)}</span>
                   </div>
                 </Link>

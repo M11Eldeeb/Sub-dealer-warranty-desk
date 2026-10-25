@@ -6,7 +6,7 @@ import ExportDataButton from "@/components/ExportDataButton";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor } from "lucide-react";
+import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -105,6 +105,15 @@ export function getPartsSummary(parts) {
   if (resolved === total) return { label: "All Parts Supplied", color: "#1D7466", bg: "#E1F2EE" };
   if (resolved === 0) return { label: "Waiting Shipment", color: "#9A5C00", bg: "#FCF1DA" };
   return { label: `Partially Supplied (${resolved}/${total})`, color: "#5B4FB0", bg: "#EAE7FA" };
+}
+
+/** How many of a claim's defective parts have arrived back at the dealer. null = nothing to show. */
+export function defectedSummary(claim) {
+  const parts = claim.claim_parts || [];
+  const total = parts.length;
+  if (!total) return claim.defected_part_arrived ? { all: true, arrived: 0, total: 0 } : null;
+  const arrived = claim.defected_part_arrived ? total : parts.filter((p) => p.defected_arrived_at).length;
+  return { all: arrived === total, arrived, total };
 }
 
 export function StatusTag({ status, parts, returnRequests }) {
@@ -253,6 +262,11 @@ function HeaderMenu({ profile, onSignOut }) {
             {(staff || viewer || profile?.role === "sub_dealer") && (
               <Link href={profile?.role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer"} onClick={() => setOpen(false)} className={item}>
                 <ClipboardList size={16} className="text-[#6E6E6E]" /> Warranty Claims
+              </Link>
+            )}
+            {(staff || viewer || profile?.role === "sub_dealer") && (
+              <Link href="/dashboard/defect-returns" onClick={() => setOpen(false)} className={item}>
+                <PackageOpen size={16} className="text-[#6E6E6E]" /> Defected parts
               </Link>
             )}
             {freeService?.canUse && (

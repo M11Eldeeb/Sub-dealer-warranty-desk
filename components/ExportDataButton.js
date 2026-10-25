@@ -39,6 +39,12 @@ export default function ExportDataButton({ variant = "button", className = "" })
       const rows = claims.map((c) => ({
         "Warranty Claim ID": c.claim_number,
         "Status": c.status,
+        "Defected parts arrived": (() => {
+          const total = (c.claim_parts || []).length;
+          if (!total) return c.defected_part_arrived ? "Yes" : "";
+          const got = c.defected_part_arrived ? total : c.claim_parts.filter((p) => p.defected_arrived_at).length;
+          return `${got}/${total}`;
+        })(),
         "Branch": c.branches?.name || "",
         "VIN": c.vin,
         "Mileage (km)": c.mileage ?? "",

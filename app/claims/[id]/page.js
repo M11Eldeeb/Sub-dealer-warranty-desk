@@ -3,7 +3,7 @@ import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Header, StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import { Header, defectedSummary, StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import { uploadEvidence, removeAttachment, attachmentUrl, syncClaimFolder } from "@/lib/evidence-upload";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import DialogFocus from "@/components/DialogFocus";
@@ -799,6 +799,7 @@ export default function ClaimDetailPage() {
     if (actionLoading) return;
     setActionLoading("defectedPartArrived");
     try {
+      await supabase.from("claim_parts").update({ defected_arrived_at: new Date().toISOString() }).eq("claim_id", claim.id).is("defected_arrived_at", null);
       await supabase.from("claims").update({ defected_part_arrived: true }).eq("id", claim.id);
       await addLog(claim.status, claim.status, "Defected part marked as arrived.");
       await load();
@@ -1057,7 +1058,15 @@ export default function ClaimDetailPage() {
 
           {parts.length > 0 && (
             <div className="mt-4">
-              <div className="text-xs font-bold text-[#6E6E6E] mb-2">Parts</div>
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                <div className="text-xs font-bold text-[#6E6E6E]">Parts</div>
+                {(() => {
+                  const d = defectedSummary({ ...claim, claim_parts: parts });
+                  return d && d.arrived > 0 ? (
+                    <span className="text-xs font-bold text-[#5B4FB0]">{d.all ? "Defected parts: all arrived to dealer" : `Defected parts: ${d.arrived}/${d.total} arrived to dealer`}</span>
+                  ) : null;
+                })()}
+              </div>
               <div className="space-y-1.5">
                 {parts.map((p) => {
                   const partStatus = PART_STATUS[p.status] || PART_STATUS["Waiting Action"];
@@ -1073,6 +1082,7 @@ export default function ClaimDetailPage() {
                           {p.tracking_number && <span className="text-[#6E6E6E] font-mono text-xs ml-2">· #{p.tracking_number}</span>}
                           {p.eta && <span className="text-[#6E6E6E] font-mono text-xs ml-2">· ETA {p.eta}</span>}
                         </div>
+                        {(p.defected_arrived_at || claim.defected_part_arrived) && <span className="text-[0.6875rem] font-bold text-[#5B4FB0] mr-2">Defective part returned</span>}
                         <span className="text-xs font-bold flex items-center gap-1" style={{ color: partStatus.color }}>
                           <partStatus.icon size={13} /> {partStatus.label}
                         </span>
@@ -1869,7 +1879,7 @@ export default function ClaimDetailPage() {
               <ActionBtn
                 color="#5B4FB0"
                 icon={CheckCircle2}
-                label="Mark Defected Part Arrived"
+                label={parts.some((p) => p.defected_arrived_at) ? "Mark remaining parts arrived" : "Mark Defected Part Arrived"}
                 onClick={handleMarkDefectedPartArrived}
                 disabled={actionLoading !== null}
                 loading={actionLoading === "defectedPartArrived"}
