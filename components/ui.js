@@ -199,6 +199,17 @@ export function Header({ profile, onSignOut }) {
   );
 }
 
+/** Red circle at the end of a menu row: something in there waits for you. */
+function ActionDot({ show }) {
+  if (!show) return null;
+  return (
+    <span className="ml-auto flex items-center">
+      <span className="w-2.5 h-2.5 rounded-full bg-[#E4002B]" aria-hidden="true" />
+      <span className="sr-only">needs your action</span>
+    </span>
+  );
+}
+
 /** The sandwich menu: user + e-mail settings and data export for dealer / admin accounts, and Sign out for everyone. */
 function HeaderMenu({ profile, onSignOut }) {
   const [open, setOpen] = useState(false);
@@ -206,6 +217,8 @@ function HeaderMenu({ profile, onSignOut }) {
   const staff = profile?.role === "dealer" || profile?.role === "admin";
   const viewer = profile?.role === "manager"; // managers can look at everything and change nothing
   const freeService = useFreeService(profile?.role, profile?.id);
+  const actions = freeService?.actions || { claims: 0, free: 0, defects: 0 };
+  const anyAction = actions.claims > 0 || actions.free > 0 || actions.defects > 0;
   const [theme, setTheme] = useTheme();
 
   useEffect(() => {
@@ -231,7 +244,7 @@ function HeaderMenu({ profile, onSignOut }) {
         aria-label="Menu"
         aria-haspopup="true"
         aria-expanded={open}
-        className="no-press tap-icon sm:min-w-0 sm:min-h-0 w-11 h-11 sm:w-9 sm:h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-colors"
+        className="no-press tap-icon sm:min-w-0 sm:min-h-0 relative w-11 h-11 sm:w-9 sm:h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-colors"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
@@ -245,6 +258,7 @@ function HeaderMenu({ profile, onSignOut }) {
             {open ? <X size={18} /> : <Menu size={18} />}
           </motion.span>
         </AnimatePresence>
+        {anyAction && !open && <span aria-hidden="true" className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#E4002B] border-2 border-[#1A1A1A]" />}
       </button>
       <AnimatePresence>
         {open && (
@@ -262,17 +276,19 @@ function HeaderMenu({ profile, onSignOut }) {
             {(staff || viewer || profile?.role === "sub_dealer") && (
               <Link href={profile?.role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer"} onClick={() => setOpen(false)} className={item}>
                 <ClipboardList size={16} className="text-[#6E6E6E]" /> Warranty Claims
+                <ActionDot show={actions.claims > 0} />
               </Link>
             )}
             {(staff || viewer || profile?.role === "sub_dealer") && (
               <Link href="/dashboard/defect-returns" onClick={() => setOpen(false)} className={item}>
                 <PackageOpen size={16} className="text-[#6E6E6E]" /> Defected parts
+                <ActionDot show={actions.defects > 0} />
               </Link>
             )}
             {freeService?.canUse && (
               <Link href="/dashboard/free-service" onClick={() => setOpen(false)} className={item}>
                 <BadgeCheck size={16} className="text-[#6E6E6E]" /> Free Service
-                {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[0.6875rem]">{freeService.pending}</span>}
+                <ActionDot show={actions.free > 0} />
               </Link>
             )}
             {viewer && (

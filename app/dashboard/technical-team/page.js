@@ -62,7 +62,7 @@ export default function TechnicalTeamDashboard() {
       if (filter === "verified" && !c.technical_verified) return false;
       if (
         query &&
-        !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())
+        !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())
       )
         return false;
       return true;

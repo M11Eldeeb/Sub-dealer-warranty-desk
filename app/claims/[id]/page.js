@@ -870,7 +870,6 @@ export default function ClaimDetailPage() {
   if (loading || !claim) return <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">Loading…</div>;
 
   const s = STATUS[claim.status] || STATUS.draft;
-  const stampFor = { rejected: ["REJECTED", "#B23A32"], closed: ["CLOSED", "#2E7D46"] };
   const role = profile.role;
 
   const signOut = async () => {
@@ -906,15 +905,6 @@ export default function ClaimDetailPage() {
         )}
 
         <div className="relative bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg p-6 overflow-hidden" style={{ borderLeft: `5px solid ${s.color}` }}>
-          {stampFor[claim.status] && (
-            <div
-              className="absolute top-6 right-6 border-4 rounded px-3 py-1 text-lg font-bold opacity-80 select-none pointer-events-none"
-              style={{ color: stampFor[claim.status][1], borderColor: stampFor[claim.status][1], transform: "rotate(-8deg)" }}
-            >
-              {stampFor[claim.status][0]}
-            </div>
-          )}
-
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="font-mono text-xs text-[#6E6E6E]">{claim.claim_number}</div>
@@ -1062,6 +1052,7 @@ export default function ClaimDetailPage() {
                 <div className="text-xs font-bold text-[#6E6E6E]">Parts</div>
                 {(() => {
                   const d = defectedSummary({ ...claim, claim_parts: parts });
+                  if (d && d.arrived === 0 && claim.status === "closed") return <span className="text-xs font-bold text-[#9A5C00]">Defected Parts: Parts still in sub dealer</span>;
                   return d && d.arrived > 0 ? (
                     <span className="text-xs font-bold text-[#5B4FB0]">{d.all ? "Defected parts: all arrived to dealer" : `Defected parts: ${d.arrived}/${d.total} arrived to dealer`}</span>
                   ) : null;

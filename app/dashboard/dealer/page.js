@@ -81,7 +81,7 @@ export default function DealerDashboard() {
     if (filter === "needs_review" && !["submitted", "waiting_pa", "repair_submitted"].includes(c.status)) return false;
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
-    if (query && !`${c.work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
   const filtered = applyClaimsFilterSort(tabFiltered, toolbar);
@@ -175,6 +175,12 @@ export default function DealerDashboard() {
                     {(() => {
                       const d = defectedSummary(c);
                       if (!d) return null;
+                      if (d.arrived === 0 && c.status === "closed")
+                        return (
+                          <span className="flex items-center gap-1 text-[#9A5C00] font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#9A5C00]" /> Defected Parts: Parts still in sub dealer
+                          </span>
+                        );
                       if (d.all)
                         return (
                           <span className="flex items-center gap-1 text-[#5B4FB0] font-bold">
