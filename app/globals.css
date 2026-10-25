@@ -276,11 +276,18 @@ label {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
-/* ---- Dark appearance (follows the device setting; there is no switch in the app) ------------------------------------------
+/* ---- Dark appearance -----------------------------------------------------------------------------------------------
+   Follows the device setting by default; the menu can force Light or Dark (the choice sets data-theme on <html>).
    The light palette is hard-coded all over the pages, so the dark one is generated from the same list of colours
-   (text, backgrounds, borders) and sits here in one place. Brand reds, gradients and photos keep their colours. */
+   and sits here in one place. Brand reds, gradients and photos keep their colours. */
 :root {
   color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 .pill {
   color: var(--pill-fg);
@@ -293,266 +300,506 @@ label {
 .tone-fg {
   color: var(--t-fg);
 }
+
+/* Auto: dark when the device is dark, unless Light was chosen. */
 @media (prefers-color-scheme: dark) {
-  body {
-    background: #0f0f11;
-    color: #f2f2f7;
+  :root:not([data-theme="light"]) body {
+    background: #0f0f11; color: #f2f2f7;
   }
-  * {
+  :root:not([data-theme="light"]) * {
     scrollbar-color: #48484d transparent;
   }
-  ::-webkit-scrollbar-thumb {
-    background: #48484d;
-    border-color: #0f0f11;
+  :root:not([data-theme="light"]) ::-webkit-scrollbar-thumb {
+    background: #48484d; border-color: #0f0f11;
   }
-  .input {
-    background: #242428;
-    border-color: #3a3a3f;
-    color: #f2f2f7;
+  :root:not([data-theme="light"]) .input {
+    background: #242428; border-color: #3a3a3f; color: #f2f2f7;
   }
-  .input:focus {
-    border-color: #ff5468;
-    box-shadow: 0 0 0 3px rgba(255, 84, 104, 0.2);
+  :root:not([data-theme="light"]) .input:focus {
+    border-color: #ff5468; box-shadow: 0 0 0 3px rgba(255, 84, 104, 0.2);
   }
-  .claim-card {
-    background: #1c1c1e;
-    border-color: #2c2c30;
-    box-shadow: none;
+  :root:not([data-theme="light"]) .claim-card {
+    background: #1c1c1e; border-color: #2c2c30; box-shadow: none;
   }
-  @media (hover: hover) and (pointer: fine) {
-    .claim-card:hover {
-      border-color: #5a2a31;
-      box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
-    }
-  }
-  .skeleton {
+  :root:not([data-theme="light"]) .skeleton {
     background: #2a2a2e;
   }
-  .pill {
-    color: color-mix(in srgb, var(--pill-fg) 40%, #ffffff);
-    background: color-mix(in srgb, var(--pill-fg) 24%, #1c1c1e);
+  :root:not([data-theme="light"]) .pill {
+    color: color-mix(in srgb, var(--pill-fg) 40%, #ffffff); background: color-mix(in srgb, var(--pill-fg) 24%, #1c1c1e);
   }
-  .tone-box {
-    background: color-mix(in srgb, var(--t-fg) 16%, #1c1c1e);
-    border-color: color-mix(in srgb, var(--t-fg) 38%, #1c1c1e);
+  :root:not([data-theme="light"]) .tone-box {
+    background: color-mix(in srgb, var(--t-fg) 16%, #1c1c1e); border-color: color-mix(in srgb, var(--t-fg) 38%, #1c1c1e);
   }
-  .tone-fg {
+  :root:not([data-theme="light"]) .tone-fg {
     color: color-mix(in srgb, var(--t-fg) 45%, #ffffff);
   }
-  .bottom-nav {
-    background: rgba(28, 28, 30, 0.92);
-    border-color: #3a3a3f;
+  :root:not([data-theme="light"]) .bottom-nav {
+    background: rgba(28, 28, 30, 0.92); border-color: #3a3a3f;
   }
-  .bg-\[\#F4F4F4\] {
+  :root:not([data-theme="light"]) .bg-\[\#F4F4F4\] {
     background-color: #0F0F11;
   }
-  .text-\[\#4D4D4D\] {
+  :root:not([data-theme="light"]) .text-\[\#4D4D4D\] {
     color: #D1D1D6;
   }
-  .hover\:text-\[\#111111\]:hover {
+  :root:not([data-theme="light"]) .hover\:text-\[\#111111\]:hover {
     color: #F2F2F7;
   }
-  .text-\[\#111111\] {
+  :root:not([data-theme="light"]) .text-\[\#111111\] {
     color: #F2F2F7;
   }
-  .text-\[\#6E6E6E\] {
+  :root:not([data-theme="light"]) .text-\[\#6E6E6E\] {
     color: #A1A1A8;
   }
-  .bg-white {
+  :root:not([data-theme="light"]) .bg-white {
     background-color: #1C1C1E;
   }
-  .border-\[\#E0E0E0\] {
+  :root:not([data-theme="light"]) .border-\[\#E0E0E0\] {
     border-color: #3A3A3F;
   }
-  .bg-\[\#F1F2F4\] {
+  :root:not([data-theme="light"]) .bg-\[\#F1F2F4\] {
     background-color: #2A2A2E;
   }
-  .text-\[\#B23A32\] {
+  :root:not([data-theme="light"]) .text-\[\#B23A32\] {
     color: #FF7A72;
   }
-  .hover\:bg-\[\#FAE4E2\]:hover {
+  :root:not([data-theme="light"]) .hover\:bg-\[\#FAE4E2\]:hover {
     background-color: rgba(255,69,58,0.16);
   }
-  .text-\[\#E4002B\] {
+  :root:not([data-theme="light"]) .text-\[\#E4002B\] {
     color: #FF5468;
   }
-  .border-\[\#C7C7C7\] {
+  :root:not([data-theme="light"]) .border-\[\#C7C7C7\] {
     border-color: #48484D;
   }
-  .hover\:text-\[\#E4002B\]:hover {
+  :root:not([data-theme="light"]) .hover\:text-\[\#E4002B\]:hover {
     color: #FF5468;
   }
-  .divide-\[\#E0E0E0\] > :not([hidden]) ~ :not([hidden]) {
+  :root:not([data-theme="light"]) .divide-\[\#E0E0E0\] > :not([hidden]) ~ :not([hidden]) {
     border-color: #3A3A3F;
   }
-  .text-\[\#1A1A1A\] {
+  :root:not([data-theme="light"]) .text-\[\#1A1A1A\] {
     color: #F2F2F7;
   }
-  .disabled\:bg-\[\#D0D0D0\]:disabled {
+  :root:not([data-theme="light"]) .disabled\:bg-\[\#D0D0D0\]:disabled {
     background-color: #48484D;
   }
-  .text-\[\#C4551B\] {
+  :root:not([data-theme="light"]) .text-\[\#C4551B\] {
     color: #FF9F5A;
   }
-  .bg-\[\#FDEBE0\] {
+  :root:not([data-theme="light"]) .bg-\[\#FDEBE0\] {
     background-color: rgba(255,159,10,0.16);
   }
-  .border-\[\#F2C9A8\] {
+  :root:not([data-theme="light"]) .border-\[\#F2C9A8\] {
     border-color: rgba(255,159,10,0.4);
   }
-  .bg-\[\#FFFFFF\] {
+  :root:not([data-theme="light"]) .bg-\[\#FFFFFF\] {
     background-color: #1C1C1E;
   }
-  .text-\[\#2E7D46\] {
+  :root:not([data-theme="light"]) .text-\[\#2E7D46\] {
     color: #5DD27B;
   }
-  .bg-\[\#E5F3E8\] {
+  :root:not([data-theme="light"]) .bg-\[\#E5F3E8\] {
     background-color: rgba(48,209,88,0.15);
   }
-  .bg-\[\#FAE4E2\] {
+  :root:not([data-theme="light"]) .bg-\[\#FAE4E2\] {
     background-color: rgba(255,69,58,0.16);
   }
-  .border-\[\#A9D9C9\] {
+  :root:not([data-theme="light"]) .border-\[\#A9D9C9\] {
     border-color: rgba(50,200,170,0.4);
   }
-  .text-\[\#5B4FB0\] {
+  :root:not([data-theme="light"]) .text-\[\#5B4FB0\] {
     color: #A79BFF;
   }
-  .bg-\[\#EAE7FA\] {
+  :root:not([data-theme="light"]) .bg-\[\#EAE7FA\] {
     background-color: rgba(125,110,255,0.2);
   }
-  .hover\:bg-\[\#FDEBE0\]:hover {
+  :root:not([data-theme="light"]) .hover\:bg-\[\#FDEBE0\]:hover {
     background-color: rgba(255,159,10,0.16);
   }
-  .hover\:bg-\[\#F4F4F4\]:hover {
+  :root:not([data-theme="light"]) .hover\:bg-\[\#F4F4F4\]:hover {
     background-color: #0F0F11;
   }
-  .bg-\[\#EDE7FC\] {
+  :root:not([data-theme="light"]) .bg-\[\#EDE7FC\] {
     background-color: rgba(125,110,255,0.2);
   }
-  .border-\[\#D9CCF7\] {
+  :root:not([data-theme="light"]) .border-\[\#D9CCF7\] {
     border-color: rgba(125,110,255,0.45);
   }
-  .text-\[\#6D28D9\] {
+  :root:not([data-theme="light"]) .text-\[\#6D28D9\] {
     color: #B197FC;
   }
-  .text-\[\#4C1D95\] {
+  :root:not([data-theme="light"]) .text-\[\#4C1D95\] {
     color: #C4B5FD;
   }
-  .border-\[\#D3CDF2\] {
+  :root:not([data-theme="light"]) .border-\[\#D3CDF2\] {
     border-color: rgba(125,110,255,0.45);
   }
-  .hover\:bg-\[\#E0E0E0\]:hover {
+  :root:not([data-theme="light"]) .hover\:bg-\[\#E0E0E0\]:hover {
     background-color: #3A3A3F;
   }
-  .bg-\[\#E1F2EE\] {
+  :root:not([data-theme="light"]) .bg-\[\#E1F2EE\] {
     background-color: rgba(50,200,170,0.15);
   }
-  .border-\[\#C3E5DD\] {
+  :root:not([data-theme="light"]) .border-\[\#C3E5DD\] {
     border-color: rgba(50,200,170,0.4);
   }
-  .text-\[\#1E7A6B\] {
+  :root:not([data-theme="light"]) .text-\[\#1E7A6B\] {
     color: #52C7B2;
   }
-  .border-\[\#9BC9BE\] {
+  :root:not([data-theme="light"]) .border-\[\#9BC9BE\] {
     border-color: rgba(50,200,170,0.4);
   }
-  .hover\:bg-white:hover {
+  :root:not([data-theme="light"]) .hover\:bg-white:hover {
     background-color: #1C1C1E;
   }
-  .bg-\[\#E0F2FE\] {
+  :root:not([data-theme="light"]) .bg-\[\#E0F2FE\] {
     background-color: rgba(64,170,255,0.16);
   }
-  .border-\[\#B8E4F5\] {
+  :root:not([data-theme="light"]) .border-\[\#B8E4F5\] {
     border-color: rgba(64,170,255,0.4);
   }
-  .text-\[\#0E7490\] {
+  :root:not([data-theme="light"]) .text-\[\#0E7490\] {
     color: #5CC8E8;
   }
-  .bg-\[\#111111\] {
+  :root:not([data-theme="light"]) .bg-\[\#111111\] {
     background-color: #3A3A3F;
   }
-  .border-\[\#111111\] {
+  :root:not([data-theme="light"]) .border-\[\#111111\] {
     border-color: #D1D1D6;
   }
-  .border-\[\#C3E0C9\] {
+  :root:not([data-theme="light"]) .border-\[\#C3E0C9\] {
     border-color: rgba(48,209,88,0.4);
   }
-  .group:hover .group-hover\:text-\[\#E4002B\] {
+  :root:not([data-theme="light"]) .group:hover .group-hover\:text-\[\#E4002B\] {
     color: #FF5468;
   }
-  .text-\[\#262626\] {
+  :root:not([data-theme="light"]) .text-\[\#262626\] {
     color: #F2F2F7;
   }
-  .border-\[\#B8DEC1\] {
+  :root:not([data-theme="light"]) .border-\[\#B8DEC1\] {
     border-color: rgba(48,209,88,0.4);
   }
-  .hover\:bg-\[\#2A2A2A\]:hover {
+  :root:not([data-theme="light"]) .hover\:bg-\[\#2A2A2A\]:hover {
     background-color: #4A4A50;
   }
-  .border-\[\#EEEEEE\] {
+  :root:not([data-theme="light"]) .border-\[\#EEEEEE\] {
     border-color: #2C2C30;
   }
-  .divide-\[\#F1F1F1\] > :not([hidden]) ~ :not([hidden]) {
+  :root:not([data-theme="light"]) .divide-\[\#F1F1F1\] > :not([hidden]) ~ :not([hidden]) {
     border-color: #2C2C30;
   }
-  .hover\:border-\[\#111111\]:hover {
+  :root:not([data-theme="light"]) .hover\:border-\[\#111111\]:hover {
     border-color: #D1D1D6;
   }
-  .divide-\[\#EEEEEE\] > :not([hidden]) ~ :not([hidden]) {
+  :root:not([data-theme="light"]) .divide-\[\#EEEEEE\] > :not([hidden]) ~ :not([hidden]) {
     border-color: #2C2C30;
   }
-  .bg-\[\#FAFAFA\] {
+  :root:not([data-theme="light"]) .bg-\[\#FAFAFA\] {
     background-color: #242428;
   }
-  .border-\[\#F2C9C5\] {
+  :root:not([data-theme="light"]) .border-\[\#F2C9C5\] {
     border-color: rgba(255,69,58,0.4);
   }
-  .text-\[\#C77700\] {
+  :root:not([data-theme="light"]) .text-\[\#C77700\] {
     color: #FFB454;
   }
-  .border-\[\#CFE0F5\] {
+  :root:not([data-theme="light"]) .border-\[\#CFE0F5\] {
     border-color: rgba(64,156,255,0.4);
   }
-  .bg-\[\#F1F6FC\] {
+  :root:not([data-theme="light"]) .bg-\[\#F1F6FC\] {
     background-color: rgba(64,156,255,0.12);
   }
-  .text-\[\#2A62B0\] {
+  :root:not([data-theme="light"]) .text-\[\#2A62B0\] {
     color: #7FB2F5;
   }
-  .bg-\[\#D5E3F5\] {
+  :root:not([data-theme="light"]) .bg-\[\#D5E3F5\] {
     background-color: rgba(64,156,255,0.24);
   }
-  .bg-\[\#F5FBF7\] {
+  :root:not([data-theme="light"]) .bg-\[\#F5FBF7\] {
     background-color: rgba(48,209,88,0.1);
   }
-  .text-\[\#A0A0A0\] {
+  :root:not([data-theme="light"]) .text-\[\#A0A0A0\] {
     color: #8E8E93;
   }
-  .text-\[\#C0C0C0\] {
+  :root:not([data-theme="light"]) .text-\[\#C0C0C0\] {
     color: #8E8E93;
   }
-  .bg-\[\#FFF5F6\] {
+  :root:not([data-theme="light"]) .bg-\[\#FFF5F6\] {
     background-color: rgba(228,0,43,0.14);
   }
-  .border-\[\#D5D5D5\] {
+  :root:not([data-theme="light"]) .border-\[\#D5D5D5\] {
     border-color: #48484D;
   }
-  .hover\:bg-\[\#FFF5F6\]:hover {
+  :root:not([data-theme="light"]) .hover\:bg-\[\#FFF5F6\]:hover {
     background-color: rgba(228,0,43,0.14);
   }
-  .bg-\[\#FFF8F3\] {
+  :root:not([data-theme="light"]) .bg-\[\#FFF8F3\] {
     background-color: rgba(255,159,10,0.1);
   }
-  .text-\[\#ADADAD\] {
+  :root:not([data-theme="light"]) .text-\[\#ADADAD\] {
     color: #8E8E93;
   }
-  .bg-\[\#E0E0E0\] {
+  :root:not([data-theme="light"]) .bg-\[\#E0E0E0\] {
     background-color: #3A3A3F;
   }
-  /* the dark bar stays dark in both appearances; the buttons inside it keep their look */
-  .app-header {
+  :root:not([data-theme="light"]) .app-header {
     background-color: #111113;
   }
-  .no-scrollbar { scrollbar-width: none; }
+  @media (hover: hover) and (pointer: fine) {
+    :root:not([data-theme="light"]) .claim-card:hover {
+      border-color: #5a2a31; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
+    }
+  }
+
+}
+
+/* Dark chosen in the menu. */
+:root[data-theme="dark"] body {
+  background: #0f0f11; color: #f2f2f7;
+}
+:root[data-theme="dark"] * {
+  scrollbar-color: #48484d transparent;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #48484d; border-color: #0f0f11;
+}
+:root[data-theme="dark"] .input {
+  background: #242428; border-color: #3a3a3f; color: #f2f2f7;
+}
+:root[data-theme="dark"] .input:focus {
+  border-color: #ff5468; box-shadow: 0 0 0 3px rgba(255, 84, 104, 0.2);
+}
+:root[data-theme="dark"] .claim-card {
+  background: #1c1c1e; border-color: #2c2c30; box-shadow: none;
+}
+:root[data-theme="dark"] .skeleton {
+  background: #2a2a2e;
+}
+:root[data-theme="dark"] .pill {
+  color: color-mix(in srgb, var(--pill-fg) 40%, #ffffff); background: color-mix(in srgb, var(--pill-fg) 24%, #1c1c1e);
+}
+:root[data-theme="dark"] .tone-box {
+  background: color-mix(in srgb, var(--t-fg) 16%, #1c1c1e); border-color: color-mix(in srgb, var(--t-fg) 38%, #1c1c1e);
+}
+:root[data-theme="dark"] .tone-fg {
+  color: color-mix(in srgb, var(--t-fg) 45%, #ffffff);
+}
+:root[data-theme="dark"] .bottom-nav {
+  background: rgba(28, 28, 30, 0.92); border-color: #3a3a3f;
+}
+:root[data-theme="dark"] .bg-\[\#F4F4F4\] {
+  background-color: #0F0F11;
+}
+:root[data-theme="dark"] .text-\[\#4D4D4D\] {
+  color: #D1D1D6;
+}
+:root[data-theme="dark"] .hover\:text-\[\#111111\]:hover {
+  color: #F2F2F7;
+}
+:root[data-theme="dark"] .text-\[\#111111\] {
+  color: #F2F2F7;
+}
+:root[data-theme="dark"] .text-\[\#6E6E6E\] {
+  color: #A1A1A8;
+}
+:root[data-theme="dark"] .bg-white {
+  background-color: #1C1C1E;
+}
+:root[data-theme="dark"] .border-\[\#E0E0E0\] {
+  border-color: #3A3A3F;
+}
+:root[data-theme="dark"] .bg-\[\#F1F2F4\] {
+  background-color: #2A2A2E;
+}
+:root[data-theme="dark"] .text-\[\#B23A32\] {
+  color: #FF7A72;
+}
+:root[data-theme="dark"] .hover\:bg-\[\#FAE4E2\]:hover {
+  background-color: rgba(255,69,58,0.16);
+}
+:root[data-theme="dark"] .text-\[\#E4002B\] {
+  color: #FF5468;
+}
+:root[data-theme="dark"] .border-\[\#C7C7C7\] {
+  border-color: #48484D;
+}
+:root[data-theme="dark"] .hover\:text-\[\#E4002B\]:hover {
+  color: #FF5468;
+}
+:root[data-theme="dark"] .divide-\[\#E0E0E0\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #3A3A3F;
+}
+:root[data-theme="dark"] .text-\[\#1A1A1A\] {
+  color: #F2F2F7;
+}
+:root[data-theme="dark"] .disabled\:bg-\[\#D0D0D0\]:disabled {
+  background-color: #48484D;
+}
+:root[data-theme="dark"] .text-\[\#C4551B\] {
+  color: #FF9F5A;
+}
+:root[data-theme="dark"] .bg-\[\#FDEBE0\] {
+  background-color: rgba(255,159,10,0.16);
+}
+:root[data-theme="dark"] .border-\[\#F2C9A8\] {
+  border-color: rgba(255,159,10,0.4);
+}
+:root[data-theme="dark"] .bg-\[\#FFFFFF\] {
+  background-color: #1C1C1E;
+}
+:root[data-theme="dark"] .text-\[\#2E7D46\] {
+  color: #5DD27B;
+}
+:root[data-theme="dark"] .bg-\[\#E5F3E8\] {
+  background-color: rgba(48,209,88,0.15);
+}
+:root[data-theme="dark"] .bg-\[\#FAE4E2\] {
+  background-color: rgba(255,69,58,0.16);
+}
+:root[data-theme="dark"] .border-\[\#A9D9C9\] {
+  border-color: rgba(50,200,170,0.4);
+}
+:root[data-theme="dark"] .text-\[\#5B4FB0\] {
+  color: #A79BFF;
+}
+:root[data-theme="dark"] .bg-\[\#EAE7FA\] {
+  background-color: rgba(125,110,255,0.2);
+}
+:root[data-theme="dark"] .hover\:bg-\[\#FDEBE0\]:hover {
+  background-color: rgba(255,159,10,0.16);
+}
+:root[data-theme="dark"] .hover\:bg-\[\#F4F4F4\]:hover {
+  background-color: #0F0F11;
+}
+:root[data-theme="dark"] .bg-\[\#EDE7FC\] {
+  background-color: rgba(125,110,255,0.2);
+}
+:root[data-theme="dark"] .border-\[\#D9CCF7\] {
+  border-color: rgba(125,110,255,0.45);
+}
+:root[data-theme="dark"] .text-\[\#6D28D9\] {
+  color: #B197FC;
+}
+:root[data-theme="dark"] .text-\[\#4C1D95\] {
+  color: #C4B5FD;
+}
+:root[data-theme="dark"] .border-\[\#D3CDF2\] {
+  border-color: rgba(125,110,255,0.45);
+}
+:root[data-theme="dark"] .hover\:bg-\[\#E0E0E0\]:hover {
+  background-color: #3A3A3F;
+}
+:root[data-theme="dark"] .bg-\[\#E1F2EE\] {
+  background-color: rgba(50,200,170,0.15);
+}
+:root[data-theme="dark"] .border-\[\#C3E5DD\] {
+  border-color: rgba(50,200,170,0.4);
+}
+:root[data-theme="dark"] .text-\[\#1E7A6B\] {
+  color: #52C7B2;
+}
+:root[data-theme="dark"] .border-\[\#9BC9BE\] {
+  border-color: rgba(50,200,170,0.4);
+}
+:root[data-theme="dark"] .hover\:bg-white:hover {
+  background-color: #1C1C1E;
+}
+:root[data-theme="dark"] .bg-\[\#E0F2FE\] {
+  background-color: rgba(64,170,255,0.16);
+}
+:root[data-theme="dark"] .border-\[\#B8E4F5\] {
+  border-color: rgba(64,170,255,0.4);
+}
+:root[data-theme="dark"] .text-\[\#0E7490\] {
+  color: #5CC8E8;
+}
+:root[data-theme="dark"] .bg-\[\#111111\] {
+  background-color: #3A3A3F;
+}
+:root[data-theme="dark"] .border-\[\#111111\] {
+  border-color: #D1D1D6;
+}
+:root[data-theme="dark"] .border-\[\#C3E0C9\] {
+  border-color: rgba(48,209,88,0.4);
+}
+:root[data-theme="dark"] .group:hover .group-hover\:text-\[\#E4002B\] {
+  color: #FF5468;
+}
+:root[data-theme="dark"] .text-\[\#262626\] {
+  color: #F2F2F7;
+}
+:root[data-theme="dark"] .border-\[\#B8DEC1\] {
+  border-color: rgba(48,209,88,0.4);
+}
+:root[data-theme="dark"] .hover\:bg-\[\#2A2A2A\]:hover {
+  background-color: #4A4A50;
+}
+:root[data-theme="dark"] .border-\[\#EEEEEE\] {
+  border-color: #2C2C30;
+}
+:root[data-theme="dark"] .divide-\[\#F1F1F1\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2C2C30;
+}
+:root[data-theme="dark"] .hover\:border-\[\#111111\]:hover {
+  border-color: #D1D1D6;
+}
+:root[data-theme="dark"] .divide-\[\#EEEEEE\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2C2C30;
+}
+:root[data-theme="dark"] .bg-\[\#FAFAFA\] {
+  background-color: #242428;
+}
+:root[data-theme="dark"] .border-\[\#F2C9C5\] {
+  border-color: rgba(255,69,58,0.4);
+}
+:root[data-theme="dark"] .text-\[\#C77700\] {
+  color: #FFB454;
+}
+:root[data-theme="dark"] .border-\[\#CFE0F5\] {
+  border-color: rgba(64,156,255,0.4);
+}
+:root[data-theme="dark"] .bg-\[\#F1F6FC\] {
+  background-color: rgba(64,156,255,0.12);
+}
+:root[data-theme="dark"] .text-\[\#2A62B0\] {
+  color: #7FB2F5;
+}
+:root[data-theme="dark"] .bg-\[\#D5E3F5\] {
+  background-color: rgba(64,156,255,0.24);
+}
+:root[data-theme="dark"] .bg-\[\#F5FBF7\] {
+  background-color: rgba(48,209,88,0.1);
+}
+:root[data-theme="dark"] .text-\[\#A0A0A0\] {
+  color: #8E8E93;
+}
+:root[data-theme="dark"] .text-\[\#C0C0C0\] {
+  color: #8E8E93;
+}
+:root[data-theme="dark"] .bg-\[\#FFF5F6\] {
+  background-color: rgba(228,0,43,0.14);
+}
+:root[data-theme="dark"] .border-\[\#D5D5D5\] {
+  border-color: #48484D;
+}
+:root[data-theme="dark"] .hover\:bg-\[\#FFF5F6\]:hover {
+  background-color: rgba(228,0,43,0.14);
+}
+:root[data-theme="dark"] .bg-\[\#FFF8F3\] {
+  background-color: rgba(255,159,10,0.1);
+}
+:root[data-theme="dark"] .text-\[\#ADADAD\] {
+  color: #8E8E93;
+}
+:root[data-theme="dark"] .bg-\[\#E0E0E0\] {
+  background-color: #3A3A3F;
+}
+:root[data-theme="dark"] .app-header {
+  background-color: #111113;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme="dark"] .claim-card:hover {
+    border-color: #5a2a31; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
+  }
 }

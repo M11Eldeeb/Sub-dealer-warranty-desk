@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ExportDataButton from "@/components/ExportDataButton";
 import { useFreeService } from "@/lib/use-free-service";
+import { useTheme } from "@/lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList } from "lucide-react";
+import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -196,6 +197,7 @@ function HeaderMenu({ profile, onSignOut }) {
   const staff = profile?.role === "dealer" || profile?.role === "admin";
   const viewer = profile?.role === "manager"; // managers can look at everything and change nothing
   const freeService = useFreeService(profile?.role, profile?.id);
+  const [theme, setTheme] = useTheme();
 
   useEffect(() => {
     if (!open) return;
@@ -277,6 +279,31 @@ function HeaderMenu({ profile, onSignOut }) {
                 <div className="border-t border-[#EEEEEE]" />
               </>
             )}
+            <div className="px-3.5 py-3 border-t border-[#EEEEEE]">
+              <div id="appearance-label" className="text-xs font-semibold text-[#6E6E6E] mb-2">
+                Appearance
+              </div>
+              <div role="radiogroup" aria-labelledby="appearance-label" className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-[#F1F2F4]">
+                {[
+                  ["auto", "Auto", Monitor],
+                  ["light", "Light", Sun],
+                  ["dark", "Dark", Moon],
+                ].map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    role="radio"
+                    aria-checked={theme === value}
+                    onClick={() => setTheme(value)}
+                    className={`no-press tap-auto flex items-center justify-center gap-1.5 min-h-9 rounded-md text-xs font-semibold transition-colors ${
+                      theme === value ? "bg-white text-[#111111] shadow-sm" : "text-[#6E6E6E] hover:text-[#111111]"
+                    }`}
+                  >
+                    <Icon size={14} aria-hidden="true" /> {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-[#EEEEEE]" />
             <button onClick={onSignOut} className={`${item} text-[#B23A32]`}>
               <LogOut size={16} /> Sign out
             </button>
