@@ -1,10 +1,12 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
+import { Header, StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import { uploadEvidence, removeAttachment, attachmentUrl, syncClaimFolder } from "@/lib/evidence-upload";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
+import DialogFocus from "@/components/DialogFocus";
 import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
@@ -18,6 +20,7 @@ export default function ClaimDetailPage() {
 
   const [profile, setProfile] = useState(null);
   const [claim, setClaim] = useState(null);
+  usePageTitle(claim ? `${claim.claim_number} · WO ${claim.work_order_number || ""}`.trim() : "Claim");
   const [parts, setParts] = useState([]);
   const [labor, setLabor] = useState([]);
   const [attachments, setAttachments] = useState([]);
@@ -869,9 +872,16 @@ export default function ClaimDetailPage() {
   const stampFor = { rejected: ["REJECTED", "#B23A32"], closed: ["CLOSED", "#2E7D46"] };
   const role = profile.role;
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-4 sm:px-6 py-5 sm:py-8">
-      <div className="max-w-3xl mx-auto page-in">
+    <div className="min-h-screen bg-[#F4F4F4]">
+      <Header profile={profile} onSignOut={signOut} />
+      <div className="px-4 sm:px-6 py-5 sm:py-8">
+      <div role="main" className="max-w-3xl mx-auto page-in">
         <button
           onClick={() => {
             router.refresh();
@@ -891,13 +901,13 @@ export default function ClaimDetailPage() {
         </button>
 
         {returnEmailNote && (
-          <div className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2 mb-3">{returnEmailNote}</div>
+          <div role="status" className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2 mb-3">{returnEmailNote}</div>
         )}
 
         <div className="relative bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg p-6 overflow-hidden" style={{ borderLeft: `5px solid ${s.color}` }}>
           {stampFor[claim.status] && (
             <div
-              className="absolute top-6 right-6 border-4 rounded px-3 py-1 text-lg font-black uppercase tracking-widest opacity-80 select-none pointer-events-none"
+              className="absolute top-6 right-6 border-4 rounded px-3 py-1 text-lg font-bold opacity-80 select-none pointer-events-none"
               style={{ color: stampFor[claim.status][1], borderColor: stampFor[claim.status][1], transform: "rotate(-8deg)" }}
             >
               {stampFor[claim.status][0]}
@@ -907,7 +917,7 @@ export default function ClaimDetailPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="font-mono text-xs text-[#6E6E6E]">{claim.claim_number}</div>
-              <h2 className="text-xl font-black text-[#111111] mt-0.5">WO# {combinedWorkOrder(claim)}</h2>
+              <h1 className="text-xl font-black text-[#111111] mt-0.5">WO# {combinedWorkOrder(claim)}</h1>
             </div>
             <div className="flex items-center gap-2">
               {isAgeing(claim) ? (
@@ -916,7 +926,7 @@ export default function ClaimDetailPage() {
                 daysSinceReturned(claim) !== null && <ReturnedDaysBadge days={daysSinceReturned(claim)} />
               )}
               {claim.technical_verified && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide text-[#2E7D46] bg-[#E5F3E8]">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.6875rem] font-bold text-[#2E7D46] bg-[#E5F3E8]">
                   <CheckCircle2 size={12} /> Technically Verified
                 </span>
               )}
@@ -935,26 +945,26 @@ export default function ClaimDetailPage() {
 
           <div className="mt-4 space-y-3">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">Customer Complaint</div>
+              <div className="text-xs font-bold text-[#6E6E6E] mb-1">Customer Complaint</div>
               <p className="text-sm text-[#1A1A1A]">{claim.customer_complaint}</p>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">Cause of Defect</div>
+              <div className="text-xs font-bold text-[#6E6E6E] mb-1">Cause of Defect</div>
               <p className="text-sm text-[#1A1A1A]">{claim.cause_of_defect}</p>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">Correction</div>
+              <div className="text-xs font-bold text-[#6E6E6E] mb-1">Correction</div>
               <p className="text-sm text-[#1A1A1A]">{claim.correction}</p>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">Comment</div>
+              <div className="text-xs font-bold text-[#6E6E6E] mb-1">Comment</div>
               <p className="text-sm text-[#1A1A1A]">{claim.comment}</p>
             </div>
           </div>
 
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E]">Evidence</div>
+              <div className="text-xs font-bold text-[#6E6E6E]">Evidence</div>
               <DownloadAttachmentsButton claim={claim} parts={parts} labor={labor} attachments={attachments} />
             </div>
             {uploadError && (
@@ -974,14 +984,17 @@ export default function ClaimDetailPage() {
                       <button
                         onClick={() => openLightbox(a.id)}
                         title={a.file_name}
-                        className={`w-20 h-20 rounded-lg overflow-hidden border hover:ring-2 hover:ring-[#E4002B] transition-shadow block ${
-                          a.stage === "after_repair" ? "border-[#A9D9C9]" : "border-[#E0E0E0]"
-                        }`}
+                        className={`w-20 h-20 rounded-lg overflow-hidden border hover:ring-2 hover:ring-[#E4002B] transition-shadow block ${ a.stage === "after_repair" ? "border-[#A9D9C9]" : "border-[#E0E0E0]" }`}
                       >
                         {isImage(a.file_name) ? (
                           <img src={url} alt={a.file_name} className="w-full h-full object-cover" />
                         ) : (
-                          <video src={url} muted className="w-full h-full object-cover" />
+                          <>
+                            <video src={`${url}#t=0.5`} muted preload="metadata" playsInline aria-hidden="true" className="w-full h-full object-cover bg-[#1A1A1A]" />
+                            <span className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                              <span className="w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center text-[0.6875rem] pl-0.5">▶</span>
+                            </span>
+                          </>
                         )}
                       </button>
                       {canDelete && (
@@ -1000,9 +1013,7 @@ export default function ClaimDetailPage() {
                 return (
                   <div
                     key={a.id}
-                    className={`text-xs pl-2.5 pr-1.5 py-1.5 rounded flex items-center gap-1.5 font-mono ${
-                      a.stage === "after_repair" ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-white text-[#4D4D4D] border border-[#E0E0E0]"
-                    }`}
+                    className={`text-xs pl-2.5 pr-1.5 py-1.5 rounded flex items-center gap-1.5 font-mono ${ a.stage === "after_repair" ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-white text-[#4D4D4D] border border-[#E0E0E0]" }`}
                   >
                     <button onClick={() => viewFile(a.id)} className="flex items-center gap-1.5 hover:underline">
                       <FileText size={12} /> {a.file_name}
@@ -1025,14 +1036,14 @@ export default function ClaimDetailPage() {
 
           {(labor.length > 0 || parts.length > 0) && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E]">Parts &amp; Labor</div>
+              <div className="text-xs font-bold text-[#6E6E6E]">Parts &amp; Labor</div>
               <ExportPartsLaborButton claim={claim} parts={parts} labor={labor} />
             </div>
           )}
 
           {labor.length > 0 && (
             <div className="mt-2">
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Labor</div>
+              <div className="text-xs font-bold text-[#6E6E6E] mb-2">Labor</div>
               <div className="space-y-1.5">
                 {labor.map((l) => (
                   <div key={l.id} className="text-sm bg-white border border-[#E0E0E0] rounded px-3 py-2">
@@ -1046,7 +1057,7 @@ export default function ClaimDetailPage() {
 
           {parts.length > 0 && (
             <div className="mt-4">
-              <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Parts</div>
+              <div className="text-xs font-bold text-[#6E6E6E] mb-2">Parts</div>
               <div className="space-y-1.5">
                 {parts.map((p) => {
                   const partStatus = PART_STATUS[p.status] || PART_STATUS["Waiting Action"];
@@ -1069,12 +1080,12 @@ export default function ClaimDetailPage() {
                       {(p.supplying_location || p.superseding_part_number) && (
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {p.supplying_location && (
-                            <span className="text-[11px] font-bold uppercase tracking-wide text-[#5B4FB0] bg-[#EAE7FA] px-2 py-0.5 rounded-full">
+                            <span className="text-[0.6875rem] font-bold uppercase tracking-wide text-[#5B4FB0] bg-[#EAE7FA] px-2 py-0.5 rounded-full">
                               From {p.supplying_location}
                             </span>
                           )}
                           {p.superseding_part_number && (
-                            <span className="text-[11px] font-mono text-[#6E6E6E] bg-[#F1F2F4] px-2 py-0.5 rounded-full">
+                            <span className="text-[0.6875rem] font-mono text-[#6E6E6E] bg-[#F1F2F4] px-2 py-0.5 rounded-full">
                               Superseded by {p.superseding_part_number}
                             </span>
                           )}
@@ -1091,7 +1102,7 @@ export default function ClaimDetailPage() {
                             {(role === "dealer" || role === "parts_team" || role === "admin") && (
                               <button
                                 onClick={() => resolveReturnRequest(r)}
-                                className="shrink-0 px-2 py-1 rounded font-bold text-[11px] uppercase tracking-wide bg-white border border-[#C4551B] text-[#C4551B] hover:bg-[#FDEBE0]"
+                                className="shrink-0 px-2 py-1 rounded font-bold text-[0.6875rem] bg-white border border-[#C4551B] text-[#C4551B] hover:bg-[#FDEBE0]"
                               >
                                 Mark Resolved
                               </button>
@@ -1113,7 +1124,7 @@ export default function ClaimDetailPage() {
             (!showReturnPartBox ? (
               <button
                 onClick={() => setShowReturnPartBox(true)}
-                className="mb-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-[#B23A32] bg-white border border-[#B23A32] hover:bg-[#FAE4E2]"
+                className="mb-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs text-[#B23A32] bg-white border border-[#B23A32] hover:bg-[#FAE4E2]"
               >
                 <RotateCcw size={14} /> Return Part
               </button>
@@ -1167,7 +1178,7 @@ export default function ClaimDetailPage() {
                   <button
                     onClick={submitReturnParts}
                     disabled={selectedReturnParts.length === 0 || !returnPartReason.trim() || actionLoading !== null}
-                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#B23A32] hover:bg-[#9A2E28] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    className="px-4 py-2 rounded font-bold text-xs text-white bg-[#B23A32] hover:bg-[#9A2E28] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
                     {actionLoading === "returnParts" && <Loader2 size={13} className="animate-spin" />}
                     {actionLoading === "returnParts" ? "Submitting…" : "Confirm Return"}
@@ -1179,7 +1190,7 @@ export default function ClaimDetailPage() {
                       setReturnPartReason("");
                     }}
                     disabled={actionLoading !== null}
-                    className="px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-[#6E6E6E] hover:bg-[#F4F4F4] disabled:opacity-40"
+                    className="px-4 py-2 rounded font-bold text-xs text-[#6E6E6E] hover:bg-[#F4F4F4] disabled:opacity-40"
                   >
                     Cancel
                   </button>
@@ -1202,7 +1213,7 @@ export default function ClaimDetailPage() {
                 </div>
               )}
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-3">
-                <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Dealer Work Order Number</label>
+                <label className="block text-xs font-bold text-[#6E6E6E] mb-1.5">Dealer Work Order Number</label>
                 <div className="flex gap-2">
                   <input
                     value={dealerWOPrefix}
@@ -1263,10 +1274,10 @@ export default function ClaimDetailPage() {
                 />
               </div>
               {partsEmailNote && (
-                <div className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{partsEmailNote}</div>
+                <div role="status" className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{partsEmailNote}</div>
               )}
               {techEmailNote && (
-                <div className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{techEmailNote}</div>
+                <div role="status" className="note-in text-xs text-[#C4551B] bg-[#FDEBE0] border border-[#F2C9A8] rounded p-2">{techEmailNote}</div>
               )}
               {!dealerEditMode && (
                 <button
@@ -1448,13 +1459,13 @@ export default function ClaimDetailPage() {
                           className="text-xs"
                         />
                         {requisitionFiles.length > 0 && (
-                          <div className="text-[11px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>
+                          <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>
                         )}
                         <div className="flex gap-2">
                           <button
                             onClick={() => confirmPartStatusWithRequisition(p)}
                             disabled={!requisitionFiles.length || actionLoading !== null}
-                            className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                            className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                           >
                             {actionLoading === "partReq" && <Loader2 size={11} className="animate-spin" />}
                             {actionLoading === "partReq" ? "Uploading…" : "Confirm"}
@@ -1465,7 +1476,7 @@ export default function ClaimDetailPage() {
                               setRequisitionFiles([]);
                             }}
                             disabled={actionLoading !== null}
-                            className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
+                            className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-[#6E6E6E] hover:bg-[#E0E0E0]"
                           >
                             Cancel
                           </button>
@@ -1689,7 +1700,7 @@ export default function ClaimDetailPage() {
                 <button
                   onClick={dealerEditMode ? handleDealerSaveEdit : handleSaveAndResubmit}
                   disabled={saving}
-                  className="mt-4 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
+                  className="mt-4 px-5 py-2.5 rounded font-bold text-sm text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
                 >
                   {saving ? "Saving…" : dealerEditMode ? "Save Changes" : "Save & Resubmit Claim"}
                 </button>
@@ -1697,7 +1708,7 @@ export default function ClaimDetailPage() {
                   <button
                     onClick={cancelDealerEdit}
                     disabled={saving}
-                    className="mt-4 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-[#6E6E6E] hover:bg-[#F4F4F4] disabled:opacity-50"
+                    className="mt-4 px-5 py-2.5 rounded font-bold text-sm text-[#6E6E6E] hover:bg-[#F4F4F4] disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -1720,7 +1731,7 @@ export default function ClaimDetailPage() {
                 <button
                   onClick={handleConfirmPartsReceived}
                   disabled={actionLoading !== null}
-                  className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {actionLoading === "confirmParts" && <Loader2 size={13} className="animate-spin" />}
                   {actionLoading === "confirmParts"
@@ -1792,7 +1803,7 @@ export default function ClaimDetailPage() {
               <button
                 onClick={() => handleSubmitAfterRepair(afterRepairFiles)}
                 disabled={afterRepairFiles.length === 0 || actionLoading !== null}
-                className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white bg-[#1E7A6B] hover:bg-[#175D53] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded font-bold text-xs text-white bg-[#1E7A6B] hover:bg-[#175D53] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {actionLoading === "submitAfterRepair" && <Loader2 size={13} className="animate-spin" />}
                 {actionLoading === "submitAfterRepair" ? "Uploading & Submitting…" : "Submit After Repair"}
@@ -1851,7 +1862,7 @@ export default function ClaimDetailPage() {
 
           {claim.status === "closed" && (role === "dealer" || role === "admin") && (
             claim.defected_part_arrived ? (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide text-[#2E7D46] bg-[#E5F3E8] w-fit">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.6875rem] font-bold text-[#2E7D46] bg-[#E5F3E8] w-fit">
                 <CheckCircle2 size={12} /> Defected Part Arrived
               </div>
             ) : (
@@ -1868,7 +1879,7 @@ export default function ClaimDetailPage() {
         </div>
 
         <div className="mt-6">
-          <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2 flex items-center gap-1.5">
+          <div className="text-xs font-bold text-[#6E6E6E] mb-2 flex items-center gap-1.5">
             <History size={13} /> Claim History
           </div>
           <div className="space-y-2">
@@ -1886,7 +1897,8 @@ export default function ClaimDetailPage() {
       </div>
 
       {lightboxIndex !== null && viewableAttachments[lightboxIndex] && (
-        <div className="fade-in fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" onClick={() => setLightboxIndex(null)}>
+        <div className="fade-in fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Attachment preview" onClick={() => setLightboxIndex(null)}>
+          <DialogFocus onClose={() => setLightboxIndex(null)} />
           <button
             onClick={() => setLightboxIndex(null)}
             className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2"
@@ -1942,23 +1954,24 @@ export default function ClaimDetailPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">{label}</label>
+    <label className="block min-w-0">
+      <span className="block text-xs font-semibold text-[#6E6E6E] mb-1.5">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
 function Info({ label, value, mono }) {
   return (
     <div>
-      <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">{label}</div>
+      <div className="text-[0.6875rem] font-bold text-[#6E6E6E]">{label}</div>
       <div className={`text-[#111111] ${mono ? "font-mono text-xs mt-0.5" : ""}`}>{value}</div>
     </div>
   );
@@ -1969,9 +1982,7 @@ function ActionBtn({ color, icon: Icon, label, onClick, wide, disabled, loading 
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed grow sm:grow-0 ${
-        wide ? "w-full" : ""
-      }`}
+      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed grow sm:grow-0 ${ wide ? "w-full" : "" }`}
       style={{ background: color }}
     >
       {loading ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />} {loading ? "Processing…" : label}
@@ -1986,7 +1997,7 @@ function NoteBox({ placeholder, value, onChange, onSubmit, color, label, loading
       <button
         onClick={onSubmit}
         disabled={!value.trim() || loading}
-        className="mt-2 px-4 py-2 rounded font-bold text-xs uppercase tracking-wide text-white disabled:opacity-40 flex items-center gap-1.5"
+        className="mt-2 px-4 py-2 rounded font-bold text-xs text-white disabled:opacity-40 flex items-center gap-1.5"
         style={{ background: color }}
       >
         {loading && <Loader2 size={13} className="animate-spin" />}

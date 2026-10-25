@@ -1,10 +1,12 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Wrench } from "lucide-react";
 
 export default function LoginPage() {
+  usePageTitle("Log in");
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover">
+      <video autoPlay muted loop playsInline aria-hidden="true" className="login-video absolute inset-0 w-full h-full object-cover">
         <source src="/mg-login-bg.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-black/60" />
@@ -50,7 +52,7 @@ export default function LoginPage() {
           <div className="w-9 h-9 rounded bg-[#E4002B] flex items-center justify-center">
             <Wrench size={18} className="text-white" />
           </div>
-          <div className="font-black uppercase tracking-wide text-white">WarrantyDesk</div>
+          <h1 className="font-bold text-white">WarrantyDesk</h1>
         </div>
 
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-6 shadow-2xl">
@@ -58,6 +60,8 @@ export default function LoginPage() {
             <input
               className="input"
               type="email"
+              aria-label="Email"
+              autoComplete="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -66,6 +70,8 @@ export default function LoginPage() {
             <input
               className="input"
               type="password"
+              aria-label="Password"
+              autoComplete="current-password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -76,14 +82,14 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-md font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
+              className="w-full py-2.5 rounded-md font-bold text-sm text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
             >
               {loading ? "Please wait…" : "Log in"}
             </button>
           </form>
         </div>
 
-        <p className="text-xs text-white/70 text-center mt-4">
+        <p className="text-sm text-white/90 text-center mt-4">
           Don't have an account? Ask your dealer to create one for you.
         </p>
       </div>

@@ -71,7 +71,7 @@ export default function DownloadAttachmentsButton({ claim, parts, labor, attachm
       onClick={handleDownload}
       disabled={working}
       title="Download all evidence for this claim as one zip file"
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] uppercase tracking-wide text-[#111111] bg-white border border-[#E0E0E0] hover:border-[#111111] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[0.6875rem] text-[#111111] bg-white border border-[#E0E0E0] hover:border-[#111111] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
     >
       {working ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
       {working ? progress || "Preparing…" : `Download All (${attachments.length})`}

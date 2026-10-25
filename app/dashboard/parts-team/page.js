@@ -1,9 +1,10 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header, Tabs, ClaimGrid, ClaimCard, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
+import { LoadingShell, Header, Tabs, ClaimGrid, ClaimCard, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
 import { uploadEvidence } from "@/lib/evidence-upload";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
 import { Search, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
@@ -16,6 +17,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function PartsTeamDashboard() {
+  usePageTitle("Parts");
   const router = useRouter();
   const supabase = createClient();
   const [profile, setProfile] = useState(null);
@@ -239,17 +241,13 @@ export default function PartsTeamDashboard() {
   });
   const filtered = applyPartsFilterSort(tabFiltered, toolbar);
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
+      <div role="main" className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
+        <h1 className="sr-only">Parts</h1>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <Tabs
             value={filter}
@@ -262,6 +260,7 @@ export default function PartsTeamDashboard() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search parts, claims, WO#, branch"
                 placeholder="Search parts, claims, WO#, branch..."
                 className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
               />
@@ -329,12 +328,12 @@ export default function PartsTeamDashboard() {
                       Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence.
                     </div>
                     <input type="file" multiple onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))} className="text-xs" />
-                    {requisitionFiles.length > 0 && <div className="text-[11px] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>}
+                    {requisitionFiles.length > 0 && <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>}
                     <div className="flex gap-2">
                       <button
                         onClick={confirmPartStatusWithRequisition}
                         disabled={!requisitionFiles.length || requisitionUploading}
-                        className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                        className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                       >
                         {requisitionUploading && <Loader2 size={11} className="animate-spin" />}
                         {requisitionUploading ? "Uploading…" : "Confirm"}
@@ -345,7 +344,7 @@ export default function PartsTeamDashboard() {
                           setRequisitionFiles([]);
                         }}
                         disabled={requisitionUploading}
-                        className="px-3 py-1.5 rounded font-bold text-[11px] uppercase tracking-wide text-[#6E6E6E] hover:bg-[#E0E0E0]"
+                        className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-[#6E6E6E] hover:bg-[#E0E0E0]"
                       >
                         Cancel
                       </button>
@@ -396,7 +395,7 @@ export default function PartsTeamDashboard() {
                   )}
                 </div>
 
-                <div className="text-[11px] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>
+                <div className="text-[0.6875rem] text-[#6E6E6E] mt-2">Added {fmt(p.created_at)}</div>
 
                 {p.status === "Parts Return" && returnRequestsForPart.map((r) => (
                   <div key={r.id} className="mt-2 text-xs bg-[#FDEBE0] text-[#C4551B] border border-[#F2C9A8] rounded p-2">

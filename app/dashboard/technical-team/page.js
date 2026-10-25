@@ -1,12 +1,14 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder } from "@/components/ui";
+import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder } from "@/components/ui";
 import { Paperclip, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function TechnicalTeamDashboard() {
+  usePageTitle("Technical review");
   const router = useRouter();
   const supabase = createClient();
   const [profile, setProfile] = useState(null);
@@ -67,17 +69,13 @@ export default function TechnicalTeamDashboard() {
     })
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
+      <div role="main" className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
+        <h1 className="sr-only">Technical review</h1>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <Tabs
             value={filter}
@@ -92,7 +90,8 @@ export default function TechnicalTeamDashboard() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search claims or branches..."
+              aria-label="Search claims or branches"
+                placeholder="Search claims or branches..."
               className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-64"
             />
           </div>

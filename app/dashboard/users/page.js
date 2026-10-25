@@ -1,15 +1,18 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header } from "@/components/ui";
+import { LoadingShell, Header } from "@/components/ui";
+import DialogFocus from "@/components/DialogFocus";
 import { ChevronLeft, UserPlus, KeyRound, Trash2, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
 
 const ROLE_ORDER = ["manager", "admin", "dealer", "technical_team", "parts_team", "sub_dealer"];
 const ROLE_LABEL = { admin: "Admin", manager: "Manager (view only)", dealer: "Dealer", sub_dealer: "Sub-Dealer", parts_team: "Parts Team", technical_team: "Technical Team" };
 
 export default function UsersPage() {
+  usePageTitle("User settings");
   const router = useRouter();
   const supabase = createClient();
 
@@ -97,12 +100,7 @@ export default function UsersPage() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   const q = query.trim().toLowerCase();
   const shown = users.filter((u) => !q || [u.fullName, u.email, u.branch, ROLE_LABEL[u.role]].some((v) => (v || "").toLowerCase().includes(q)));
@@ -113,18 +111,18 @@ export default function UsersPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
+      <div role="main" className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
         <button onClick={() => router.push("/dashboard/dealer")} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
           <ChevronLeft size={16} /> Back
         </button>
         <div className="flex items-start justify-between gap-3 flex-wrap mb-5">
           <div>
-            <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">User settings</h2>
+            <h1 className="text-xl font-bold text-[#111111] mb-1">User settings</h1>
             <p className="text-sm text-[#6E6E6E]">Everyone who can sign in to the website. Add accounts, reset a password or delete an account.</p>
           </div>
           <Link
             href="/dashboard/dealer/create-account"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs text-white bg-[#E4002B] hover:bg-[#B8001F] active:scale-95 transition-all"
           >
             <UserPlus size={14} /> Add user
           </Link>
@@ -134,23 +132,21 @@ export default function UsersPage() {
 
         {notice && (
           <div
-            className={`note-in text-sm rounded-lg border p-3 mb-4 flex items-start gap-2 ${
-              notice.tone === "good" ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"
-            }`}
+            className={`note-in text-sm rounded-lg border p-3 mb-4 flex items-start gap-2 ${ notice.tone === "good" ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]" }`}
           >
             <AlertCircle size={15} className="mt-0.5 shrink-0" /> {notice.text}
           </div>
         )}
 
         {temp && (
-          <div className="note-in bg-[#E5F3E8] border border-[#C3E0C9] rounded-lg p-4 mb-4 text-sm">
+          <div role="status" className="note-in bg-[#E5F3E8] border border-[#C3E0C9] rounded-lg p-4 mb-4 text-sm">
             <div className="font-bold text-[#2E7D46] mb-1">New password for {temp.name}</div>
             <div className="text-[#2E7D46]">Share it with them directly. This is the only time it is shown.</div>
             <div className="bg-white rounded p-2.5 mt-2 font-mono text-xs space-y-1">
               <div>Email: {temp.email}</div>
               <div>Password: {temp.password}</div>
             </div>
-            <button onClick={copy} className="mt-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#2E7D46] hover:underline">
+            <button onClick={copy} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-[#2E7D46] hover:underline">
               {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copied" : "Copy"}
             </button>
           </div>
@@ -159,7 +155,8 @@ export default function UsersPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name, email, role or branch…"
+          aria-label="Search by name, email, role or branch"
+                placeholder="Search by name, email, role or branch…"
           className="mb-3 px-3 py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-80"
         />
 
@@ -170,7 +167,7 @@ export default function UsersPage() {
             <div>
               {groups.map((g) => (
                 <div key={g.role}>
-                  <div className="px-4 py-2 bg-[#FAFAFA] border-b border-[#EEEEEE] text-[11px] font-black uppercase tracking-widest text-[#6E6E6E]">
+                  <div className="px-4 py-2 bg-[#FAFAFA] border-b border-[#EEEEEE] text-[0.6875rem] font-bold text-[#6E6E6E]">
                     {ROLE_LABEL[g.role] || g.role} <span className="font-bold">({g.members.length})</span>
                   </div>
                   <ul className="divide-y divide-[#EEEEEE] border-b border-[#EEEEEE] last:border-b-0">
@@ -179,7 +176,7 @@ export default function UsersPage() {
                   <div className="min-w-0">
                     <div className="font-bold text-sm text-[#111111] truncate">
                       {u.fullName}
-                      {u.id === me && <span className="ml-2 text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">you</span>}
+                      {u.id === me && <span className="ml-2 text-[0.6875rem] font-bold text-[#6E6E6E]">you</span>}
                     </div>
                     <div className="text-xs text-[#6E6E6E] truncate">{u.email || "no email"}</div>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">
@@ -191,7 +188,7 @@ export default function UsersPage() {
                       <button
                         onClick={() => resetPassword(u)}
                         disabled={!!busy}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E0E0E0] text-xs font-bold uppercase tracking-wide text-[#111111] hover:border-[#111111] disabled:opacity-60 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E0E0E0] text-xs font-bold text-[#111111] hover:border-[#111111] disabled:opacity-60 transition-colors"
                       >
                         {busy === `reset:${u.id}` ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} Reset password
                       </button>
@@ -199,7 +196,7 @@ export default function UsersPage() {
                         <button
                           onClick={() => setConfirmDelete(u)}
                           disabled={!!busy}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#F2C9C5] text-xs font-bold uppercase tracking-wide text-[#B23A32] hover:bg-[#FAE4E2] disabled:opacity-60 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#F2C9C5] text-xs font-bold text-[#B23A32] hover:bg-[#FAE4E2] disabled:opacity-60 transition-colors"
                         >
                           {busy === `delete:${u.id}` ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Delete
                         </button>
@@ -217,17 +214,18 @@ export default function UsersPage() {
       </div>
 
       {confirmDelete && (
-        <div className="fade-in fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setConfirmDelete(null)}>
+        <div role="dialog" aria-modal="true" aria-label="Delete account" className="fade-in fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setConfirmDelete(null)}>
+          <DialogFocus onClose={() => setConfirmDelete(null)} />
           <div className="dialog-in bg-white rounded-lg p-5 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="font-black uppercase tracking-wide text-[#111111] mb-2">Delete account?</div>
+            <div className="font-bold text-[#111111] mb-2">Delete account?</div>
             <p className="text-sm text-[#4D4D4D] mb-4">
               <b>{confirmDelete.fullName}</b> ({confirmDelete.email}) will no longer be able to sign in. If they have claims or history on record the account cannot be deleted - reset their password instead.
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-md border border-[#E0E0E0] text-xs font-bold uppercase tracking-wide">
+              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-md border border-[#E0E0E0] text-xs font-bold">
                 Cancel
               </button>
-              <button onClick={() => deleteUser(confirmDelete)} className="px-4 py-2 rounded-md bg-[#B23A32] hover:bg-[#8F2E27] text-white text-xs font-bold uppercase tracking-wide">
+              <button onClick={() => deleteUser(confirmDelete)} className="px-4 py-2 rounded-md bg-[#B23A32] hover:bg-[#8F2E27] text-white text-xs font-bold">
                 Delete
               </button>
             </div>

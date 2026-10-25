@@ -1,16 +1,21 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { uploadEvidence } from "@/lib/evidence-upload";
+import { Header } from "@/components/ui";
+import DialogFocus from "@/components/DialogFocus";
 import { ChevronLeft, ChevronRight, Paperclip, X, Plus } from "lucide-react";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function NewClaimPage() {
+  usePageTitle("New claim");
   const router = useRouter();
   const supabase = createClient();
 
+  const [profile, setProfile] = useState(null);
   const [vin, setVin] = useState("");
   const [mileage, setMileage] = useState("");
   const [plate, setPlate] = useState("");
@@ -33,7 +38,8 @@ export default function NewClaimPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: prof } = await supabase.from("profiles").select("branch_id").eq("id", user.id).single();
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      setProfile(prof);
       if (!prof?.branch_id) return;
       const { data: branch } = await supabase.from("branches").select("abbreviation").eq("id", prof.branch_id).single();
       if (branch?.abbreviation) setBranchAbbreviation(branch.abbreviation);
@@ -191,9 +197,16 @@ export default function NewClaimPage() {
     router.refresh();
   };
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-4 sm:px-6 py-5 sm:py-8">
-      <div className="max-w-2xl mx-auto page-in">
+    <div className="min-h-screen bg-[#F4F4F4]">
+      <Header profile={profile} onSignOut={signOut} />
+      <div className="px-4 sm:px-6 py-5 sm:py-8">
+      <div role="main" className="max-w-2xl mx-auto page-in">
         <button
           onClick={() => {
             router.refresh();
@@ -203,7 +216,7 @@ export default function NewClaimPage() {
         >
           <ChevronLeft size={16} /> Back
         </button>
-        <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">New Warranty Claim</h2>
+        <h1 className="text-xl font-bold text-[#111111] mb-1">New Warranty Claim</h1>
         <p className="text-sm text-[#6E6E6E] mb-6">Fill in vehicle and repair details, then attach supporting evidence.</p>
 
         <div className="space-y-4 bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
@@ -432,14 +445,15 @@ export default function NewClaimPage() {
         <button
           disabled={!canSubmit}
           onClick={handleSubmit}
-          className="mt-5 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:cursor-not-allowed transition-colors"
+          className="mt-5 px-5 py-2.5 rounded font-bold text-sm text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:cursor-not-allowed transition-colors"
         >
           {saving ? "Submitting…" : "Submit Claim"}
         </button>
       </div>
 
       {lightboxPos !== null && mediaEntries[lightboxPos] && (
-        <div className="fade-in fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" onClick={() => setLightboxPos(null)}>
+        <div className="fade-in fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Attachment preview" onClick={() => setLightboxPos(null)}>
+          <DialogFocus onClose={() => setLightboxPos(null)} />
           <button
             onClick={() => setLightboxPos(null)}
             className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2"
@@ -490,15 +504,16 @@ export default function NewClaimPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">{label}</label>
+    <label className="block min-w-0">
+      <span className="block text-xs font-semibold text-[#6E6E6E] mb-1.5">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }

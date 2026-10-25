@@ -1,8 +1,9 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Header, fmt } from "@/components/ui";
+import { LoadingShell, Header, fmt } from "@/components/ui";
 import { FsStatusTag, Fact, SavedFiles, formatSar, FS_STATUS, RequiredDocsEditor, UploadProgress, docOf, docFileName, missingDocs } from "@/components/free-service";
 import { uploadEvidence, removeAttachment, syncClaimFolder } from "@/lib/evidence-upload";
 import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock, Ban } from "lucide-react";
@@ -21,6 +22,7 @@ export default function FreeServiceDetailPage() {
 
   const [profile, setProfile] = useState(null);
   const [claim, setClaim] = useState(null);
+  usePageTitle(claim ? `${claim.claim_number} · WO ${claim.work_order_number || ""}`.trim() : "Claim");
   const [attachments, setAttachments] = useState([]);
   const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,12 +80,7 @@ export default function FreeServiceDetailPage() {
     router.push("/login");
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   const isSub = profile?.role === "sub_dealer";
   const isViewer = profile?.role === "manager"; // read only: no decisions, no edits
@@ -96,7 +93,7 @@ export default function FreeServiceDetailPage() {
         <Header profile={profile} onSignOut={signOut} />
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <Lock className="mx-auto mb-3 text-[#6E6E6E]" size={26} />
-          <div className="font-black uppercase tracking-wide text-[#111111]">Request not found</div>
+          <div className="font-bold text-[#111111]">Request not found</div>
           <p className="text-sm text-[#6E6E6E] mt-1">It may not exist, or Free Service is not open to you yet.</p>
           <button onClick={() => router.push(back)} className="mt-4 text-sm font-bold text-[#E4002B] hover:underline">
             Back to Free Service
@@ -234,7 +231,7 @@ export default function FreeServiceDetailPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 sm:py-8 page-in space-y-4">
+      <div role="main" className="max-w-3xl mx-auto px-4 sm:px-6 py-5 sm:py-8 page-in space-y-4">
         <button onClick={() => router.push(back)} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111]">
           <ChevronLeft size={16} /> Free Service
         </button>
@@ -245,13 +242,13 @@ export default function FreeServiceDetailPage() {
             <div className="font-mono text-xs text-[#6E6E6E]">
               {claim.claim_number} · {claim.branches?.name}
             </div>
-            <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide break-words">WO# {[claim.work_order_number, claim.dealer_work_order_number].filter(Boolean).join(" / ")}</h2>
+            <h1 className="text-xl font-bold text-[#111111] break-words">WO# {[claim.work_order_number, claim.dealer_work_order_number].filter(Boolean).join(" / ")}</h1>
           </div>
           <FsStatusTag status={status} />
         </div>
 
         {message && (
-          <div className={`note-in text-xs rounded-lg border p-3 flex items-start gap-2 ${message.ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
+          <div role="status" className={`note-in text-xs rounded-lg border p-3 flex items-start gap-2 ${message.ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
             <AlertCircle size={14} className="mt-0.5 shrink-0" /> {message.text}
           </div>
         )}
@@ -260,10 +257,10 @@ export default function FreeServiceDetailPage() {
         {banner && (() => {
           const [bg, border, color, Icon] = tones[banner.tone];
           return (
-            <div className="note-in rounded-lg border p-4 flex items-start gap-3" style={{ background: bg, borderColor: border }}>
-              <Icon size={18} className="mt-0.5 shrink-0" style={{ color }} />
+            <div role="status" className="tone-box note-in rounded-lg border p-4 flex items-start gap-3" style={{ "--t-fg": color, "--t-bg": bg, "--t-border": border }}>
+              <Icon size={18} className="tone-fg mt-0.5 shrink-0" />
               <div className="min-w-0">
-                <div className="text-sm font-black uppercase tracking-wide" style={{ color }}>
+                <div className="tone-fg text-sm font-bold">
                   {banner.title}
                 </div>
                 {banner.text && <p className="text-sm mt-1 text-[#262626] whitespace-pre-wrap break-words">{banner.text}</p>}
@@ -275,7 +272,7 @@ export default function FreeServiceDetailPage() {
 
         {/* Details */}
         <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
-          <h3 className="text-xs font-black uppercase tracking-widest text-[#111111] mb-3">Details</h3>
+          <h3 className="text-sm font-bold text-[#111111] mb-3">Details</h3>
           {evidenceEditable ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Field label="Work order (sub-dealer)">
@@ -285,7 +282,7 @@ export default function FreeServiceDetailPage() {
                 </div>
               </Field>
               <Field label="VIN">
-                <input className="input font-mono uppercase" value={edit.vin} onChange={(e) => setEdit({ ...edit, vin: e.target.value })} />
+                <input className="input font-mono" value={edit.vin} onChange={(e) => setEdit({ ...edit, vin: e.target.value })} />
               </Field>
               <Field label="Mileage (km)">
                 <input className="input" type="number" min="0" inputMode="numeric" value={edit.mileage} onChange={(e) => setEdit({ ...edit, mileage: e.target.value })} />
@@ -331,12 +328,12 @@ export default function FreeServiceDetailPage() {
           emptyText={evidenceEditable ? "No other files." : "Nothing attached yet."}
         >
           {evidenceEditable && <RequiredDocsEditor attachments={evidence} uploading={uploading} onAddDoc={addDocFile} onRemove={(a) => removeFile("evidence_before", a)} />}
-          {evidenceEditable && evidence.some((a) => !docOf(a.file_name)) && <div className="mt-4 text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E]">Other files</div>}
+          {evidenceEditable && evidence.some((a) => !docOf(a.file_name)) && <div className="mt-4 text-[0.6875rem] font-bold text-[#6E6E6E]">Other files</div>}
         </SavedFiles>
 
         {evidenceEditable && (
           <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
-            <h3 className="text-xs font-black uppercase tracking-widest text-[#111111]">Comment (optional)</h3>
+            <h3 className="text-sm font-bold text-[#111111]">Comment (optional)</h3>
             <p className="text-xs text-[#6E6E6E] mt-0.5">Anything the dealer should know. It stays here while you add files.</p>
             <textarea rows={3} className="input resize-none mt-3" value={edit.comment} onChange={(e) => setEdit({ ...edit, comment: e.target.value })} placeholder="Add a comment..." />
           </section>
@@ -380,16 +377,16 @@ export default function FreeServiceDetailPage() {
             {!confirmCancel ? (
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-sm text-[#4D4D4D]">No longer needed? You can cancel this request. It moves to History.</p>
-                <button onClick={() => setConfirmCancel(true)} disabled={!!busy || uploading} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#F2C9C5] text-xs font-bold uppercase tracking-wide text-[#B23A32] hover:bg-[#FAE4E2] disabled:opacity-40 transition-colors">
+                <button onClick={() => setConfirmCancel(true)} disabled={!!busy || uploading} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#F2C9C5] text-xs font-bold text-[#B23A32] hover:bg-[#FAE4E2] disabled:opacity-40 transition-colors">
                   <Ban size={13} /> Cancel request
                 </button>
               </div>
             ) : (
-              <div className="note-in space-y-3">
+              <div role="status" className="note-in space-y-3">
                 <p className="text-sm text-[#262626]">Cancel this Free Service request? The dealer is told, and you cannot reopen it - you would need to send a new request.</p>
                 <div className="flex gap-2 flex-wrap">
                   <PrimaryButton onClick={cancelIt} disabled={!!busy} loading={busy === "cancel"} icon={Ban} label="Yes, cancel it" color="#B23A32" />
-                  <button onClick={() => setConfirmCancel(false)} disabled={!!busy} className="px-4 py-2.5 rounded border border-[#E0E0E0] text-xs font-bold uppercase tracking-wide text-[#4D4D4D] hover:border-[#111111]">
+                  <button onClick={() => setConfirmCancel(false)} disabled={!!busy} className="px-4 py-2.5 rounded border border-[#E0E0E0] text-xs font-bold text-[#4D4D4D] hover:border-[#111111]">
                     Keep it
                   </button>
                 </div>
@@ -401,7 +398,7 @@ export default function FreeServiceDetailPage() {
         {/* Dealer / admin decision */}
         {decisionPhase && (
           <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
-            <h3 className="text-xs font-black uppercase tracking-widest text-[#111111] mb-3">{decisionPhase === "invoice" ? "Decision on the invoice" : "Your decision"}</h3>
+            <h3 className="text-sm font-bold text-[#111111] mb-3">{decisionPhase === "invoice" ? "Decision on the invoice" : "Your decision"}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <DecisionButton active={mode === "approve"} color="#2E7D46" icon={Check} label={decisionPhase === "invoice" ? "Approve & complete" : "Approve"} onClick={() => setMode(mode === "approve" ? null : "approve")} />
               <DecisionButton active={mode === "return"} color="#B45309" icon={CornerUpLeft} label="Return for edit" onClick={() => setMode(mode === "return" ? null : "return")} />
@@ -409,7 +406,7 @@ export default function FreeServiceDetailPage() {
             </div>
 
             {mode === "approve" && decisionPhase === "request" && (
-              <div className="note-in mt-4 space-y-3 border-t border-[#EEEEEE] pt-4">
+              <div role="status" className="note-in mt-4 space-y-3 border-t border-[#EEEEEE] pt-4">
                 <Field label="Dealer work order number">
                   <div className="flex gap-2">
                     <input value={dealerPrefix} onChange={(e) => setDealerPrefix(e.target.value.toUpperCase())} placeholder="HER" title="Prefix — usually HER, but editable" className="input font-mono font-bold w-20 text-center" />
@@ -428,7 +425,7 @@ export default function FreeServiceDetailPage() {
             )}
 
             {mode === "approve" && decisionPhase === "invoice" && (
-              <div className="note-in mt-4 space-y-3 border-t border-[#EEEEEE] pt-4">
+              <div role="status" className="note-in mt-4 space-y-3 border-t border-[#EEEEEE] pt-4">
                 <p className="text-sm text-[#4D4D4D]">
                   Approving the invoice completes this Free Service ({formatSar(claim.approved_amount)}). The sub-dealer is notified.
                 </p>
@@ -437,7 +434,7 @@ export default function FreeServiceDetailPage() {
             )}
 
             {(mode === "return" || mode === "reject") && (
-              <div className="note-in mt-4 space-y-3 border-t border-[#EEEEEE] pt-4">
+              <div role="status" className="note-in mt-4 space-y-3 border-t border-[#EEEEEE] pt-4">
                 <Field label={mode === "return" ? "What should the sub-dealer fix?" : "Reason for rejecting"}>
                   <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={mode === "return" ? "Explain what needs to change…" : "Explain why it is rejected…"} className="input resize-none" />
                 </Field>
@@ -453,7 +450,7 @@ export default function FreeServiceDetailPage() {
 
         {/* History */}
         <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
-          <h3 className="text-xs font-black uppercase tracking-widest text-[#111111] mb-3">History</h3>
+          <h3 className="text-sm font-bold text-[#111111] mb-3">History</h3>
           <ol className="space-y-3">
             {log.map((l) => (
               <li key={l.id} className="flex gap-3">
@@ -462,7 +459,7 @@ export default function FreeServiceDetailPage() {
                   <div className="text-sm text-[#262626] break-words">
                     <span className="font-bold text-[#111111]">{l.actor_name}</span> — {l.note || l.to_status}
                   </div>
-                  <div className="text-[11px] text-[#6E6E6E] font-mono">{fmt(l.at)}</div>
+                  <div className="text-[0.6875rem] text-[#6E6E6E] font-mono">{fmt(l.at)}</div>
                 </div>
               </li>
             ))}
@@ -475,10 +472,10 @@ export default function FreeServiceDetailPage() {
 
 function Field({ label, children }) {
   return (
-    <div className="min-w-0">
-      <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">{label}</label>
+    <label className="block min-w-0">
+      <span className="block text-xs font-semibold text-[#6E6E6E] mb-1.5">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
@@ -491,7 +488,7 @@ function PrimaryButton({ onClick, disabled, loading, icon: Icon, label, color = 
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center justify-center gap-2 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+      className="flex items-center justify-center gap-2 px-5 py-2.5 rounded font-bold text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
       style={{ background: color }}
     >
       {loading ? <Loader2 size={15} className="animate-spin" /> : <Icon size={15} />} {label}
@@ -503,7 +500,7 @@ function DecisionButton({ active, color, icon: Icon, label, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 font-bold text-xs uppercase tracking-wide transition-colors"
+      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 font-bold text-xs transition-colors"
       style={active ? { background: color, borderColor: color, color: "#fff" } : { borderColor: color, color }}
     >
       <Icon size={15} /> {label}

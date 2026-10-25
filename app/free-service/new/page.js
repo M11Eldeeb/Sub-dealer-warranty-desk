@@ -1,8 +1,9 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Header } from "@/components/ui";
+import { LoadingShell, Header } from "@/components/ui";
 import { FilePicker, DocSlot, FS_DOCS, docFileName, UploadProgress } from "@/components/free-service";
 import { uploadEvidence } from "@/lib/evidence-upload";
 import { ChevronLeft, Loader2, Send, Lock } from "lucide-react";
@@ -14,6 +15,7 @@ const stripPrefix = (value, prefix) => {
 };
 
 export default function NewFreeServicePage() {
+  usePageTitle("New Free Service request");
   const router = useRouter();
   const supabase = createClient();
 
@@ -96,17 +98,12 @@ export default function NewFreeServicePage() {
     router.push(`/free-service/${id}`);
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
+      <div role="main" className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
         <button onClick={() => router.push("/dashboard/free-service")} disabled={saving} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4 disabled:opacity-50">
           <ChevronLeft size={16} /> Free Service
         </button>
@@ -114,12 +111,12 @@ export default function NewFreeServicePage() {
         {locked ? (
           <div className="bg-white border border-[#E0E0E0] rounded-lg p-8 text-center">
             <Lock className="mx-auto mb-3 text-[#6E6E6E]" size={26} />
-            <div className="font-black uppercase tracking-wide text-[#111111]">Not available yet</div>
+            <div className="font-bold text-[#111111]">Not available yet</div>
             <p className="text-sm text-[#6E6E6E] mt-1">Free Service approvals are being tested and will open soon.</p>
           </div>
         ) : (
           <>
-            <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">New Free Service approval</h2>
+            <h1 className="text-xl font-bold text-[#111111] mb-1">New Free Service approval</h1>
             <p className="text-sm text-[#6E6E6E] mb-6">Enter the work order, VIN and mileage, add the four required files, and send it. The dealer reviews it and replies here.</p>
 
             <div className="space-y-4 bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
@@ -131,7 +128,7 @@ export default function NewFreeServicePage() {
               </Field>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="VIN">
-                  <input value={vin} onChange={(e) => setVin(e.target.value)} placeholder="17-character VIN" className="input font-mono uppercase" disabled={saving} />
+                  <input value={vin} onChange={(e) => setVin(e.target.value)} placeholder="17-character VIN" className="input font-mono" disabled={saving} />
                 </Field>
                 <Field label="Mileage (km)">
                   <input type="number" min="0" inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="45000" className="input" disabled={saving} />
@@ -142,7 +139,7 @@ export default function NewFreeServicePage() {
               </Field>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Required files</label>
+                <label className="block text-xs font-bold text-[#6E6E6E] mb-1.5">Required files</label>
                 <div className="space-y-2">
                   {FS_DOCS.map((d) => (
                     <DocSlot key={d.key} doc={d} file={docs[d.key] || null} onChange={(f) => setDocs((all) => ({ ...all, [d.key]: f }))} disabled={saving} />
@@ -164,13 +161,13 @@ export default function NewFreeServicePage() {
                 <UploadProgress progress={progress} />
               </div>
             )}
-            {error && <div className="note-in text-sm text-[#B23A32] mt-3">{error}</div>}
+            {error && <div role="status" className="note-in text-sm text-[#B23A32] mt-3">{error}</div>}
 
             <div className="mt-5 flex items-center gap-3 flex-wrap">
               <button
                 onClick={submit}
                 disabled={!canSubmit}
-                className="flex items-center gap-2 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 rounded font-bold text-sm text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} {saving ? "Uploading…" : "Submit for approval"}
               </button>
@@ -185,9 +182,9 @@ export default function NewFreeServicePage() {
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">{label}</label>
+    <label className="block min-w-0">
+      <span className="block text-xs font-semibold text-[#6E6E6E] mb-1.5">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }

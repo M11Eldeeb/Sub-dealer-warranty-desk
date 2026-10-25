@@ -121,14 +121,12 @@ export default function ClaimsToolbar({
         <div className="relative" ref={filterRef}>
           <button
             onClick={() => setFilterOpen((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs uppercase tracking-wide border transition-colors ${
-              activeFilterCount > 0 ? "bg-[#111111] text-white border-[#111111]" : "bg-white text-[#4D4D4D] border-[#E0E0E0] hover:border-[#111111]"
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs border transition-colors ${ activeFilterCount > 0 ? "bg-[#111111] text-white border-[#111111]" : "bg-white text-[#4D4D4D] border-[#E0E0E0] hover:border-[#111111]" }`}
           >
             <SlidersHorizontal size={13} />
             Filter
             {activeFilterCount > 0 && (
-              <span className="bg-[#E4002B] text-white rounded-full w-4 h-4 flex items-center justify-center text-[11px]">
+              <span className="bg-[#E4002B] text-white rounded-full w-4 h-4 flex items-center justify-center text-[0.6875rem]">
                 {activeFilterCount}
               </span>
             )}
@@ -138,7 +136,7 @@ export default function ClaimsToolbar({
             <div className="pop-in origin-top-left sm:origin-top-right absolute z-30 top-full mt-2 left-0 sm:left-auto sm:right-0 w-72 max-w-[calc(100vw-2rem)] bg-white border border-[#E0E0E0] rounded-lg shadow-xl p-4 space-y-4">
               {branches && branches.length > 0 && (
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Branch</div>
+                  <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-2">Branch</div>
                   <div className="max-h-28 overflow-y-auto space-y-1.5">
                     {branches.map((b) => (
                       <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -157,7 +155,7 @@ export default function ClaimsToolbar({
 
               {statusOptions && statusOptions.length > 0 && (
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Status</div>
+                  <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-2">Status</div>
                   <div className="max-h-32 overflow-y-auto space-y-1.5">
                     {statusOptions.map((s) => (
                       <label key={s} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -178,7 +176,7 @@ export default function ClaimsToolbar({
               )}
 
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Creation Date</div>
+                <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-2">Creation Date</div>
                 <div className="flex gap-2">
                   <input
                     type="date"
@@ -197,7 +195,7 @@ export default function ClaimsToolbar({
 
               {showReceptionDate && (
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Reception Date</div>
+                  <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-2">Reception Date</div>
                   <div className="flex gap-2">
                     <input
                       type="date"
@@ -231,7 +229,7 @@ export default function ClaimsToolbar({
       <div className="relative" ref={sortRef}>
         <button
           onClick={() => setSortOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs uppercase tracking-wide border border-[#E0E0E0] bg-white text-[#4D4D4D] hover:border-[#111111] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs border border-[#E0E0E0] bg-white text-[#4D4D4D] hover:border-[#111111] transition-colors"
         >
           <ArrowUpDown size={13} />
           {currentSortLabel}
@@ -252,17 +250,13 @@ export default function ClaimsToolbar({
             <div className="border-t border-[#E0E0E0] mt-1 pt-1 flex gap-1">
               <button
                 onClick={() => set({ sortDir: "asc" })}
-                className={`flex-1 px-2.5 py-1.5 rounded text-xs font-bold uppercase tracking-wide ${
-                  state.sortDir === "asc" ? "bg-[#111111] text-white" : "text-[#6E6E6E] hover:bg-[#F4F4F4]"
-                }`}
+                className={`flex-1 px-2.5 py-1.5 rounded text-xs font-bold ${ state.sortDir === "asc" ? "bg-[#111111] text-white" : "text-[#6E6E6E] hover:bg-[#F4F4F4]" }`}
               >
                 Ascending
               </button>
               <button
                 onClick={() => set({ sortDir: "desc" })}
-                className={`flex-1 px-2.5 py-1.5 rounded text-xs font-bold uppercase tracking-wide ${
-                  state.sortDir === "desc" ? "bg-[#111111] text-white" : "text-[#6E6E6E] hover:bg-[#F4F4F4]"
-                }`}
+                className={`flex-1 px-2.5 py-1.5 rounded text-xs font-bold ${ state.sortDir === "desc" ? "bg-[#111111] text-white" : "text-[#6E6E6E] hover:bg-[#F4F4F4]" }`}
               >
                 Descending
               </button>

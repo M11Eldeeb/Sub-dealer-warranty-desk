@@ -1,4 +1,5 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +10,7 @@ const randomPassword = () =>
   Math.random().toString(36).slice(-5) + Math.random().toString(36).slice(-5).toUpperCase() + "!" + Math.floor(Math.random() * 100);
 
 export default function CreateAccountPage() {
+  usePageTitle("Create account");
   const router = useRouter();
   const supabase = createClient();
 
@@ -102,7 +104,7 @@ export default function CreateAccountPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
+      <div role="main" className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
         <button
           onClick={() => {
             router.refresh();
@@ -112,7 +114,7 @@ export default function CreateAccountPage() {
         >
           <ChevronLeft size={16} /> Back
         </button>
-        <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Create Account</h2>
+        <h1 className="text-xl font-bold text-[#111111] mb-1">Create Account</h1>
         <p className="text-sm text-[#6E6E6E] mb-6">Create a login for a dealer, sub-dealer, or parts team member.</p>
 
         {successInfo && (
@@ -157,9 +159,7 @@ export default function CreateAccountPage() {
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  className={`sm:flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                    role === r ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                  }`}
+                  className={`sm:flex-1 py-2 rounded-md text-xs font-bold border ${ role === r ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
                 >
                   {r === "sub_dealer" ? "Sub-Dealer" : r === "dealer" ? "Dealer" : r === "parts_team" ? "Parts Team" : r === "manager" ? "Manager (view only)" : "Technical Team"}
                 </button>
@@ -173,18 +173,14 @@ export default function CreateAccountPage() {
                 <button
                   type="button"
                   onClick={() => setBranchMode("existing")}
-                  className={`flex-1 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                    branchMode === "existing" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-bold border ${ branchMode === "existing" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
                 >
                   Existing branch
                 </button>
                 <button
                   type="button"
                   onClick={() => setBranchMode("new")}
-                  className={`flex-1 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                    branchMode === "new" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-bold border ${ branchMode === "new" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
                 >
                   New branch
                 </button>
@@ -222,7 +218,7 @@ export default function CreateAccountPage() {
         <button
           disabled={!canSubmit}
           onClick={handleSubmit}
-          className="mt-5 px-5 py-2.5 rounded font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:cursor-not-allowed transition-colors"
+          className="mt-5 px-5 py-2.5 rounded font-bold text-sm text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:cursor-not-allowed transition-colors"
         >
           {saving ? "Creating…" : "Create Account"}
         </button>
@@ -233,9 +229,9 @@ export default function CreateAccountPage() {
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">{label}</label>
+    <label className="block min-w-0">
+      <span className="block text-xs font-semibold text-[#6E6E6E] mb-1.5">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }

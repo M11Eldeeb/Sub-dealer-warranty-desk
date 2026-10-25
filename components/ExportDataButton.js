@@ -18,8 +18,10 @@ function summarizeLabor(labor) {
 export default function ExportDataButton({ variant = "button", className = "" }) {
   const supabase = createClient();
   const [working, setWorking] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const handleExport = async () => {
+    setNotice("");
     setWorking(true);
     try {
       const { data: claims, error } = await supabase
@@ -30,7 +32,7 @@ export default function ExportDataButton({ variant = "button", className = "" })
 
       if (error) throw error;
       if (!claims || claims.length === 0) {
-        alert("No claims to export.");
+        setNotice("There are no claims to export yet.");
         return;
       }
 
@@ -66,7 +68,7 @@ export default function ExportDataButton({ variant = "button", className = "" })
       XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
       XLSX.writeFile(workbook, `warranty-claims-${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (err) {
-      alert("Export failed — please try again.");
+      setNotice("The export failed. Please try again.");
     } finally {
       setWorking(false);
     }
@@ -74,22 +76,36 @@ export default function ExportDataButton({ variant = "button", className = "" })
 
   if (variant === "menu") {
     return (
-      <button onClick={handleExport} disabled={working} title="Export every claim you can see to an Excel spreadsheet" className={className}>
-        {working ? <Loader2 size={16} className="animate-spin text-[#6E6E6E]" /> : <FileSpreadsheet size={16} className="text-[#6E6E6E]" />}
-        {working ? "Exporting…" : "Export data"}
-      </button>
+      <>
+        <button onClick={handleExport} disabled={working} title="Export every claim you can see to an Excel spreadsheet" className={className}>
+          {working ? <Loader2 size={16} className="animate-spin text-[#6E6E6E]" /> : <FileSpreadsheet size={16} className="text-[#6E6E6E]" />}
+          {working ? "Exporting…" : "Export data"}
+        </button>
+        {notice && (
+          <div role="alert" className="note-in mx-3.5 mb-2 text-xs text-[#C4551B]">
+            {notice}
+          </div>
+        )}
+      </>
     );
   }
 
   return (
-    <button
-      onClick={handleExport}
-      disabled={working}
-      title="Export every claim you can see to an Excel spreadsheet"
-      className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-[#111111] bg-white border border-[#E0E0E0] hover:border-[#111111] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
-    >
-      {working ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
-      {working ? "Exporting…" : "Export Data"}
-    </button>
+    <>
+      <button
+        onClick={handleExport}
+        disabled={working}
+        title="Export every claim you can see to an Excel spreadsheet"
+        className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs text-[#111111] bg-white border border-[#E0E0E0] hover:border-[#111111] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+      >
+        {working ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+        {working ? "Exporting…" : "Export Data"}
+      </button>
+      {notice && (
+        <span role="alert" className="note-in text-xs text-[#C4551B]">
+          {notice}
+        </span>
+      )}
+    </>
   );
 }

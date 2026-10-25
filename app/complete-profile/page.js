@@ -1,10 +1,12 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Wrench } from "lucide-react";
 
 export default function CompleteProfilePage() {
+  usePageTitle("Complete profile");
   const router = useRouter();
   const supabase = createClient();
 
@@ -87,7 +89,7 @@ export default function CompleteProfilePage() {
           <div className="w-9 h-9 rounded bg-[#E4002B] flex items-center justify-center">
             <Wrench size={18} className="text-white" />
           </div>
-          <div className="font-black uppercase tracking-wide text-[#111111]">WarrantyDesk</div>
+          <div className="font-bold text-[#111111]">WarrantyDesk</div>
         </div>
 
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-6">
@@ -100,36 +102,28 @@ export default function CompleteProfilePage() {
               <button
                 type="button"
                 onClick={() => setRole("sub_dealer")}
-                className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                  role === "sub_dealer" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                }`}
+                className={`flex-1 py-2 rounded-md text-xs font-bold border ${ role === "sub_dealer" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
               >
                 Sub-Dealer
               </button>
               <button
                 type="button"
                 onClick={() => setRole("dealer")}
-                className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                  role === "dealer" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                }`}
+                className={`flex-1 py-2 rounded-md text-xs font-bold border ${ role === "dealer" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
               >
                 Dealer
               </button>
               <button
                 type="button"
                 onClick={() => setRole("parts_team")}
-                className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                  role === "parts_team" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                }`}
+                className={`flex-1 py-2 rounded-md text-xs font-bold border ${ role === "parts_team" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
               >
                 Parts Team
               </button>
               <button
                 type="button"
                 onClick={() => setRole("technical_team")}
-                className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wide border ${
-                  role === "technical_team" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]"
-                }`}
+                className={`flex-1 py-2 rounded-md text-xs font-bold border ${ role === "technical_team" ? "bg-[#111111] text-white border-[#111111]" : "border-[#E0E0E0] text-[#6E6E6E]" }`}
               >
                 Technical Team
               </button>
@@ -147,7 +141,7 @@ export default function CompleteProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full py-2.5 rounded-md font-bold text-sm uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
+              className="w-full py-2.5 rounded-md font-bold text-sm text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:opacity-50"
             >
               {saving ? "Saving…" : "Continue"}
             </button>

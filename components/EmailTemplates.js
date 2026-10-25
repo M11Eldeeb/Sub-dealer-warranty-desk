@@ -40,9 +40,9 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel, branchL
   const set = (patch) => onChange({ ...list, ...patch });
   return (
     <div className="border border-[#EEEEEE] rounded-lg p-3 space-y-3">
-      <div className="text-xs font-black uppercase tracking-wide text-[#111111]">{title}</div>
+      <div className="text-xs font-bold text-[#111111]">{title}</div>
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Everyone with the role</div>
+        <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-1.5">Everyone with the role</div>
         <div className="flex flex-wrap gap-1.5">
           {roles.map((r) => (
             <button key={r} type="button" onClick={() => set({ roles: toggle(list.roles, r) })} className={chip(list.roles.includes(r))}>
@@ -52,7 +52,7 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel, branchL
         </div>
       </div>
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Specific people</div>
+        <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-1.5">Specific people</div>
         <div className="flex flex-wrap gap-1.5">
           {users.map((u) => (
             <button key={u.id} type="button" onClick={() => set({ users: toggle(list.users, u.id) })} title={u.email} className={chip(list.users.includes(u.id))}>
@@ -74,7 +74,7 @@ function Recipients({ title, list, onChange, users, roles, triggerLabel, branchL
         </label>
       )}
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Other email addresses (separate with commas)</div>
+        <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-1.5">Other email addresses (separate with commas)</div>
         <input
           value={list.extraText}
           onChange={(e) => set({ extraText: e.target.value })}
@@ -115,9 +115,9 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
       <button type="button" onClick={() => setOpen((o) => !o)} className="w-full p-4 flex items-center justify-between gap-3 text-left">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-black uppercase tracking-wide text-sm text-[#111111]">{draft.label}</span>
-            <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${draft.enabled ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-[#F1F2F4] text-[#6E6E6E]"}`}>{draft.enabled ? "On" : "Off"}</span>
-            {dirty && <span className="text-[11px] font-bold uppercase tracking-wide text-[#C4551B]">Unsaved changes</span>}
+            <span className="font-bold text-sm text-[#111111]">{draft.label}</span>
+            <span className={`text-[0.6875rem] font-bold px-2 py-0.5 rounded ${draft.enabled ? "bg-[#E5F3E8] text-[#2E7D46]" : "bg-[#F1F2F4] text-[#6E6E6E]"}`}>{draft.enabled ? "On" : "Off"}</span>
+            {dirty && <span className="text-[0.6875rem] font-bold text-[#C4551B]">Unsaved changes</span>}
           </div>
           <div className="text-xs text-[#6E6E6E] mt-0.5">{draft.when}</div>
           <div className="text-xs text-[#4D4D4D] mt-1 truncate">
@@ -142,7 +142,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
           </label>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Subject</label>
+            <label className="block text-xs font-bold text-[#6E6E6E] mb-1.5">Subject</label>
             <input
               value={draft.subject}
               onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
@@ -151,7 +151,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-1.5">Message</label>
+            <label className="block text-xs font-bold text-[#6E6E6E] mb-1.5">Message</label>
             <textarea
               ref={bodyRef}
               value={draft.body}
@@ -159,10 +159,10 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
               rows={6}
               className="w-full px-3 py-2 rounded-md border border-[#E0E0E0] text-sm outline-none focus:border-[#E4002B] leading-relaxed"
             />
-            <div className="mt-1.5 text-[11px] text-[#6E6E6E]">Click to add claim details into the message or subject:</div>
+            <div className="mt-1.5 text-[0.6875rem] text-[#6E6E6E]">Click to add claim details into the message or subject:</div>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {placeholders.map(([token, label]) => (
-                <button key={token} type="button" onClick={() => insert(token)} title={label} className="px-2 py-1 rounded border border-[#E0E0E0] text-[11px] font-mono text-[#4D4D4D] hover:border-[#111111]">
+                <button key={token} type="button" onClick={() => insert(token)} title={label} className="px-2 py-1 rounded border border-[#E0E0E0] text-[0.6875rem] font-mono text-[#4D4D4D] hover:border-[#111111]">
                   {token}
                 </button>
               ))}
@@ -201,7 +201,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
           </div>
 
           {state?.message && (
-            <div className={`note-in text-xs rounded-lg border p-3 flex items-start gap-2 ${state.ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
+            <div role="status" className={`note-in text-xs rounded-lg border p-3 flex items-start gap-2 ${state.ok ? "bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]"}`}>
               {state.ok ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" /> : <AlertCircle size={14} className="mt-0.5 shrink-0" />}
               {state.message}
             </div>
@@ -212,7 +212,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
               type="button"
               onClick={onSave}
               disabled={!!state?.busy || !dirty}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold text-white bg-[#E4002B] hover:bg-[#B8001F] disabled:bg-[#D0D0D0] disabled:cursor-not-allowed transition-colors"
             >
               {state?.busy === "save" ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save
             </button>
@@ -220,7 +220,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
               type="button"
               onClick={onTest}
               disabled={!!state?.busy}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#E0E0E0] text-xs font-bold uppercase tracking-wide text-[#111111] hover:border-[#111111] disabled:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#E0E0E0] text-xs font-bold text-[#111111] hover:border-[#111111] disabled:opacity-60 transition-colors"
             >
               {state?.busy === "test" ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send a test to me
             </button>
@@ -228,7 +228,7 @@ function TemplateCard({ draft, saved, setDraft, users, roles, placeholders, onSa
               type="button"
               onClick={onReset}
               disabled={!!state?.busy}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wide text-[#6E6E6E] hover:text-[#111111] disabled:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold text-[#6E6E6E] hover:text-[#111111] disabled:opacity-60 transition-colors"
             >
               {state?.busy === "reset" ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reset to default
             </button>
@@ -308,7 +308,7 @@ export default function EmailTemplates() {
     <div className="space-y-3">
       {[...new Set(data.templates.map((t) => t.group))].map((group) => (
         <div key={group} className="space-y-3">
-          <div className="text-[11px] font-black uppercase tracking-widest text-[#6E6E6E] pt-2">{group === "Claims" ? "Warranty claims" : group}</div>
+          <div className="text-[0.6875rem] font-bold text-[#6E6E6E] pt-2">{group === "Claims" ? "Warranty claims" : group}</div>
           {data.templates
             .filter((t) => t.group === group)
             .map((t) => (

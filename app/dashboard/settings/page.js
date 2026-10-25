@@ -1,8 +1,9 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Header } from "@/components/ui";
+import { LoadingShell, Header } from "@/components/ui";
 import DriveStatus from "@/components/DriveStatus";
 import EmailTemplates from "@/components/EmailTemplates";
 import { ChevronLeft, Mail, CheckCircle2, AlertCircle, Loader2, Send, BadgeCheck, Lock, LockOpen } from "lucide-react";
@@ -21,6 +22,7 @@ const FLAGS = {
 const fmtTime = (iso) => new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default function SettingsPage() {
+  usePageTitle("Settings");
   const router = useRouter();
   const supabase = createClient();
 
@@ -103,12 +105,7 @@ export default function SettingsPage() {
     loadStatus();
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   const [kind, text] = flag ? FLAGS[flag.key] || ["warn", "Email: " + flag.key] : [null, null];
   const banner = (ok) => (ok ? "note-in bg-[#E5F3E8] border-[#B8DEC1] text-[#2E7D46]" : "note-in bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]");
@@ -117,26 +114,26 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
+      <div role="main" className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 page-in">
         <button onClick={() => router.push("/dashboard/dealer")} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
           <ChevronLeft size={16} /> Back
         </button>
-        <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Settings</h2>
+        <h1 className="text-xl font-bold text-[#111111] mb-1">Settings</h1>
         <p className="text-sm text-[#6E6E6E] mb-6">Google Drive storage and email settings.</p>
 
-        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Google Drive</div>
+        <div className="text-xs font-bold text-[#6E6E6E] mb-2">Google Drive</div>
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-4 mb-6">
           <DriveStatus role={profile?.role} />
         </div>
 
-        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Free Service approvals</div>
+        <div className="text-xs font-bold text-[#6E6E6E] mb-2">Free Service approvals</div>
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-5 mb-6">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#111111] text-white flex items-center justify-center shrink-0">
               <BadgeCheck size={17} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-black uppercase tracking-wide text-sm text-[#111111]">Sub-dealer access</div>
+              <div className="font-bold text-sm text-[#111111]">Sub-dealer access</div>
               <p className="text-xs text-[#6E6E6E] mt-0.5">
                 While locked, only the dealer and admins can see and create Free Service requests, so it can be tested safely. Open it when testing is done.
               </p>
@@ -149,7 +146,7 @@ export default function SettingsPage() {
                   <button
                     onClick={toggleFreeService}
                     disabled={togglingFs}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide text-white disabled:opacity-60 transition-colors ${freeService?.globalOpen ? "bg-[#111111] hover:bg-[#2A2A2A]" : "bg-[#E4002B] hover:bg-[#B8001F]"}`}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold text-white disabled:opacity-60 transition-colors ${freeService?.globalOpen ? "bg-[#111111] hover:bg-[#2A2A2A]" : "bg-[#E4002B] hover:bg-[#B8001F]"}`}
                   >
                     {togglingFs && <Loader2 size={13} className="animate-spin" />} {freeService?.globalOpen ? "Lock it again" : "Open for all sub-dealers"}
                   </button>
@@ -157,10 +154,10 @@ export default function SettingsPage() {
                   <span className="text-xs text-[#6E6E6E]">Only an admin can change this.</span>
                 )}
               </div>
-              {fsError && <div className="note-in mt-2 text-xs text-[#C4551B]">{fsError}</div>}
+              {fsError && <div role="status" className="note-in mt-2 text-xs text-[#C4551B]">{fsError}</div>}
               {isAdmin && testers.length > 0 && (
                 <div className="mt-4 border-t border-[#EEEEEE] pt-3">
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#6E6E6E] mb-1">
+                  <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-1">
                     Test accounts{freeService?.globalOpen ? " (not needed while it is open for everyone)" : " - can use Free Service while it is locked"}
                   </div>
                   <ul className="divide-y divide-[#F1F1F1]">
@@ -180,14 +177,14 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Email</div>
+        <div className="text-xs font-bold text-[#6E6E6E] mb-2">Email</div>
         <div className="bg-white border border-[#E0E0E0] rounded-lg p-5 space-y-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#111111] text-white flex items-center justify-center shrink-0">
               <Mail size={17} />
             </div>
             <div>
-              <div className="font-black uppercase tracking-wide text-sm text-[#111111]">Email sender</div>
+              <div className="font-bold text-sm text-[#111111]">Email sender</div>
               <p className="text-xs text-[#6E6E6E] mt-0.5">
                 The company mailbox WarrantyDesk sends from - for example when a claim is sent to the technical team, and for reminders. It can only send; it cannot read anything in the mailbox.
               </p>
@@ -220,13 +217,13 @@ export default function SettingsPage() {
                 <button
                   onClick={sendTest}
                   disabled={testing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E0E0E0] text-xs font-bold uppercase tracking-wide text-[#111111] hover:border-[#111111] disabled:opacity-60 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E0E0E0] text-xs font-bold text-[#111111] hover:border-[#111111] disabled:opacity-60 transition-colors"
                 >
                   {testing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} {testing ? "Sending…" : "Send a test to me"}
                 </button>
               )}
               {isAdmin ? (
-                <a href="/api/google-mail/connect" className="px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors">
+                <a href="/api/google-mail/connect" className="px-3 py-1.5 rounded-md text-xs font-bold text-white bg-[#E4002B] hover:bg-[#B8001F] transition-colors">
                   {status?.connected ? "Reconnect" : "Connect the email sender"}
                 </a>
               ) : (
@@ -238,9 +235,9 @@ export default function SettingsPage() {
           {testResult && <div className={`text-xs rounded-lg border p-3 ${banner(testResult.ok)}`}>{testResult.text}</div>}
         </div>
 
-        <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mt-8 mb-1">Automatic emails</div>
+        <div className="text-xs font-bold text-[#6E6E6E] mt-8 mb-1">Automatic emails</div>
         <p className="text-xs text-[#6E6E6E] mb-3">Click an email to change its wording, who it goes to and who is copied. Changes apply to the next email sent.</p>
-        <div className="note-in text-xs rounded-lg border border-[#E0E0E0] bg-white p-3 mb-3 flex items-start gap-2">
+        <div role="status" className="note-in text-xs rounded-lg border border-[#E0E0E0] bg-white p-3 mb-3 flex items-start gap-2">
           {status?.lastRun ? (
             <>
               <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${status.lastRun.outcome === "ok" ? "bg-[#2E7D46]" : "bg-[#C4551B]"}`} />
@@ -263,7 +260,7 @@ export default function SettingsPage() {
 
         {status?.recent?.length > 0 && (
           <div className="mt-6">
-            <div className="text-xs font-bold uppercase tracking-wide text-[#6E6E6E] mb-2">Recent emails</div>
+            <div className="text-xs font-bold text-[#6E6E6E] mb-2">Recent emails</div>
             <div className="bg-white border border-[#E0E0E0] rounded-lg divide-y divide-[#EEEEEE]">
               {status.recent.map((m) => (
                 <div key={m.id} className="p-3 text-xs flex items-start justify-between gap-3">
@@ -273,7 +270,7 @@ export default function SettingsPage() {
                     {m.error && <div className="text-[#B23A32] mt-0.5 break-words">{m.error}</div>}
                   </div>
                   <div className="text-right shrink-0">
-                    <div className={`font-bold uppercase tracking-wide ${m.status === "sent" ? "text-[#2E7D46]" : "text-[#B23A32]"}`}>{m.status}</div>
+                    <div className={`font-bold ${m.status === "sent" ? "text-[#2E7D46]" : "text-[#B23A32]"}`}>{m.status}</div>
                     <div className="text-[#6E6E6E]">{fmtTime(m.created_at)}</div>
                   </div>
                 </div>

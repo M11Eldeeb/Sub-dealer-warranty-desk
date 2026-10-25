@@ -1,6 +1,7 @@
 "use client";
 import { Children, cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ExportDataButton from "@/components/ExportDataButton";
 import { useFreeService } from "@/lib/use-free-service";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,7 +66,7 @@ export function isAgeing(claim) {
 
 export function AgeingBadge({ days }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2]">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-bold uppercase tracking-wide text-[#B23A32] bg-[#FAE4E2]">
       ⚠ Ageing — {days}d
     </span>
   );
@@ -73,7 +74,7 @@ export function AgeingBadge({ days }) {
 
 export function ReturnedDaysBadge({ days }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide text-[#C4551B] bg-[#FDEBE0]">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-bold uppercase tracking-wide text-[#C4551B] bg-[#FDEBE0]">
       Returned {days} day{days === 1 ? "" : "s"} ago
     </span>
   );
@@ -111,8 +112,8 @@ export function StatusTag({ status, parts, returnRequests }) {
     if (summary) {
       return (
         <span
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide"
-          style={{ color: summary.color, background: summary.bg }}
+          className="pill inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.6875rem] font-bold"
+          style={{ "--pill-fg": summary.color, "--pill-bg": summary.bg }}
         >
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: summary.color }} />
           {summary.label}
@@ -125,8 +126,8 @@ export function StatusTag({ status, parts, returnRequests }) {
     const s = STATUS.parts_return;
     return (
       <span
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide"
-        style={{ color: s.color, background: s.bg }}
+        className="pill inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.6875rem] font-bold"
+        style={{ "--pill-fg": s.color, "--pill-bg": s.bg }}
       >
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
         Parts Return {pending > 0 ? `(${pending} pending)` : ""}
@@ -136,8 +137,8 @@ export function StatusTag({ status, parts, returnRequests }) {
   const s = STATUS[status] || STATUS.draft;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wide"
-      style={{ color: s.color, background: s.bg }}
+      className="pill inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.6875rem] font-bold"
+      style={{ "--pill-fg": s.color, "--pill-bg": s.bg }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
       {s.label}
@@ -147,7 +148,8 @@ export function StatusTag({ status, parts, returnRequests }) {
 
 export function Header({ profile, onSignOut }) {
   return (
-    <div
+    <>
+    <header
       className="app-header sticky top-0 z-40 bg-[#111111] text-white px-4 sm:px-6 pb-3 sm:pb-4 sm:pt-4 border-b border-white/5"
       style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
     >
@@ -161,7 +163,7 @@ export function Header({ profile, onSignOut }) {
           </div>
           <div>
             <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
-            <div className="text-[11px] text-[#ADADAD] uppercase tracking-wide mt-0.5">
+            <div className="text-[0.6875rem] text-[#ADADAD] mt-0.5">
               {profile?.role === "admin"
                 ? "Admin Console"
                 : profile?.role === "manager"
@@ -181,7 +183,9 @@ export function Header({ profile, onSignOut }) {
           <HeaderMenu profile={profile} onSignOut={onSignOut} />
         </div>
       </div>
-    </div>
+    </header>
+    <BottomNav profile={profile} />
+    </>
   );
 }
 
@@ -214,6 +218,7 @@ function HeaderMenu({ profile, onSignOut }) {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Menu"
+        aria-haspopup="true"
         aria-expanded={open}
         className="no-press tap-icon sm:min-w-0 sm:min-h-0 w-11 h-11 sm:w-9 sm:h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-colors"
       >
@@ -241,7 +246,7 @@ function HeaderMenu({ profile, onSignOut }) {
           >
             <div className="px-3.5 py-3 border-b border-[#EEEEEE] bg-[#FAFAFA]">
               <div className="text-sm font-bold truncate">{profile?.full_name}</div>
-              <div className="text-[11px] uppercase tracking-wide text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
+              <div className="text-[0.6875rem] text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
             </div>
             {(staff || viewer || profile?.role === "sub_dealer") && (
               <Link href={profile?.role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer"} onClick={() => setOpen(false)} className={item}>
@@ -251,7 +256,7 @@ function HeaderMenu({ profile, onSignOut }) {
             {freeService?.canUse && (
               <Link href="/dashboard/free-service" onClick={() => setOpen(false)} className={item}>
                 <BadgeCheck size={16} className="text-[#6E6E6E]" /> Free Service
-                {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[11px]">{freeService.pending}</span>}
+                {freeService.pending > 0 && <span className="ml-auto bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[0.6875rem]">{freeService.pending}</span>}
               </Link>
             )}
             {viewer && (
@@ -289,16 +294,16 @@ function HeaderMenu({ profile, onSignOut }) {
  */
 export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
   return (
-    <div className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm relative max-w-full overflow-x-auto no-scrollbar sm:flex-wrap sm:overflow-visible">
+    <div role="tablist" className="flex items-center gap-1 bg-white border border-[#E0E0E0] rounded-lg p-1 text-sm relative max-w-full overflow-x-auto no-scrollbar sm:flex-wrap sm:overflow-visible">
       {tabs.map(({ key, label, count }) => {
         const active = value === key;
         return (
           <button
             key={key}
+            role="tab"
+            aria-selected={active}
             onClick={() => onChange(key)}
-            className={`relative shrink-0 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 transition-colors ${
-              active ? "text-white" : "text-[#4D4D4D] hover:text-[#111111]"
-            }`}
+            className={`relative shrink-0 px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 transition-colors ${ active ? "text-white" : "text-[#4D4D4D] hover:text-[#111111]" }`}
           >
             {active && (
               <motion.span
@@ -310,7 +315,7 @@ export function Tabs({ value, onChange, tabs, layoutId = "tab-pill" }) {
             <span className="relative flex items-center gap-1.5">
               {label}
               {count !== undefined && (
-                <span className={`px-1.5 rounded-full text-[11px] transition-colors ${active ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{count}</span>
+                <span className={`px-1.5 rounded-full text-[0.6875rem] transition-colors ${active ? "bg-white/20" : "bg-[#E0E0E0]"}`}>{count}</span>
               )}
             </span>
           </button>
@@ -359,5 +364,79 @@ export function ClaimCard({ claimId, index = 0, children }) {
     <motion.div key={claimId} layout="position" variants={cardVariants} initial="hidden" animate="show" custom={index} className="min-w-0">
       {children}
     </motion.div>
+  );
+}
+
+/** Phones: the two main places always one tap away, like a tab bar (a menu hides them). */
+function BottomNav({ profile }) {
+  const path = usePathname() || "";
+  const role = profile?.role;
+  const freeService = useFreeService(role, profile?.id);
+  const hasClaims = ["sub_dealer", "dealer", "admin", "manager"].includes(role);
+  const show = hasClaims && freeService?.canUse;
+
+  useEffect(() => {
+    if (!show) return;
+    document.body.classList.add("has-bottom-nav");
+    return () => document.body.classList.remove("has-bottom-nav");
+  }, [show]);
+
+  if (!show) return null;
+  const claimsHref = role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer";
+  const onFree = path.startsWith("/dashboard/free-service") || path.startsWith("/free-service");
+  const tabs = [
+    { href: claimsHref, label: "Claims", Icon: ClipboardList, active: !onFree },
+    { href: "/dashboard/free-service", label: "Free Service", Icon: BadgeCheck, active: onFree, badge: freeService.pending },
+  ];
+  return (
+    <nav aria-label="Main" className="bottom-nav sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-[#E0E0E0]">
+      <ul className="flex">
+        {tabs.map(({ href, label, Icon, active, badge }) => (
+          <li key={label} className="flex-1">
+            <Link
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-h-14 text-[0.6875rem] font-semibold transition-colors ${active ? "text-[#E4002B]" : "text-[#6E6E6E]"}`}
+            >
+              <Icon size={20} aria-hidden="true" />
+              {label}
+              {badge > 0 && <span className="absolute top-1.5 left-1/2 ml-2 bg-[#E4002B] text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[0.6875rem]">{badge}</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/** What shows while a page loads its data: the bar and the shape of the cards, instead of an empty screen. */
+export function LoadingShell({ cards = 4 }) {
+  return (
+    <div className="min-h-screen bg-[#F4F4F4]" role="status" aria-label="Loading">
+      <header className="app-header bg-[#111111] text-white px-4 sm:px-6 pb-3 sm:pb-4 sm:pt-4 border-b border-white/5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2447] to-[#B8001F] flex items-center justify-center">
+              <Wrench size={16} className="text-white" />
+            </div>
+            <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
+          </div>
+          <div className="skeleton w-11 h-11 sm:w-9 sm:h-9 rounded-md opacity-30" />
+        </div>
+      </header>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
+        <div className="skeleton h-10 w-72 max-w-full rounded-lg mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: cards }).map((_, i) => (
+            <div key={i} className="claim-card p-4">
+              <div className="skeleton h-3 w-32 rounded mb-3" />
+              <div className="skeleton h-5 w-56 max-w-full rounded mb-2" />
+              <div className="skeleton h-3 w-40 rounded mb-4" />
+              <div className="skeleton h-3 w-24 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

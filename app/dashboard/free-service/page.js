@@ -1,9 +1,10 @@
 "use client";
+import { usePageTitle } from "@/lib/use-page-title";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Header, Tabs, ClaimGrid, ClaimCard, fmt } from "@/components/ui";
+import { LoadingShell, Header, Tabs, ClaimGrid, ClaimCard, fmt } from "@/components/ui";
 import { FsStatusTag, formatSar } from "@/components/free-service";
 import { ChevronLeft, Plus, Search, Paperclip, Lock, Inbox } from "lucide-react";
 
@@ -12,6 +13,7 @@ const WITH_SUB_DEALER = ["returned", "invoice_returned", "approved"];
 const FINISHED = ["closed", "rejected", "cancelled"];
 
 export default function FreeServiceListPage() {
+  usePageTitle("Free Service");
   const router = useRouter();
   const supabase = createClient();
 
@@ -54,12 +56,7 @@ export default function FreeServiceListPage() {
     router.push("/login");
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center text-[#6E6E6E]">
-        <div className="w-5 h-5 rounded-full border-2 border-[#E0E0E0] border-t-[#E4002B] animate-spin mr-2" /> Loading…
-      </div>
-    );
+  if (loading) return <LoadingShell />;
 
   const isSub = profile?.role === "sub_dealer";
   const groups = {
@@ -88,20 +85,20 @@ export default function FreeServiceListPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
+      <div role="main" className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
         <button onClick={() => router.push(isSub ? "/dashboard/sub-dealer" : "/dashboard/dealer")} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
           <ChevronLeft size={16} /> Claims
         </button>
 
         <div className="flex items-start justify-between gap-3 flex-wrap mb-5">
           <div>
-            <h2 className="text-xl font-black text-[#111111] uppercase tracking-wide mb-1">Free Service approvals</h2>
+            <h1 className="text-xl font-bold text-[#111111] mb-1">Free Service approvals</h1>
             <p className="text-sm text-[#6E6E6E]">Request approval for a free service, then upload the invoice once it is approved.</p>
           </div>
           {!locked && profile?.role === "sub_dealer" && (
             <Link
               href="/free-service/new"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-white bg-gradient-to-r from-[#FF2447] to-[#C4001F] hover:opacity-95 transition-opacity"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs text-white bg-gradient-to-r from-[#FF2447] to-[#C4001F] hover:opacity-95 transition-opacity"
             >
               <Plus size={14} /> New request
             </Link>
@@ -111,7 +108,7 @@ export default function FreeServiceListPage() {
         {locked ? (
           <div className="bg-white border border-[#E0E0E0] rounded-lg p-8 text-center">
             <Lock className="mx-auto mb-3 text-[#6E6E6E]" size={26} />
-            <div className="font-black uppercase tracking-wide text-[#111111]">Not available yet</div>
+            <div className="font-bold text-[#111111]">Not available yet</div>
             <p className="text-sm text-[#6E6E6E] mt-1">Free Service approvals are being tested and will open soon.</p>
           </div>
         ) : (
@@ -123,7 +120,8 @@ export default function FreeServiceListPage() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search work order, VIN or branch..."
+                  aria-label="Search work order, VIN or branch"
+                placeholder="Search work order, VIN or branch..."
                   className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full sm:w-72"
                 />
               </div>

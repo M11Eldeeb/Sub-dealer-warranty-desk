@@ -135,7 +135,7 @@ export default function DownloadAllButton() {
       onClick={handleDownload}
       disabled={working}
       title="Download every claim you can see, with all evidence, as one zip file"
-      className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wide text-[#111111] bg-white border border-[#E0E0E0] hover:border-[#111111] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+      className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs text-[#111111] bg-white border border-[#E0E0E0] hover:border-[#111111] transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
     >
       {working ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
       {working ? progress || "Preparing…" : "Download All"}
