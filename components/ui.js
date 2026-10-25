@@ -111,7 +111,7 @@ export function getPartsSummary(parts) {
 export function defectedSummary(claim) {
   const rejected = claim.status === "rejected";
   // a rejected claim only owes the parts that were supplied to the branch
-  const parts = (claim.claim_parts || []).filter((p) => !rejected || p.status === "Supplied to Sub-Dealer" || p.defected_arrived_at);
+  const parts = (claim.claim_parts || []).filter((p) => !rejected || (claim.parts_received_at && p.status === "Supplied to Sub-Dealer") || p.defected_arrived_at);
   const total = parts.length;
   if (!total) return claim.defected_part_arrived ? { all: true, arrived: 0, total: 0, returnable: true } : null;
   const arrived = claim.defected_part_arrived ? total : parts.filter((p) => p.defected_arrived_at).length;
