@@ -84,7 +84,7 @@ export default function DealerDashboard() {
     if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
-  const filtered = applyClaimsFilterSort(tabFiltered, toolbar);
+  const filtered = applyClaimsFilterSort(tabFiltered, filter === "history" ? toolbar : { ...toolbar, partStatus: [] });
 
   if (loading) return <LoadingShell />;
 
@@ -120,6 +120,7 @@ export default function DealerDashboard() {
               statusOptions={STATUS_OPTIONS}
               branches={branchList}
               sortOptions={SORT_OPTIONS}
+              showPartStatus={filter === "history"}
             />
             <FreeServiceButton role={profile?.role} userId={profile?.id} />
           </div>

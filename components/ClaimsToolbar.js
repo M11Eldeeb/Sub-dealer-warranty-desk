@@ -1,10 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { STATUS } from "@/components/ui";
+import { STATUS, defectedSummary } from "@/components/ui";
 import { SlidersHorizontal, ArrowUpDown, X, Check } from "lucide-react";
 
 export const DEFAULT_FILTER_STATE = {
   statuses: [],
+  partStatus: [], // defective parts: "in_sub" (still at the sub-dealer) / "arrived" (back at the dealer)
   branchIds: [],
   createdFrom: "",
   createdTo: "",
@@ -18,6 +19,11 @@ export function applyClaimsFilterSort(claims, state) {
   let result = claims.filter((c) => {
     if (state.statuses.length && !state.statuses.includes(c.status)) return false;
     if (state.branchIds.length && !state.branchIds.includes(c.branch_id)) return false;
+    if (state.partStatus?.length) {
+      const d = defectedSummary(c);
+      if (!d) return false;
+      if (!state.partStatus.includes(d.all ? "arrived" : "in_sub")) return false;
+    }
     if (state.createdFrom && new Date(c.created_at) < new Date(state.createdFrom)) return false;
     if (state.createdTo && new Date(c.created_at) > new Date(state.createdTo + "T23:59:59")) return false;
     if (state.receptionFrom && c.reception_date && c.reception_date < state.receptionFrom) return false;
@@ -91,6 +97,7 @@ export default function ClaimsToolbar({
   branches, // array of {id, name} to offer, or null to hide the branch filter entirely
   sortOptions, // array of { value, label }
   showReceptionDate = true,
+  showPartStatus = false, // History only: where the defective parts are
 }) {
   const [filterRef, filterOpen, setFilterOpen] = usePopover();
   const [sortRef, sortOpen, setSortOpen] = usePopover();
@@ -104,6 +111,7 @@ export default function ClaimsToolbar({
 
   const activeFilterCount =
     state.statuses.length +
+    (showPartStatus ? state.partStatus.length : 0) +
     state.branchIds.length +
     (state.createdFrom ? 1 : 0) +
     (state.createdTo ? 1 : 0) +
@@ -111,7 +119,7 @@ export default function ClaimsToolbar({
     (state.receptionTo ? 1 : 0);
 
   const clearFilters = () =>
-    set({ statuses: [], branchIds: [], createdFrom: "", createdTo: "", receptionFrom: "", receptionTo: "" });
+    set({ statuses: [], partStatus: [], branchIds: [], createdFrom: "", createdTo: "", receptionFrom: "", receptionTo: "" });
 
   const currentSortLabel = sortOptions.find((o) => o.value === state.sortField)?.label || "Sort";
 
@@ -169,6 +177,20 @@ export default function ClaimsToolbar({
                           <span className="w-2 h-2 rounded-full" style={{ background: STATUS[s]?.color }} />
                           {STATUS[s]?.label || s}
                         </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {showPartStatus && (
+                <div>
+                  <div className="text-[0.6875rem] font-bold text-[#6E6E6E] mb-2">Part status</div>
+                  <div className="space-y-1.5">
+                    {[["in_sub", "In Subdealer"], ["arrived", "Arrived to Dealer"]].map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={state.partStatus.includes(key)} onChange={() => toggleInArray("partStatus", key)} className="accent-[#E4002B]" />
+                        {label}
                       </label>
                     ))}
                   </div>
