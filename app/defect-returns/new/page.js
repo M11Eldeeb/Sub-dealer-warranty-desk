@@ -7,8 +7,11 @@ import { LoadingShell, Header } from "@/components/ui";
 import { ResponsiveRows } from "@/components/defect-returns";
 import { ChevronLeft, Search, Loader2, Send, PackageCheck, CheckCircle2 } from "lucide-react";
 
-// Only closed claims: the defective parts are sent back once the claim is finished.
-const ELIGIBLE = ["closed"];
+// Closed claims, and rejected claims whose parts had already been supplied: the defective parts are sent back once the claim is finished.
+const ELIGIBLE = ["closed", "rejected"];
+const SUPPLIED = "Supplied to Sub-Dealer";
+// A rejected claim only owes the parts that really reached the branch.
+const owed = (claim) => (claim.status === "rejected" ? claim.claim_parts.filter((p) => p.status === SUPPLIED || p.defected_arrived_at) : claim.claim_parts);
 
 export default function NewDefectReturnPage() {
   usePageTitle("New defected parts return");
@@ -39,7 +42,7 @@ export default function NewDefectReturnPage() {
       const [{ data: c }, { data: open }] = await Promise.all([
         supabase
           .from("claims")
-          .select("id, claim_number, vin, work_order_number, dealer_work_order_number, status, created_at, claim_parts(id, name, part_number, qty, defected_arrived_at)")
+          .select("id, claim_number, vin, work_order_number, dealer_work_order_number, status, created_at, claim_parts(id, name, part_number, qty, status, defected_arrived_at)")
           .eq("kind", "claim")
           .in("status", ELIGIBLE)
           .order("created_at", { ascending: false }),
@@ -47,6 +50,7 @@ export default function NewDefectReturnPage() {
       ]);
       const reserved = new Set((open || []).filter((i) => i.defect_returns?.status === "submitted").map((i) => i.part_id));
       const list = (c || [])
+        .map((claim) => ({ ...claim, claim_parts: owed(claim) }))
         .map((claim) => ({
           ...claim,
           total: claim.claim_parts.length,
@@ -161,7 +165,7 @@ export default function NewDefectReturnPage() {
             {availableCount === 0 && claims.length === 0 ? (
               <div className="bg-white border border-[#E0E0E0] rounded-lg p-8 text-center text-[#6E6E6E]">
                 <PackageCheck className="mx-auto mb-2" size={26} />
-                No claim has defective parts waiting to be returned. A claim shows up here once it is closed.
+                No claim has defective parts waiting to be returned. A claim shows up here once it is closed, or rejected after its parts were supplied.
               </div>
             ) : (
               <>

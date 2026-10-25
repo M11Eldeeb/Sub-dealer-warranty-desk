@@ -173,7 +173,7 @@ export default function SubDealerDashboard() {
                     {(() => {
                       const d = defectedSummary(c);
                       if (!d) return null;
-                      if (d.arrived === 0 && c.status === "closed")
+                      if (d.arrived === 0 && d.returnable)
                         return (
                           <span className="flex items-center gap-1 text-[#9A5C00] font-bold">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#9A5C00]" /> Defected Parts: Parts still in sub dealer

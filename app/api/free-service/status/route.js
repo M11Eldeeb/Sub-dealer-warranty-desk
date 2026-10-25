@@ -50,12 +50,12 @@ async function menuActions(admin, role, branchId, canUse) {
     const [claims, free, closed, reserved] = await Promise.all([
       count(admin.from("claims").select("id", head).eq("kind", "claim").eq("branch_id", branchId).in("status", ["returned", "parts_arrived", "repair_returned", "parts_return"])),
       canUse ? count(admin.from("claims").select("id", head).eq("kind", "free_service").eq("branch_id", branchId).in("status", ["returned", "invoice_returned", "approved"])) : Promise.resolve(0),
-      admin.from("claims").select("id, claim_parts(id, defected_arrived_at)").eq("kind", "claim").eq("branch_id", branchId).eq("status", "closed"),
+      admin.from("claims").select("id, status, claim_parts(id, status, defected_arrived_at)").eq("kind", "claim").eq("branch_id", branchId).in("status", ["closed", "rejected"]),
       admin.from("defect_return_items").select("part_id, defect_returns(status)").eq("decision", "pending"),
     ]);
     const held = new Set((reserved.data || []).filter((i) => i.defect_returns?.status === "submitted").map((i) => i.part_id));
     // closed claims that still have a defective part here which is not on its way to the dealer
-    const defects = (closed.data || []).filter((c) => (c.claim_parts || []).some((p) => !p.defected_arrived_at && !held.has(p.id))).length;
+    const defects = (closed.data || []).filter((c) => (c.claim_parts || []).some((p) => (c.status === "closed" || p.status === "Supplied to Sub-Dealer") && !p.defected_arrived_at && !held.has(p.id))).length;
     return { claims, free, defects };
   }
 

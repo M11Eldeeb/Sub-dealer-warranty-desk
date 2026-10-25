@@ -1052,7 +1052,7 @@ export default function ClaimDetailPage() {
                 <div className="text-xs font-bold text-[#6E6E6E]">Parts</div>
                 {(() => {
                   const d = defectedSummary({ ...claim, claim_parts: parts });
-                  if (d && d.arrived === 0 && claim.status === "closed") return <span className="text-xs font-bold text-[#9A5C00]">Defected Parts: Parts still in sub dealer</span>;
+                  if (d && d.arrived === 0 && d.returnable) return <span className="text-xs font-bold text-[#9A5C00]">Defected Parts: Parts still in sub dealer</span>;
                   return d && d.arrived > 0 ? (
                     <span className="text-xs font-bold text-[#5B4FB0]">{d.all ? "Defected parts: all arrived to dealer" : `Defected parts: ${d.arrived}/${d.total} arrived to dealer`}</span>
                   ) : null;

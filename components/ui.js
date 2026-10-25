@@ -109,11 +109,14 @@ export function getPartsSummary(parts) {
 
 /** How many of a claim's defective parts have arrived back at the dealer. null = nothing to show. */
 export function defectedSummary(claim) {
-  const parts = claim.claim_parts || [];
+  const rejected = claim.status === "rejected";
+  // a rejected claim only owes the parts that were supplied to the branch
+  const parts = (claim.claim_parts || []).filter((p) => !rejected || p.status === "Supplied to Sub-Dealer" || p.defected_arrived_at);
   const total = parts.length;
-  if (!total) return claim.defected_part_arrived ? { all: true, arrived: 0, total: 0 } : null;
+  if (!total) return claim.defected_part_arrived ? { all: true, arrived: 0, total: 0, returnable: true } : null;
   const arrived = claim.defected_part_arrived ? total : parts.filter((p) => p.defected_arrived_at).length;
-  return { all: arrived === total, arrived, total };
+  // returnable: the claim is finished, so these parts can be sent back to the dealer
+  return { all: arrived === total, arrived, total, returnable: claim.status === "closed" || rejected };
 }
 
 export function StatusTag({ status, parts, returnRequests }) {
