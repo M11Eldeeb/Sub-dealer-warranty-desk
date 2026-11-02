@@ -3,6 +3,7 @@ import { Children, cloneElement, isValidElement, useEffect, useRef, useState } f
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ExportDataButton from "@/components/ExportDataButton";
+import LiveSheetButton from "@/components/LiveSheetButton";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
@@ -297,6 +298,7 @@ function HeaderMenu({ profile, onSignOut }) {
             {viewer && (
               <>
                 <ExportDataButton variant="menu" className={item} />
+                <LiveSheetButton className={item} canRefresh={false} />
                 <div className="border-t border-[#EEEEEE]" />
               </>
             )}
@@ -309,6 +311,7 @@ function HeaderMenu({ profile, onSignOut }) {
                   <Settings size={16} className="text-[#6E6E6E]" /> Settings
                 </Link>
                 <ExportDataButton variant="menu" className={item} />
+                <LiveSheetButton className={item} canRefresh={true} />
                 <div className="border-t border-[#EEEEEE]" />
               </>
             )}
