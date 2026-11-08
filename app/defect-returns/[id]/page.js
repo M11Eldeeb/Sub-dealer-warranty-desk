@@ -6,7 +6,7 @@ import { usePageTitle } from "@/lib/use-page-title";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, fmt } from "@/components/ui";
 import { DrStatusTag, DecisionChip, ResponsiveRows } from "@/components/defect-returns";
-import { ChevronLeft, Check, XCircle, RotateCcw, Loader2, Ban, CheckCheck, AlertCircle, Lock } from "lucide-react";
+import { ChevronLeft, Check, XCircle, RotateCcw, Loader2, Ban, CheckCheck, AlertCircle, Lock, Search, MessageSquare, Send } from "lucide-react";
 
 export default function DefectReturnDetailPage() {
   const router = useRouter();
@@ -20,6 +20,10 @@ export default function DefectReturnDetailPage() {
   const [busy, setBusy] = useState(null);
   const [message, setMessage] = useState(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [query, setQuery] = useState("");
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentBusy, setCommentBusy] = useState(false);
   usePageTitle(ret ? ret.return_number : "Defected parts return");
 
   const load = async () => {
@@ -36,7 +40,13 @@ export default function DefectReturnDetailPage() {
     }
     data.defect_return_items.sort((a, b) => (a.claims?.claim_number || "").localeCompare(b.claims?.claim_number || "") || (a.claim_parts?.name || "").localeCompare(b.claim_parts?.name || ""));
     setRet(data);
+    await loadComments();
     return data;
+  };
+
+  const loadComments = async () => {
+    const { data } = await supabase.from("defect_return_comments").select("id, author_name, author_role, body, created_at").eq("return_id", params.id).order("created_at", { ascending: true });
+    setComments(data || []);
   };
 
   useEffect(() => {
@@ -84,6 +94,27 @@ export default function DefectReturnDetailPage() {
   const claimCount = new Set(items.map((i) => i.claim_id)).size;
   const canReview = isOfficer && ret.status !== "cancelled";
   const canCancel = isSub && ret.status === "submitted" && pending === items.length;
+
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? items.filter((i) =>
+        [i.claims?.claim_number, i.claims?.work_order_number, i.claims?.dealer_work_order_number, i.claims?.vin, i.claim_parts?.name, i.claim_parts?.part_number].some((v) => (v || "").toLowerCase().includes(q))
+      )
+    : items;
+  const canComment = ["sub_dealer", "dealer", "admin"].includes(profile.role);
+
+  const sendComment = async () => {
+    const body = commentText.trim();
+    if (!body || commentBusy) return;
+    setCommentBusy(true);
+    const { error } = await supabase.rpc("add_defect_return_comment", { p_return: ret.id, p_body: body });
+    if (error) setMessage({ ok: false, text: error.message });
+    else {
+      setCommentText("");
+      await loadComments();
+    }
+    setCommentBusy(false);
+  };
 
   const decide = async (item, decision) => {
     if (busy) return;
@@ -226,9 +257,73 @@ export default function DefectReturnDetailPage() {
           )}
         </section>
 
-        <ResponsiveRows columns={columns} rows={items} rowKey={(i) => i.id} />
+        <div className="relative w-full sm:w-80">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E6E6E]" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search the parts in this request"
+            placeholder="Search claim, work order, VIN or part..."
+            className="pl-8 pr-3 py-3 sm:py-2 rounded-lg border border-[#E0E0E0] text-sm bg-white outline-none focus:border-[#E4002B] w-full"
+          />
+        </div>
+        {q && (
+          <p className="text-xs text-[#6E6E6E]" role="status">
+            Showing {shown.length} of {items.length} parts
+          </p>
+        )}
+
+        {shown.length === 0 ? (
+          <div className="bg-white border border-[#E0E0E0] rounded-lg p-8 text-center text-sm text-[#6E6E6E]">No part in this request matches your search.</div>
+        ) : (
+          <ResponsiveRows columns={columns} rows={shown} rowKey={(i) => i.id} />
+        )}
 
         {isOfficer && ret.status === "submitted" && <p className="text-xs text-[#6E6E6E]">Mark each part as it is checked. The claim records it as arrived to the dealer, and the sub-dealer is told once every part has been checked.</p>}
+
+        <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5" aria-label="Comments">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-[#111111] mb-3">
+            <MessageSquare size={15} className="text-[#6E6E6E]" /> Comments{comments.length > 0 && <span className="text-xs font-semibold text-[#6E6E6E]">({comments.length})</span>}
+          </h2>
+          {comments.length === 0 ? (
+            <p className="text-sm text-[#6E6E6E]">No comments yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {comments.map((c) => {
+                const fromSub = c.author_role === "sub_dealer";
+                return (
+                  <li key={c.id} className="text-sm">
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                      <span className="font-bold text-[#111111]">{c.author_name}</span>
+                      <span className="pill px-2 py-0.5 rounded text-[0.6875rem] font-bold" style={{ "--pill-fg": fromSub ? "#0E7490" : "#5B4FB0", "--pill-bg": fromSub ? "#E0F2FE" : "#EAE7FA" }}>
+                        {fromSub ? "Sub-dealer" : "Dealer"}
+                      </span>
+                      <span className="text-[#6E6E6E]">{new Date(c.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                    <p className="mt-1 text-[#262626] whitespace-pre-wrap break-words">{c.body}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {canComment && (
+            <div className="mt-4 border-t border-[#EEEEEE] pt-4">
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={2}
+                maxLength={2000}
+                aria-label="Write a comment"
+                placeholder={isSub ? "Write to the dealer about this shipment..." : "Write to the sub-dealer about this shipment..."}
+                className="input resize-none"
+                disabled={commentBusy}
+              />
+              <button onClick={sendComment} disabled={!commentText.trim() || commentBusy} className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-md bg-[#E4002B] hover:bg-[#B8001F] text-white text-xs font-bold disabled:bg-[#D0D0D0] disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                {commentBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Post comment
+              </button>
+            </div>
+          )}
+        </section>
 
         {canCancel && (
           <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
