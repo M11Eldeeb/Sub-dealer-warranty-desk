@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned, defectedSummary } from "@/components/ui";
 import FreeServiceButton from "@/components/FreeServiceButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
-import { Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "submitted", "returned", "rejected", "approved", "awaiting_parts",
@@ -47,7 +47,7 @@ export default function DealerDashboard() {
 
     const { data: claimsData } = await supabase
       .from("claims")
-      .select("*, branches(name), claim_attachments(count), claim_parts(name, status, created_at, defected_arrived_at), claim_labor(name:labor_name, created_at)")
+      .select("*, branches(name), claim_parts(name, status, created_at, defected_arrived_at), claim_labor(name:labor_name, created_at)")
       .eq("kind", "claim")
       .order("created_at", { ascending: false });
 
@@ -81,7 +81,7 @@ export default function DealerDashboard() {
     if (filter === "needs_review" && !["submitted", "waiting_pa", "repair_submitted"].includes(c.status)) return false;
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
-    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.vehicle_model} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
   const filtered = applyClaimsFilterSort(tabFiltered, filter === "history" ? toolbar : { ...toolbar, partStatus: [] });
@@ -141,10 +141,18 @@ export default function DealerDashboard() {
                   />
                   <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                     <div className="min-w-0 break-words">
-                      <div className="font-mono text-xs text-[#6E6E6E]">{c.claim_number} · {c.branches?.name}</div>
+                      <div className="font-mono text-xs text-[#6E6E6E]">
+                        {c.branches?.name}
+                        {c.labor_amount != null && (
+                          <span className="font-bold text-[#1E7A6B]" title="Labor approved, VAT inclusive">
+                            {" · "}Allowed amount: SAR {Number(c.labor_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </div>
                       <div className="font-bold text-[#111111] mt-0.5 group-hover:text-[#E4002B] transition-colors">WO# {combinedWorkOrder(c)}</div>
                       <div className="text-sm text-[#4D4D4D] mt-0.5 font-mono">
-                        {c.vin} · {c.plate}
+                        {c.vin}
+                        {c.vehicle_model && ` · ${c.vehicle_model}`}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -158,10 +166,6 @@ export default function DealerDashboard() {
                   </div>
                   <div className="text-sm text-[#262626] mt-3 line-clamp-2">{cardSubtitle(c.claim_parts, c.claim_labor)}</div>
                   <div className="flex items-center gap-x-4 gap-y-1 mt-3 text-xs text-[#6E6E6E] flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Paperclip size={12} />
-                      {c.claim_attachments?.[0]?.count ?? 0}
-                    </span>
                     {c.claim_parts?.length > 0 && (
                       <span className="flex items-center gap-1">
                         <Package size={12} />

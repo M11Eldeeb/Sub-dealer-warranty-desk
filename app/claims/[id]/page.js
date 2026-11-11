@@ -8,6 +8,7 @@ import { uploadEvidence, removeAttachment, attachmentUrl, syncClaimFolder } from
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import DialogFocus from "@/components/DialogFocus";
 import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
+import { VEHICLE_MODELS } from "@/lib/vehicle-models";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
   FileText, History, Paperclip, Plus, CheckCircle2, Loader2, Stethoscope, Pencil,
@@ -138,6 +139,7 @@ export default function ClaimDetailPage() {
         vin: claim.vin,
         mileage: claim.mileage,
         plate: claim.plate,
+        vehicle_model: claim.vehicle_model || "",
         work_order_number: claim.work_order_number,
         reception_date: claim.reception_date,
         customer_complaint: claim.customer_complaint,
@@ -197,6 +199,7 @@ export default function ClaimDetailPage() {
       vin: claim.vin,
       mileage: claim.mileage,
       plate: claim.plate,
+      vehicle_model: claim.vehicle_model || "",
       work_order_number: claim.work_order_number,
       reception_date: claim.reception_date,
       customer_complaint: claim.customer_complaint,
@@ -435,6 +438,7 @@ export default function ClaimDetailPage() {
     vin: "VIN",
     mileage: "Mileage",
     plate: "Plate Number",
+    vehicle_model: "Vehicle Model",
     work_order_number: "Work Order Number",
     reception_date: "Reception Date",
     customer_complaint: "Customer Complaint",
@@ -442,7 +446,7 @@ export default function ClaimDetailPage() {
     correction: "Correction",
     comment: "Comment",
   };
-  const SHORT_FIELDS = ["vin", "mileage", "plate", "work_order_number", "reception_date"];
+  const SHORT_FIELDS = ["vin", "mileage", "plate", "vehicle_model", "work_order_number", "reception_date"];
 
   const saveEditedFields = async (mode) => {
     // mode: "resubmit" (sub-dealer, from returned) | "dealerEdit" (dealer/tech, no status change)
@@ -962,6 +966,7 @@ export default function ClaimDetailPage() {
             <Info label="VIN" value={claim.vin} mono />
             <Info label="Mileage" value={`${claim.mileage?.toLocaleString()} km`} />
             <Info label="Plate" value={claim.plate} />
+            {claim.vehicle_model && <Info label="Vehicle Model" value={claim.vehicle_model} />}
             <Info label="Reception Date" value={claim.reception_date} />
             <Info label="Branch" value={claim.branches?.name} />
             {claim.dealer_work_order_number && <Info label="Dealer WO#" value={claim.dealer_work_order_number} mono />}
@@ -1651,6 +1656,16 @@ export default function ClaimDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Plate Number">
                     <input className="input" value={editData.plate} onChange={(e) => setEditData({ ...editData, plate: e.target.value })} />
+                  </Field>
+                  <Field label="Vehicle Model">
+                    <select className="input" value={editData.vehicle_model || ""} onChange={(e) => setEditData({ ...editData, vehicle_model: e.target.value })}>
+                      <option value="">Select the vehicle model</option>
+                      {(editData.vehicle_model && !VEHICLE_MODELS.includes(editData.vehicle_model) ? [editData.vehicle_model, ...VEHICLE_MODELS] : VEHICLE_MODELS).map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
                   </Field>
                   <Field label="Work Order Number">
                     <input

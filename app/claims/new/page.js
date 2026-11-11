@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadEvidence } from "@/lib/evidence-upload";
 import { Header } from "@/components/ui";
 import DialogFocus from "@/components/DialogFocus";
+import { VEHICLE_MODELS } from "@/lib/vehicle-models";
 import { ChevronLeft, ChevronRight, Paperclip, X, Plus } from "lucide-react";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -19,6 +20,7 @@ export default function NewClaimPage() {
   const [vin, setVin] = useState("");
   const [mileage, setMileage] = useState("");
   const [plate, setPlate] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
   const [workOrderNumber, setWorkOrderNumber] = useState("");
   const [branchAbbreviation, setBranchAbbreviation] = useState(null);
   const [receptionDate, setReceptionDate] = useState(today());
@@ -53,6 +55,7 @@ export default function NewClaimPage() {
     vin &&
     mileage &&
     plate &&
+    vehicleModel &&
     workOrderNumber &&
     receptionDate &&
     customerComplaint &&
@@ -131,6 +134,7 @@ export default function NewClaimPage() {
         vin,
         mileage: parseInt(mileage, 10),
         plate,
+        vehicle_model: vehicleModel,
         work_order_number: finalWorkOrder,
         reception_date: receptionDate,
         customer_complaint: customerComplaint,
@@ -231,6 +235,16 @@ export default function NewClaimPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Plate Number">
               <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="ABC 1234" className="input" />
+            </Field>
+            <Field label="Vehicle Model">
+              <select value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} className="input">
+                <option value="">Select the vehicle model</option>
+                {VEHICLE_MODELS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Work Order Number (Sub-Dealer)">
               {branchAbbreviation ? (
