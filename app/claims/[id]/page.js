@@ -965,7 +965,7 @@ export default function ClaimDetailPage() {
             <Info label="Reception Date" value={claim.reception_date} />
             <Info label="Branch" value={claim.branches?.name} />
             {claim.dealer_work_order_number && <Info label="Dealer WO#" value={claim.dealer_work_order_number} mono />}
-            {["dealer", "admin", "manager"].includes(role) && (claim.labor_amount != null || claim.dealer_work_order_number) && (
+            {(role === "sub_dealer" ? claim.labor_amount != null : ["dealer", "admin", "manager"].includes(role) && (claim.labor_amount != null || claim.dealer_work_order_number)) && (
               <div>
                 <div className="text-[0.6875rem] font-bold text-[#6E6E6E]">Labor approved (VAT incl.)</div>
                 {editingAmount ? (

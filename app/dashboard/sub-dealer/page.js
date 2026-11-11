@@ -164,6 +164,11 @@ export default function SubDealerDashboard() {
                       <Paperclip size={12} />
                       {c.claim_attachments?.[0]?.count ?? 0}
                     </span>
+                    {c.labor_amount != null && (
+                      <span className="flex items-center gap-1 text-[#1E7A6B] font-bold" title="Labor approved by the dealer, VAT inclusive">
+                        Labor approved: SAR {Number(c.labor_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )}
                     {c.claim_parts?.length > 0 && (
                       <span className="flex items-center gap-1">
                         <Package size={12} />
