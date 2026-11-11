@@ -313,13 +313,14 @@ export default function ClaimDetailPage() {
   };
 
   const handleApproveAsPA = async () => {
-    if (!dealerWorkOrder.trim() || approvedLabor === null || actionLoading) return;
+    // No labor amount here: it is asked when the claim is fully approved (the Approve button, after PA confirms).
+    if (!dealerWorkOrder.trim() || actionLoading) return;
     setActionLoading("approveAsPA");
     const fullDealerWO = dealerWOPrefix.trim() ? `${dealerWOPrefix.trim()}-${dealerWorkOrder.trim()}` : dealerWorkOrder.trim();
     try {
-      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO, labor_amount: approvedLabor }).eq("id", claim.id);
+      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO }).eq("id", claim.id);
       await setStatus("waiting_pa");
-      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${fullDealerWO}. Labor approved ${sar(approvedLabor)} (VAT inclusive) — waiting on PA confirmation.`);
+      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${fullDealerWO} — waiting on PA confirmation.`);
       await syncClaimFolder(claim.id);
       await load();
     } finally {
@@ -1310,7 +1311,10 @@ export default function ClaimDetailPage() {
                     className="input flex-1"
                   />
                 </div>
-                <label className="block text-xs font-bold text-[#6E6E6E] mt-3 mb-1.5">Labor approved (SAR, VAT inclusive)</label>
+                <label className="block text-xs font-bold text-[#6E6E6E] mt-3 mb-1.5">
+                  Labor approved (SAR, VAT inclusive)
+                  <span className="font-normal"> — needed for Approve; not needed for Approve as PA</span>
+                </label>
                 <div className="flex">
                   <span className="flex items-center px-3 rounded-l border border-r-0 border-[#E0E0E0] bg-[#F1F2F4] text-sm font-mono font-bold text-[#4D4D4D]">SAR</span>
                   <input
@@ -1320,7 +1324,7 @@ export default function ClaimDetailPage() {
                     inputMode="decimal"
                     value={laborAmount}
                     onChange={(e) => setLaborAmount(e.target.value)}
-                    placeholder="Required to approve, e.g. 345.00"
+                    placeholder="Required for Approve, e.g. 345.00"
                     className="input rounded-l-none flex-1"
                   />
                 </div>
@@ -1340,7 +1344,7 @@ export default function ClaimDetailPage() {
                     icon={Clock}
                     label="Approve as PA"
                     onClick={handleApproveAsPA}
-                    disabled={!dealerWorkOrder.trim() || approvedLabor === null || actionLoading !== null}
+                    disabled={!dealerWorkOrder.trim() || actionLoading !== null}
                     loading={actionLoading === "approveAsPA"}
                   />
                 )}
