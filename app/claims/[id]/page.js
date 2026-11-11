@@ -41,6 +41,10 @@ export default function ClaimDetailPage() {
   const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [dealerWorkOrder, setDealerWorkOrder] = useState("");
   const [dealerWOPrefix, setDealerWOPrefix] = useState("HER");
+  const [laborAmount, setLaborAmount] = useState("");
+  const [editingAmount, setEditingAmount] = useState(false);
+  const [amountDraft, setAmountDraft] = useState("");
+  const [amountSaving, setAmountSaving] = useState(false);
   const [partsError, setPartsError] = useState("");
   const [newFiles, setNewFiles] = useState([]);
   const [afterRepairFiles, setAfterRepairFiles] = useState([]);
@@ -120,6 +124,7 @@ export default function ClaimDetailPage() {
         setDealerWorkOrder(claim.dealer_work_order_number);
       }
     }
+    if (claim.labor_amount != null && !laborAmount) setLaborAmount(String(claim.labor_amount));
   }, [claim]);
 
   useEffect(() => {
@@ -248,15 +253,42 @@ export default function ClaimDetailPage() {
     return error;
   };
 
+  // Labor approved by the dealer: Saudi riyals, VAT included. Empty or negative = not valid; 0 is allowed.
+  const parseAmount = (text) => {
+    const n = Number(text);
+    return String(text).trim() !== "" && Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+  };
+  const sar = (n) => `SAR ${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const approvedLabor = parseAmount(laborAmount);
+
+  const saveLaborAmount = async () => {
+    const value = parseAmount(amountDraft);
+    if (value === null || amountSaving) return;
+    setAmountSaving(true);
+    try {
+      const { error } = await supabase.from("claims").update({ labor_amount: value }).eq("id", claim.id);
+      if (error) {
+        console.error("Failed to update labor amount:", error.message);
+        return;
+      }
+      await addLog(claim.status, claim.status, `Approved labor amount changed to ${sar(value)} (VAT inclusive)${claim.labor_amount != null ? `, was ${sar(claim.labor_amount)}` : ""}.`);
+      setLaborAmount(String(value));
+      setEditingAmount(false);
+      await load();
+    } finally {
+      setAmountSaving(false);
+    }
+  };
+
   const handleApprove = async () => {
-    if (!dealerWorkOrder.trim() || actionLoading) return;
+    if (!dealerWorkOrder.trim() || approvedLabor === null || actionLoading) return;
     setActionLoading("approve");
     setPartsEmailNote("");
     const fullDealerWO = dealerWOPrefix.trim() ? `${dealerWOPrefix.trim()}-${dealerWorkOrder.trim()}` : dealerWorkOrder.trim();
     try {
-      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO }).eq("id", claim.id);
+      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO, labor_amount: approvedLabor }).eq("id", claim.id);
       await setStatus("awaiting_parts");
-      await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${fullDealerWO}`);
+      await addLog(claim.status, "approved", `Approved. Dealer Work Order # ${fullDealerWO}. Labor approved ${sar(approvedLabor)} (VAT inclusive).`);
       await addLog("approved", "awaiting_parts", "Tracking parts shipment.");
       setDealerWorkOrder("");
       await syncClaimFolder(claim.id);
@@ -281,13 +313,13 @@ export default function ClaimDetailPage() {
   };
 
   const handleApproveAsPA = async () => {
-    if (!dealerWorkOrder.trim() || actionLoading) return;
+    if (!dealerWorkOrder.trim() || approvedLabor === null || actionLoading) return;
     setActionLoading("approveAsPA");
     const fullDealerWO = dealerWOPrefix.trim() ? `${dealerWOPrefix.trim()}-${dealerWorkOrder.trim()}` : dealerWorkOrder.trim();
     try {
-      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO }).eq("id", claim.id);
+      await supabase.from("claims").update({ dealer_work_order_number: fullDealerWO, labor_amount: approvedLabor }).eq("id", claim.id);
       await setStatus("waiting_pa");
-      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${fullDealerWO} — waiting on PA confirmation.`);
+      await addLog(claim.status, "waiting_pa", `Approved as PA. Dealer Work Order # ${fullDealerWO}. Labor approved ${sar(approvedLabor)} (VAT inclusive) — waiting on PA confirmation.`);
       await syncClaimFolder(claim.id);
       await load();
     } finally {
@@ -932,6 +964,53 @@ export default function ClaimDetailPage() {
             <Info label="Reception Date" value={claim.reception_date} />
             <Info label="Branch" value={claim.branches?.name} />
             {claim.dealer_work_order_number && <Info label="Dealer WO#" value={claim.dealer_work_order_number} mono />}
+            {["dealer", "admin", "manager"].includes(role) && (claim.labor_amount != null || claim.dealer_work_order_number) && (
+              <div>
+                <div className="text-[0.6875rem] font-bold text-[#6E6E6E]">Labor approved (VAT incl.)</div>
+                {editingAmount ? (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      autoFocus
+                      value={amountDraft}
+                      onChange={(e) => setAmountDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveLaborAmount();
+                        if (e.key === "Escape") setEditingAmount(false);
+                      }}
+                      className="input w-32 py-1 text-sm"
+                      aria-label="Labor approved in SAR, VAT inclusive"
+                    />
+                    <button onClick={saveLaborAmount} disabled={parseAmount(amountDraft) === null || amountSaving} className="text-[#2E7D46] disabled:opacity-40" title="Save" aria-label="Save labor amount">
+                      <Check size={16} />
+                    </button>
+                    <button onClick={() => setEditingAmount(false)} className="text-[#6E6E6E]" title="Cancel" aria-label="Cancel">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-[#111111] flex items-center gap-2">
+                    <span className="font-mono text-xs mt-0.5">{claim.labor_amount != null ? sar(claim.labor_amount) : "Not recorded"}</span>
+                    {["dealer", "admin"].includes(role) && (
+                      <button
+                        onClick={() => {
+                          setAmountDraft(claim.labor_amount != null ? String(claim.labor_amount) : "");
+                          setEditingAmount(true);
+                        }}
+                        className="text-[#6E6E6E] hover:text-[#111111]"
+                        title="Edit the approved labor amount"
+                        aria-label="Edit the approved labor amount"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-4 space-y-3">
@@ -1231,6 +1310,20 @@ export default function ClaimDetailPage() {
                     className="input flex-1"
                   />
                 </div>
+                <label className="block text-xs font-bold text-[#6E6E6E] mt-3 mb-1.5">Labor approved (SAR, VAT inclusive)</label>
+                <div className="flex">
+                  <span className="flex items-center px-3 rounded-l border border-r-0 border-[#E0E0E0] bg-[#F1F2F4] text-sm font-mono font-bold text-[#4D4D4D]">SAR</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={laborAmount}
+                    onChange={(e) => setLaborAmount(e.target.value)}
+                    placeholder="Required to approve, e.g. 345.00"
+                    className="input rounded-l-none flex-1"
+                  />
+                </div>
               </div>
               <div className="flex flex-wrap gap-3">
                 <ActionBtn
@@ -1238,7 +1331,7 @@ export default function ClaimDetailPage() {
                   icon={Check}
                   label="Approve"
                   onClick={handleApprove}
-                  disabled={!dealerWorkOrder.trim() || actionLoading !== null}
+                  disabled={!dealerWorkOrder.trim() || approvedLabor === null || actionLoading !== null}
                   loading={actionLoading === "approve"}
                 />
                 {claim.status === "submitted" && (
@@ -1247,7 +1340,7 @@ export default function ClaimDetailPage() {
                     icon={Clock}
                     label="Approve as PA"
                     onClick={handleApproveAsPA}
-                    disabled={!dealerWorkOrder.trim() || actionLoading !== null}
+                    disabled={!dealerWorkOrder.trim() || approvedLabor === null || actionLoading !== null}
                     loading={actionLoading === "approveAsPA"}
                   />
                 )}
