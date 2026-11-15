@@ -84,11 +84,18 @@ begin
       if array_length(v_ids, 1) = 1 then
         v_claim_id := v_ids[1];
       else
-        -- several claims share the work order: pick the one holding the same parts
+        -- several claims share the work order: pick the one holding the same parts (lookups limited to those claims,
+        -- so the API's 8 second statement timeout is never hit)
         select array_agg(distinct hit) into v_hits from (
-          select l.claim_id as hit from claim_part_lines(v_ids) l where upper(btrim(l.part_no)) = any(v_parts)
+          select cp.claim_id as hit from self_audit_claim_parts cp
+            where cp.claim_id = any(v_ids) and upper(btrim(cp.part_no)) = any(v_parts)
           union
-          select c.id from self_audit_claims c where c.id = any(v_ids) and upper(btrim(c.raw_row->>'Main Part')) = any(v_parts)
+          select c.id from self_audit_claims c
+            where c.id = any(v_ids)
+              and (upper(btrim(c.raw_row->>'Main Part')) = any(v_parts)
+                   or exists (
+                     select 1 from unnest(string_to_array(regexp_replace(coalesce(c.raw_row->>'Part No', ''), '^#', ''), ';')) pn
+                     where upper(btrim(pn)) = any(v_parts)))
         ) h;
         if v_hits is not null and array_length(v_hits, 1) = 1 then
           v_claim_id := v_hits[1];
