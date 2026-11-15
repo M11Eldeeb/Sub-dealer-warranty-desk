@@ -53,7 +53,7 @@ export function scrapReason(r) {
     case "not_found":
       return "Not in the self-audit batch";
     case "ambiguous":
-      return "Another claim shares this work order. Check by hand";
+      return "Several self-audit claims share this work order and none has the same parts. Check by hand";
     default:
       return "";
   }

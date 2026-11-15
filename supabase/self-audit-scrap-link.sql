@@ -6,6 +6,10 @@
 --   Verification Date more than 90 days ago (91+ days), claim status Approved / Settled / To Be Settled,
 --   the claim has parts, and its parts are not reserved for / handed to the supplier.
 --
+-- Matching: a portal claim is matched to a batch claim by VIN and dealer work order. A suffix (-1, -2) only says the
+-- work order has more than one claim, not which claim is which, so it is ignored; when several batch claims share the
+-- work order and VIN, the one holding the same part numbers is the match.
+--
 -- NOTE: the self-audit API refuses anonymous calls (public.view_only_guard is not executable by anon), so the portal
 -- calls this function with the service role. The connection settings are in the portal's integration_secrets table.
 
@@ -19,8 +23,7 @@ insert into public.portal_link_secret (id, secret)
 values (1, replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''))
 on conflict (id) do nothing;
 
--- p_items: [{ "key": "...", "work_order_no": "HER-36167", "vin": "LSJ...", "twins": 1, "part_no": "optional" }, ...]
---   twins = how many portal claims share this exact work order + VIN (more than one makes the match ambiguous)
+-- p_items: [{ "key": "...", "work_order_no": "HER-36167", "vin": "LSJ...", "part_nos": ["10632434", ...] }, ...]
 -- returns: [{ "key", "status", "verification_date", "eligible_on", "days_held", "batch_claim_number", "batch_status" }, ...]
 -- status: can_scrap | already_scrapped | not_yet | not_verified | reserved | no_parts | not_found | ambiguous
 create or replace function public.sub_dealer_scrap_status(p_secret text, p_items jsonb)
@@ -38,9 +41,9 @@ declare
   v_base text;
   v_vin text;
   v_part text;
-  v_twins integer;
-  v_exact integer;
-  v_total integer;
+  v_parts text[];
+  v_ids uuid[];
+  v_hits uuid[];
   v_claim_id uuid;
   v_claim_number text;
   v_batch_status text;
@@ -60,55 +63,68 @@ begin
     v_wo := upper(trim(coalesce(v_item->>'work_order_no', '')));
     v_vin := upper(trim(coalesce(v_item->>'vin', '')));
     v_part := upper(trim(coalesce(v_item->>'part_no', '')));
-    v_twins := coalesce(nullif(v_item->>'twins', '')::integer, 1);
-    -- HER-36167-1 and HER-36167 are the same work order: a "-1" only marks one more claim on it
+    -- the part numbers of the portal claim: the data used to tell claims on the same work order apart
+    select coalesce(array_agg(distinct upper(btrim(x))) filter (where btrim(x) <> ''), '{}')
+      into v_parts
+    from jsonb_array_elements_text(case when jsonb_typeof(v_item->'part_nos') = 'array' then v_item->'part_nos' else '[]'::jsonb end) x;
+    -- HER-36167-1 and HER-36167 share one work order; the suffix only says there is more than one claim on it
     v_base := regexp_replace(v_wo, '^([A-Z]+-[0-9]+)-[0-9]+$', '\1');
 
     v_claim_id := null; v_claim_number := null; v_batch_status := null; v_verif := null; v_has_parts := null;
 
-    -- batch claims on this VIN (indexed) with the same base work order
-    select count(*) filter (where upper(c.work_order_no) = v_wo), count(*)
-      into v_exact, v_total
+    -- batch claims on this VIN (indexed) and work order, suffix ignored
+    select array_agg(c.id) into v_ids
     from self_audit_claims c
     where c.vin = v_vin
       and regexp_replace(upper(c.work_order_no), '^([A-Z]+-[0-9]+)-[0-9]+$', '\1') = v_base;
 
-    if v_total = 0 then
+    if v_ids is null then
       v_status := 'not_found';
-    elsif (case when v_exact > 0 then v_exact else v_total end) > 1
-          or (v_twins > 1 and v_total > 1) then
-      -- more than one batch claim could be this one, or two portal claims share the work order: do not guess
-      v_status := 'ambiguous';
     else
-      select c.id, c.claim_number, s.status, s.verification_date, s.has_parts
-        into v_claim_id, v_claim_number, v_batch_status, v_verif, v_has_parts
-      from self_audit_claims c
-      left join self_audit_claim_settlement s on s.claim_id = c.id
-      where c.vin = v_vin
-        and regexp_replace(upper(c.work_order_no), '^([A-Z]+-[0-9]+)-[0-9]+$', '\1') = v_base
-        and (v_exact = 0 or upper(c.work_order_no) = v_wo)
-      limit 1;
-
-      if v_verif is null or lower(coalesce(v_batch_status, '')) not in ('approved', 'settled', 'to be settled') then
-        v_status := 'not_verified';
-      elsif exists (select 1 from self_audit_scrapped_parts sp where sp.claim_id = v_claim_id)
-         or exists (select 1 from self_audit_scrap_requests sr where sr.claim_id = v_claim_id and sr.status = 'scrapped') then
-        v_status := 'already_scrapped';
-      elsif exists (
-          select 1 from self_audit_supplier_collection_parts scp
-          join self_audit_supplier_collections sc on sc.id = scp.collection_id
-          where scp.claim_id = v_claim_id
-            and (sc.status = 'handed_over'
-                 or (sc.status = 'pending' and (sc.collection_date is null or sc.collection_date >= current_date)
-                     and (v_part = '' or upper(trim(scp.part_no)) = v_part)))
-        ) then
-        v_status := 'reserved';
-      elsif coalesce(v_has_parts, false) = false then
-        v_status := 'no_parts';
-      elsif v_verif < current_date - 90 then
-        v_status := 'can_scrap';
+      if array_length(v_ids, 1) = 1 then
+        v_claim_id := v_ids[1];
       else
-        v_status := 'not_yet';
+        -- several claims share the work order: pick the one holding the same parts
+        select array_agg(distinct hit) into v_hits from (
+          select l.claim_id as hit from claim_part_lines(v_ids) l where upper(btrim(l.part_no)) = any(v_parts)
+          union
+          select c.id from self_audit_claims c where c.id = any(v_ids) and upper(btrim(c.raw_row->>'Main Part')) = any(v_parts)
+        ) h;
+        if v_hits is not null and array_length(v_hits, 1) = 1 then
+          v_claim_id := v_hits[1];
+        end if;
+      end if;
+
+      if v_claim_id is null then
+        v_status := 'ambiguous';
+      else
+        select c.claim_number, s.status, s.verification_date, s.has_parts
+          into v_claim_number, v_batch_status, v_verif, v_has_parts
+        from self_audit_claims c
+        left join self_audit_claim_settlement s on s.claim_id = c.id
+        where c.id = v_claim_id;
+
+        if v_verif is null or lower(coalesce(v_batch_status, '')) not in ('approved', 'settled', 'to be settled') then
+          v_status := 'not_verified';
+        elsif exists (select 1 from self_audit_scrapped_parts sp where sp.claim_id = v_claim_id)
+           or exists (select 1 from self_audit_scrap_requests sr where sr.claim_id = v_claim_id and sr.status = 'scrapped') then
+          v_status := 'already_scrapped';
+        elsif exists (
+            select 1 from self_audit_supplier_collection_parts scp
+            join self_audit_supplier_collections sc on sc.id = scp.collection_id
+            where scp.claim_id = v_claim_id
+              and (sc.status = 'handed_over'
+                   or (sc.status = 'pending' and (sc.collection_date is null or sc.collection_date >= current_date)
+                       and (v_part = '' or upper(trim(scp.part_no)) = v_part)))
+          ) then
+          v_status := 'reserved';
+        elsif coalesce(v_has_parts, false) = false then
+          v_status := 'no_parts';
+        elsif v_verif < current_date - 90 then
+          v_status := 'can_scrap';
+        else
+          v_status := 'not_yet';
+        end if;
       end if;
     end if;
 

@@ -34,23 +34,19 @@ export async function GET(request) {
   const claims = new Map();
   for (const r of returns || []) for (const i of r.defect_return_items || []) if (i.claims) claims.set(i.claims.id, i.claims);
 
-  // two portal claims on the same work order and VIN can not be told apart in the batch: flag them
-  const admin = createAdminClient();
-  const wos = [...new Set([...claims.values()].map((c) => c.dealer_work_order_number).filter(Boolean))];
-  const twinCount = {};
-  if (wos.length) {
-    const { data: same } = await admin.from("claims").select("dealer_work_order_number, vin").eq("kind", "claim").in("dealer_work_order_number", wos);
-    for (const c of same || []) {
-      const k = `${c.dealer_work_order_number}|${c.vin}`.toUpperCase();
-      twinCount[k] = (twinCount[k] || 0) + 1;
-    }
+  // The batch can hold several claims on one work order and VIN (a "-1" or "-2" only says so, not which claim is which).
+  // The claim's part numbers are the data that tells them apart.
+  const partNos = {};
+  if (claims.size) {
+    const { data: parts } = await createAdminClient().from("claim_parts").select("claim_id, part_number").in("claim_id", [...claims.keys()]);
+    for (const p of parts || []) if (p.part_number?.trim()) (partNos[p.claim_id] ||= []).push(p.part_number.trim());
   }
 
   const items = [...claims.values()].map((c) => ({
     key: c.id,
     work_order_no: c.dealer_work_order_number || "",
     vin: c.vin || "",
-    twins: twinCount[`${c.dealer_work_order_number}|${c.vin}`.toUpperCase()] || 1,
+    part_nos: partNos[c.id] || [],
   }));
 
   const { byKey, error: linkError } = await getScrapStatus(items);
