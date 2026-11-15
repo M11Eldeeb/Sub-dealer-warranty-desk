@@ -6,7 +6,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned, defectedSummary } from "@/components/ui";
 import FreeServiceButton from "@/components/FreeServiceButton";
-import ClosedRevenue from "@/components/ClosedRevenue";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -94,7 +93,6 @@ export default function DealerDashboard() {
       <Header profile={profile} onSignOut={signOut} />
       <div role="main" className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
         <h1 className="sr-only">Warranty claims</h1>
-        <ClosedRevenue />
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <Tabs
             value={filter}

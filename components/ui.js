@@ -1,13 +1,16 @@
 "use client";
 import { Children, cloneElement, isValidElement, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ExportDataButton from "@/components/ExportDataButton";
 import LiveSheetButton from "@/components/LiveSheetButton";
+import ClosedRevenue from "@/components/ClosedRevenue";
+import DialogFocus from "@/components/DialogFocus";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen } from "lucide-react";
+import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -217,6 +220,7 @@ function ActionDot({ show }) {
 /** The sandwich menu: user + e-mail settings and data export for dealer / admin accounts, and Sign out for everyone. */
 function HeaderMenu({ profile, onSignOut }) {
   const [open, setOpen] = useState(false);
+  const [revenueOpen, setRevenueOpen] = useState(false); // the Revenue window (dealer, admin, manager)
   const ref = useRef(null);
   const staff = profile?.role === "dealer" || profile?.role === "admin";
   const viewer = profile?.role === "manager"; // managers can look at everything and change nothing
@@ -297,6 +301,9 @@ function HeaderMenu({ profile, onSignOut }) {
             )}
             {viewer && (
               <>
+                <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
+                  <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
+                </button>
                 <ExportDataButton variant="menu" className={item} />
                 <LiveSheetButton className={item} canRefresh={false} />
                 <div className="border-t border-[#EEEEEE]" />
@@ -310,6 +317,9 @@ function HeaderMenu({ profile, onSignOut }) {
                 <Link href="/dashboard/settings" onClick={() => setOpen(false)} className={item}>
                   <Settings size={16} className="text-[#6E6E6E]" /> Settings
                 </Link>
+                <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
+                  <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
+                </button>
                 <ExportDataButton variant="menu" className={item} />
                 <LiveSheetButton className={item} canRefresh={true} />
                 <div className="border-t border-[#EEEEEE]" />
@@ -346,6 +356,24 @@ function HeaderMenu({ profile, onSignOut }) {
           </motion.div>
         )}
       </AnimatePresence>
+      {revenueOpen &&
+        createPortal(
+          <div role="dialog" aria-modal="true" aria-label="Revenue" className="fade-in fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRevenueOpen(false)}>
+            <DialogFocus onClose={() => setRevenueOpen(false)} />
+            <div className="dialog-in bg-white text-[#111111] rounded-lg p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h2 className="flex items-center gap-2 text-base font-bold text-[#111111]">
+                  <Wallet size={17} className="text-[#6E6E6E]" /> Revenue
+                </h2>
+                <button onClick={() => setRevenueOpen(false)} aria-label="Close" className="tap-icon p-1.5 rounded-md text-[#6E6E6E] hover:bg-[#F1F2F4]">
+                  <X size={16} />
+                </button>
+              </div>
+              <ClosedRevenue />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

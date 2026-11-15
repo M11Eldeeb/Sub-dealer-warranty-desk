@@ -6,7 +6,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, Tabs, ClaimGrid, ClaimCard, fmt } from "@/components/ui";
 import { FsStatusTag, formatSar } from "@/components/free-service";
-import ClosedRevenue from "@/components/ClosedRevenue";
 import { ChevronLeft, Plus, Search, Paperclip, Lock, Inbox } from "lucide-react";
 
 const WITH_DEALER = ["submitted", "invoice_submitted"];
@@ -114,7 +113,6 @@ export default function FreeServiceListPage() {
           </div>
         ) : (
           <>
-            <ClosedRevenue />
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <Tabs value={filter} onChange={setFilter} tabs={tabs} layoutId="fs-tab-pill" />
               <div className="relative w-full sm:w-auto">
