@@ -23,6 +23,50 @@ export function Chip({ spec }) {
   );
 }
 
+/** Scrap marks, read from the Warranty Self-Audit system (Verification Date + 90 days). */
+export const SCRAP = {
+  yes: { label: "Can be scrapped", color: "#1E6B35", bg: "#E5F3E8" },
+  no: { label: "Can't be scrapped", color: "#A63A32", bg: "#FAE4E2" },
+};
+
+const dateText = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+
+/** The mark for a whole return: info = { canScrap } from /api/defect-returns/scrap-status. */
+export const ScrapChip = ({ info }) => (info ? <Chip spec={info.canScrap ? SCRAP.yes : SCRAP.no} /> : null);
+
+/** One line saying why a single claim can or can not be scrapped. r = the claim's result from the same answer. */
+export function scrapReason(r) {
+  if (!r) return "";
+  switch (r.status) {
+    case "can_scrap":
+      return "Held more than 90 days since verification";
+    case "already_scrapped":
+      return "Already scrapped";
+    case "not_yet":
+      return `Can be scrapped from ${dateText(r.eligible_on)} (verified ${dateText(r.verification_date)})`;
+    case "not_verified":
+      return `Not verified yet${r.batch_status ? ` (${r.batch_status})` : ""}`;
+    case "reserved":
+      return "Reserved for the supplier";
+    case "no_parts":
+      return "The self-audit claim has no parts";
+    case "not_found":
+      return "Not in the self-audit batch";
+    case "ambiguous":
+      return "Another claim shares this work order. Check by hand";
+    default:
+      return "";
+  }
+}
+
+/** The line under a return's mark. */
+export function scrapSummary(info) {
+  if (!info) return "";
+  if (info.canScrap) return `All ${info.total} claim${info.total === 1 ? "" : "s"} are past the 90 days`;
+  if (info.eligibleFrom) return `Can be scrapped from ${dateText(info.eligibleFrom)}`;
+  return `${info.ready} of ${info.total} claim${info.total === 1 ? "" : "s"} can be scrapped`;
+}
+
 export const DrStatusTag = ({ status }) => <Chip spec={DR_STATUS[status] || DR_STATUS.submitted} />;
 export const DecisionChip = ({ decision }) => <Chip spec={DECISION[decision] || DECISION.pending} />;
 

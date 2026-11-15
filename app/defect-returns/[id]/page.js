@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePageTitle } from "@/lib/use-page-title";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, fmt } from "@/components/ui";
-import { DrStatusTag, DecisionChip, ResponsiveRows } from "@/components/defect-returns";
+import { DrStatusTag, DecisionChip, ResponsiveRows, Chip, SCRAP, ScrapChip, scrapReason, scrapSummary } from "@/components/defect-returns";
 import { ChevronLeft, Check, XCircle, RotateCcw, Loader2, Ban, CheckCheck, AlertCircle, Lock, Search, MessageSquare, Send } from "lucide-react";
 
 export default function DefectReturnDetailPage() {
@@ -24,6 +24,7 @@ export default function DefectReturnDetailPage() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
+  const [scrap, setScrap] = useState(null); // { canScrap, claims: { claimId: {...} } } from the self-audit system (dealer, admin, manager)
   usePageTitle(ret ? ret.return_number : "Defected parts return");
 
   const load = async () => {
@@ -60,6 +61,16 @@ export default function DefectReturnDetailPage() {
       setProfile(prof);
       await load();
       setLoading(false);
+
+      // The scrap marks come from another system, so they fill in after the page is already showing.
+      if (["dealer", "admin", "manager"].includes(prof.role)) {
+        try {
+          const res = await fetch(`/api/defect-returns/scrap-status?returnId=${params.id}`, { cache: "no-store" });
+          if (res.ok) setScrap((await res.json()).returns?.[params.id] || null);
+        } catch {
+          // no marks this time; the page still works
+        }
+      }
     })();
   }, []);
 
@@ -176,6 +187,25 @@ export default function DefectReturnDetailPage() {
     { key: "pn", label: "Part number", render: (i) => <span className="font-mono text-xs">{i.claim_parts?.part_number || "—"}</span> },
     { key: "qty", label: "Qty", render: (i) => i.claim_parts?.qty },
     { key: "state", label: "Status", render: (i) => <DecisionChip decision={i.decision} /> },
+    ...(scrap
+      ? [
+          {
+            key: "scrap",
+            label: "Scrap",
+            render: (i) => {
+              const r = scrap.claims?.[i.claim_id];
+              if (!r) return <span className="text-xs text-[#6E6E6E]">—</span>;
+              const ok = r.status === "can_scrap" || r.status === "already_scrapped";
+              return (
+                <div className="flex flex-col gap-1 sm:items-start items-end">
+                  <Chip spec={ok ? SCRAP.yes : SCRAP.no} />
+                  <span className="text-[0.6875rem] text-[#6E6E6E] max-w-[16rem] sm:text-left text-right">{scrapReason(r)}</span>
+                </div>
+              );
+            },
+          },
+        ]
+      : []),
     ...(canReview
       ? [
           {
@@ -220,7 +250,13 @@ export default function DefectReturnDetailPage() {
             </h1>
             <div className="text-xs text-[#6E6E6E] mt-0.5">Sent {fmt(ret.created_at)}</div>
           </div>
-          <DrStatusTag status={ret.status} />
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <ScrapChip info={scrap} />
+              <DrStatusTag status={ret.status} />
+            </div>
+            {scrap && <div className="text-xs text-[#6E6E6E] text-right">{scrapSummary(scrap)}</div>}
+          </div>
         </div>
 
         {message && (

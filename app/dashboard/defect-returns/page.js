@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePageTitle } from "@/lib/use-page-title";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, Tabs, ClaimGrid, ClaimCard, fmt } from "@/components/ui";
-import { DrStatusTag } from "@/components/defect-returns";
+import { DrStatusTag, ScrapChip, scrapSummary } from "@/components/defect-returns";
 import { Plus, Search, PackageOpen, Package } from "lucide-react";
 
 export default function DefectReturnsListPage() {
@@ -15,6 +15,7 @@ export default function DefectReturnsListPage() {
 
   const [profile, setProfile] = useState(null);
   const [rows, setRows] = useState([]);
+  const [scrap, setScrap] = useState({}); // returnId -> { canScrap, ... } from the self-audit system (dealer, admin, manager)
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("open");
   const [query, setQuery] = useState("");
@@ -35,6 +36,16 @@ export default function DefectReturnsListPage() {
         .order("created_at", { ascending: false });
       setRows(data || []);
       setLoading(false);
+
+      // The scrap marks come from another system, so they fill in after the page is already showing.
+      if (["dealer", "admin", "manager"].includes(prof.role)) {
+        try {
+          const res = await fetch("/api/defect-returns/scrap-status", { cache: "no-store" });
+          if (res.ok) setScrap((await res.json()).returns || {});
+        } catch {
+          // no marks this time; the list still works
+        }
+      }
     })();
   }, []);
 
@@ -112,8 +123,12 @@ export default function DefectReturnsListPage() {
                         </div>
                         <div className="text-sm text-[#4D4D4D] mt-0.5">{r.status === "cancelled" ? "Cancelled by the sub-dealer" : `${arrived} arrived · ${checked} of ${items.length} checked`}</div>
                       </div>
-                      <DrStatusTag status={r.status} />
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <ScrapChip info={scrap[r.id]} />
+                        <DrStatusTag status={r.status} />
+                      </div>
                     </div>
+                    {scrap[r.id] && <div className="mt-2 text-xs text-[#6E6E6E]">{scrapSummary(scrap[r.id])}</div>}
                     {r.status !== "cancelled" && items.length > 0 && (
                       <div className="mt-3 h-1.5 rounded-full bg-[#E0E0E0] overflow-hidden" aria-hidden="true">
                         <div className="h-full bg-[#2E7D46] transition-[width] duration-300" style={{ width: `${Math.round((arrived / items.length) * 100)}%` }} />
