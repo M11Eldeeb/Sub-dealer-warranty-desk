@@ -78,7 +78,7 @@ export default function SubDealerDashboard() {
   const tabFiltered = claims.filter((c) => {
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
-    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.claim_number}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.claim_number} ${c.gws_claim_id}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
   const filtered = applyClaimsFilterSort(tabFiltered, filter === "history" ? toolbar : { ...toolbar, partStatus: [] });

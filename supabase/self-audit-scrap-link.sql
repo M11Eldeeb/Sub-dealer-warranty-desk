@@ -6,9 +6,10 @@
 --   Verification Date more than 90 days ago (91+ days), claim status Approved / Settled / To Be Settled,
 --   the claim has parts, and its parts are not reserved for / handed to the supplier.
 --
--- Matching: a portal claim is matched to a batch claim by VIN and dealer work order. A suffix (-1, -2) only says the
--- work order has more than one claim, not which claim is which, so it is ignored; when several batch claims share the
--- work order and VIN, the one holding the same part numbers is the match.
+-- Matching: when the portal claim has its GWS claim ID (WSA...) that names the batch claim exactly. Otherwise a portal
+-- claim is matched by VIN and dealer work order. A suffix (-1, -2) only says the work order has more than one claim,
+-- not which claim is which, so it is ignored; when several batch claims share the work order and VIN, the one holding
+-- the same part numbers is the match.
 --
 -- NOTE: the self-audit API refuses anonymous calls (public.view_only_guard is not executable by anon), so the portal
 -- calls this function with the service role. The connection settings are in the portal's integration_secrets table.
@@ -23,7 +24,7 @@ insert into public.portal_link_secret (id, secret)
 values (1, replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''))
 on conflict (id) do nothing;
 
--- p_items: [{ "key": "...", "work_order_no": "HER-36167", "vin": "LSJ...", "part_nos": ["10632434", ...] }, ...]
+-- p_items: [{ "key": "...", "work_order_no": "HER-36167", "vin": "LSJ...", "gws_claim_id": "WSA...", "part_nos": ["10632434", ...] }, ...]
 -- returns: [{ "key", "status", "verification_date", "eligible_on", "days_held", "batch_claim_number", "batch_status" }, ...]
 -- status: can_scrap | already_scrapped | not_yet | not_verified | reserved | no_parts | not_found | ambiguous
 create or replace function public.sub_dealer_scrap_status(p_secret text, p_items jsonb)
@@ -41,6 +42,7 @@ declare
   v_base text;
   v_vin text;
   v_part text;
+  v_gws text;
   v_parts text[];
   v_ids uuid[];
   v_hits uuid[];
@@ -63,6 +65,7 @@ begin
     v_wo := upper(trim(coalesce(v_item->>'work_order_no', '')));
     v_vin := upper(trim(coalesce(v_item->>'vin', '')));
     v_part := upper(trim(coalesce(v_item->>'part_no', '')));
+    v_gws := upper(trim(coalesce(v_item->>'gws_claim_id', '')));
     -- the part numbers of the portal claim: the data used to tell claims on the same work order apart
     select coalesce(array_agg(distinct upper(btrim(x))) filter (where btrim(x) <> ''), '{}')
       into v_parts
@@ -72,18 +75,23 @@ begin
 
     v_claim_id := null; v_claim_number := null; v_batch_status := null; v_verif := null; v_has_parts := null;
 
-    -- batch claims on this VIN (indexed) and work order, suffix ignored
-    select array_agg(c.id) into v_ids
-    from self_audit_claims c
-    where c.vin = v_vin
-      and regexp_replace(upper(c.work_order_no), '^([A-Z]+-[0-9]+)-[0-9]+$', '\1') = v_base;
+    if v_gws <> '' then
+      -- the GWS claim ID names the batch claim exactly
+      select array_agg(c.id) into v_ids from self_audit_claims c where c.claim_number = v_gws;
+    else
+      -- no GWS ID yet: VIN (indexed) and work order, suffix ignored
+      select array_agg(c.id) into v_ids
+      from self_audit_claims c
+      where c.vin = v_vin
+        and regexp_replace(upper(c.work_order_no), '^([A-Z]+-[0-9]+)-[0-9]+$', '\1') = v_base;
+    end if;
 
     if v_ids is null then
       v_status := 'not_found';
     else
       if array_length(v_ids, 1) = 1 then
         v_claim_id := v_ids[1];
-      else
+      elsif v_gws = '' then
         -- several claims share the work order: pick the one holding the same parts (lookups limited to those claims,
         -- so the API's 8 second statement timeout is never hit)
         select array_agg(distinct hit) into v_hits from (

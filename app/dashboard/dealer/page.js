@@ -81,7 +81,7 @@ export default function DealerDashboard() {
     if (filter === "needs_review" && !["submitted", "waiting_pa", "repair_submitted"].includes(c.status)) return false;
     if (filter === "active" && ["closed", "rejected"].includes(c.status)) return false;
     if (filter === "history" && !["closed", "rejected"].includes(c.status)) return false;
-    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.vehicle_model} ${c.claim_number} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (query && !`${c.work_order_number} ${c.dealer_work_order_number} ${c.vin} ${c.plate} ${c.vehicle_model} ${c.claim_number} ${c.gws_claim_id} ${c.branches?.name}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
   });
   const filtered = applyClaimsFilterSort(tabFiltered, filter === "history" ? toolbar : { ...toolbar, partStatus: [] });

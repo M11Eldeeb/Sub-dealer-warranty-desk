@@ -24,7 +24,7 @@ export async function GET(request) {
   const returnId = new URL(request.url).searchParams.get("returnId");
   let query = supabase
     .from("defect_returns")
-    .select("id, status, defect_return_items(claim_id, claims(id, dealer_work_order_number, vin))")
+    .select("id, status, defect_return_items(claim_id, claims(id, dealer_work_order_number, vin, gws_claim_id))")
     .neq("status", "cancelled");
   if (returnId) query = query.eq("id", returnId);
   const { data: returns, error } = await query;
@@ -46,6 +46,7 @@ export async function GET(request) {
     key: c.id,
     work_order_no: c.dealer_work_order_number || "",
     vin: c.vin || "",
+    gws_claim_id: c.gws_claim_id || "", // names the batch claim exactly; without it the match is VIN + work order + parts
     part_nos: partNos[c.id] || [],
   }));
 

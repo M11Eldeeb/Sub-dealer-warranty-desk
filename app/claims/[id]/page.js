@@ -42,6 +42,8 @@ export default function ClaimDetailPage() {
   const [supersedingDrafts, setSupersedingDrafts] = useState({});
   const [dealerWorkOrder, setDealerWorkOrder] = useState("");
   const [dealerWOPrefix, setDealerWOPrefix] = useState("HER");
+  const [gwsId, setGwsId] = useState("");
+  const [closeError, setCloseError] = useState("");
   const [laborAmount, setLaborAmount] = useState("");
   const [editingAmount, setEditingAmount] = useState(false);
   const [amountDraft, setAmountDraft] = useState("");
@@ -126,6 +128,7 @@ export default function ClaimDetailPage() {
       }
     }
     if (claim.labor_amount != null && !laborAmount) setLaborAmount(String(claim.labor_amount));
+    if (claim.gws_claim_id && !gwsId) setGwsId(claim.gws_claim_id);
   }, [claim]);
 
   useEffect(() => {
@@ -845,12 +848,22 @@ export default function ClaimDetailPage() {
     }
   };
 
+  // The GWS claim ID (WSA...) identifies this claim in the manufacturer's system, so it is asked when the claim is closed.
+  const gwsClean = gwsId.trim().toUpperCase();
+  const gwsOk = /^WSA[A-Z0-9]{6,}$/.test(gwsClean);
+
   const handleCloseClaim = async () => {
-    if (actionLoading) return;
+    if (!gwsOk || actionLoading) return;
     setActionLoading("closeClaim");
+    setCloseError("");
     try {
+      const { error } = await supabase.from("claims").update({ gws_claim_id: gwsClean }).eq("id", claim.id);
+      if (error) {
+        setCloseError(error.code === "23505" ? "This GWS claim ID is already on another claim in the portal. Check the ID." : `Could not save the GWS claim ID: ${error.message}`);
+        return;
+      }
       await setStatus("closed");
-      await addLog(claim.status, "closed", "Claim closed by dealer.");
+      await addLog(claim.status, "closed", `Claim closed by dealer. GWS claim ID ${gwsClean}.`);
       await load();
     } finally {
       setActionLoading(null);
@@ -970,6 +983,7 @@ export default function ClaimDetailPage() {
             <Info label="Reception Date" value={claim.reception_date} />
             <Info label="Branch" value={claim.branches?.name} />
             {claim.dealer_work_order_number && <Info label="Dealer WO#" value={claim.dealer_work_order_number} mono />}
+            {claim.gws_claim_id && <Info label="GWS Claim ID" value={claim.gws_claim_id} mono />}
             {(role === "sub_dealer" ? claim.labor_amount != null : ["dealer", "admin", "manager"].includes(role) && (claim.labor_amount != null || claim.dealer_work_order_number)) && (
               <div>
                 <div className="text-[0.6875rem] font-bold text-[#6E6E6E]">Labor approved (VAT incl.)</div>
@@ -1930,13 +1944,33 @@ export default function ClaimDetailPage() {
                 <CheckCircle2 size={15} /> After-repair evidence submitted
               </div>
               <p className="text-sm text-[#0E7490]">Review the evidence above, then close the claim, or return it if something's wrong.</p>
+              <div>
+                <label htmlFor="gws-claim-id" className="block text-xs font-bold text-[#0E7490] mb-1.5">
+                  GWS claim ID <span className="font-normal">(starts with WSA, needed to close)</span>
+                </label>
+                <input
+                  id="gws-claim-id"
+                  value={gwsId}
+                  onChange={(e) => setGwsId(e.target.value)}
+                  placeholder="WSA6P20261015001"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="input font-mono uppercase w-full sm:w-72"
+                />
+                {gwsId.trim() !== "" && !gwsOk && <p className="text-xs text-[#C4551B] mt-1">It should start with WSA, then letters and numbers only.</p>}
+                {closeError && (
+                  <p role="alert" className="text-xs text-[#B23A32] mt-1">
+                    {closeError}
+                  </p>
+                )}
+              </div>
               <div className="flex flex-wrap gap-3">
                 <ActionBtn
                   color="#2E7D46"
                   icon={Check}
                   label="Close Claim"
                   onClick={handleCloseClaim}
-                  disabled={actionLoading !== null}
+                  disabled={!gwsOk || actionLoading !== null}
                   loading={actionLoading === "closeClaim"}
                 />
                 <ActionBtn
