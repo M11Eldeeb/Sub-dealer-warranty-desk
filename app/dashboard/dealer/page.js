@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned, defectedSummary } from "@/components/ui";
-import FreeServiceButton from "@/components/FreeServiceButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -122,7 +121,6 @@ export default function DealerDashboard() {
               sortOptions={SORT_OPTIONS}
               showPartStatus={filter === "history"}
             />
-            <FreeServiceButton role={profile?.role} userId={profile?.id} />
           </div>
         </div>
 

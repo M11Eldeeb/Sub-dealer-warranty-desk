@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, StatusTag, Header, Tabs, ClaimGrid, ClaimCard, fmt, cardSubtitle, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned, defectedSummary } from "@/components/ui";
-import FreeServiceButton from "@/components/FreeServiceButton";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyClaimsFilterSort } from "@/components/ClaimsToolbar";
 import { Plus, Paperclip, Package, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -118,7 +117,6 @@ export default function SubDealerDashboard() {
               sortOptions={SORT_OPTIONS}
               showPartStatus={filter === "history"}
             />
-            <FreeServiceButton role={profile?.role} userId={profile?.id} />
             <Link
               href="/claims/new"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs text-white bg-gradient-to-r from-[#FF2447] to-[#E4002B] hover:shadow-lg hover:shadow-[#E4002B]/25 active:scale-95 transition-all"
