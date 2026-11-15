@@ -6,8 +6,8 @@
 --   Verification Date more than 90 days ago (91+ days), claim status Approved / Settled / To Be Settled,
 --   the claim has parts, and its parts are not reserved for / handed to the supplier.
 --
--- NOTE: the self-audit API refuses anonymous calls (public.view_only_guard is not executable by anon), so the caller
--- needs a signed-in (authenticated) or service-role identity. See the connection settings in integration_secrets.
+-- NOTE: the self-audit API refuses anonymous calls (public.view_only_guard is not executable by anon), so the portal
+-- calls this function with the service role. The connection settings are in the portal's integration_secrets table.
 
 create table if not exists public.portal_link_secret (
   id integer primary key default 1 check (id = 1),
@@ -127,5 +127,7 @@ begin
 end;
 $$;
 
+-- Only the sub-dealer portal's server calls it, with the service role.
 revoke all on function public.sub_dealer_scrap_status(text, jsonb) from public;
-grant execute on function public.sub_dealer_scrap_status(text, jsonb) to anon, authenticated;
+revoke execute on function public.sub_dealer_scrap_status(text, jsonb) from anon, authenticated;
+grant execute on function public.sub_dealer_scrap_status(text, jsonb) to service_role;
