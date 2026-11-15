@@ -10,7 +10,7 @@ import DialogFocus from "@/components/DialogFocus";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet } from "lucide-react";
+import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet, Receipt } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -316,6 +316,9 @@ function HeaderMenu({ profile, onSignOut }) {
                 </Link>
                 <Link href="/dashboard/settings" onClick={() => setOpen(false)} className={item}>
                   <Settings size={16} className="text-[#6E6E6E]" /> Settings
+                </Link>
+                <Link href="/dashboard/billing" onClick={() => setOpen(false)} className={item}>
+                  <Receipt size={16} className="text-[#6E6E6E]" /> Sub-dealer bill
                 </Link>
                 <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
                   <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
