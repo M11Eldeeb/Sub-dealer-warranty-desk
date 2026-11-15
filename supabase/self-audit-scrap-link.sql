@@ -162,3 +162,17 @@ $$;
 revoke all on function public.sub_dealer_scrap_status(text, jsonb) from public;
 revoke execute on function public.sub_dealer_scrap_status(text, jsonb) from anon, authenticated;
 grant execute on function public.sub_dealer_scrap_status(text, jsonb) to service_role;
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Revenue window (applied later, same project, same pattern: read-only, service role only, checks portal_link_secret).
+-- ---------------------------------------------------------------------------------------------------------------------
+-- sub_dealer_free_service_invoiced(p_secret, p_items): items [{ key, work_order_no: "HER-42678", vin }] ->
+--   [{ key, invoiced, lines }]: the sum of self_audit_invoicing_detail lines in account I660 (I0000660: free service for the
+--   customer; labor KH9 + parts MG5) with branch = dealer code of the work order prefix (HER = A7 ...), wip = the work order
+--   number and the same VIN. invoiced is null when there is no such line yet.
+-- sub_dealer_warranty_parts(p_secret, p_items): items [{ key, gws_claim_id, work_order_no, vin }] ->
+--   [{ key, batch_found, batch_parts, batch_status, invoiced_parts, invoiced_lines }]: batch_parts = the claims batch's
+--   "Adjusted Part TOL." x 3.75 (USD -> SAR) of the claim with the same GWS claim ID, VIN and work order (suffix ignored);
+--   invoiced_parts = parts lines under account W40 (W0000040) with the same GWS claim number, VIN and work order (WIP).
+-- The full SQL of both functions is in the project's migration history: sub_dealer_free_service_invoiced and
+-- sub_dealer_warranty_parts (+ sub_dealer_warranty_parts_w40_only).
