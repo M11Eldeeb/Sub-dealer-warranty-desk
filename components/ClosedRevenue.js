@@ -13,7 +13,7 @@ const hours = (n) => `${Number(n || 0).toLocaleString("en-US", { maximumFraction
  *    Free Service requests.
  *  - Dealer revenue: warranty labor (the manufacturer pays the dealer 180 SAR per hour, the sub-dealer gets 110 SAR, so the
  *    dealer keeps 70 SAR per hour) + warranty parts (from the claims batch or the invoiced parts lines, matched on GWS claim
- *    ID, work order and VIN) + Free Service (invoiced to account I660 minus the amount approved to the sub-dealer).
+ *    ID, work order and VIN) + Free Service (invoiced to account I660 minus what is paid to the sub-dealer, account I1855, both without VAT).
  * Lives in the sandwich menu's Revenue window.
  */
 export default function ClosedRevenue() {
@@ -120,7 +120,7 @@ function Branch({ title, r }) {
         {r.fs_revenue != null && (
           <>
             {" "}
-            Free Service: {sar(r.fs_invoiced)} invoiced to account I660 minus {sar(r.fs_approved_invoiced)} approved to the sub-dealer, for the {r.fs_invoiced_count} invoiced request{r.fs_invoiced_count === 1 ? "" : "s"}.
+            Free Service: {sar(r.fs_invoiced)} invoiced to account I660 minus {sar(r.fs_approved_invoiced)} paid to the sub-dealer (account I1855, without VAT), for the {r.fs_invoiced_count} invoiced request{r.fs_invoiced_count === 1 ? "" : "s"}.
           </>
         )}
       </p>

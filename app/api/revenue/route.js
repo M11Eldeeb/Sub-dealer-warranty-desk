@@ -14,7 +14,8 @@ const round2 = (n) => Math.round(n * 100) / 100;
  *  - from the Warranty Self-Audit system: the dealer's revenue on warranty PARTS (the claims batch when GWS claim ID, work
  *    order and VIN all match; otherwise the parts invoiced under account W40 on the same work order number and VIN, or,
  *    when there are no parts lines, everything invoiced under W40 minus the labor amount approved) and on
- *    Free Service (invoiced to account I660 minus the amount approved to the sub-dealer).
+ *    Free Service (invoiced to account I660 minus what is paid to the sub-dealer: invoiced to account I1855, both without VAT;
+ *    until the I1855 invoice is in, the approved amount - which includes VAT - divided by 1.15).
  * If the self-audit system can not be reached, those extra figures come back as null and the rest still shows.
  */
 export async function GET() {
@@ -93,7 +94,9 @@ export async function GET() {
         const i = invoiced.byKey[c.id];
         if (i?.invoiced == null) continue; // not invoiced yet: it joins the totals once it is
         inv += Number(i.invoiced);
-        approved += Number(c.approved_amount || 0);
+        // The invoices are without VAT but the sub-dealer's approved amount includes it: take what was invoiced to I1855,
+        // and only until that invoice is in, the approved amount without its VAT.
+        approved += i.paid != null ? Number(i.paid) : Number(c.approved_amount || 0) / 1.15;
         row.fs_invoiced_count += 1;
       }
       row.fs_invoiced = round2(inv);
