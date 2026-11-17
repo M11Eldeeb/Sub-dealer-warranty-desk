@@ -176,3 +176,9 @@ grant execute on function public.sub_dealer_scrap_status(text, jsonb) to service
 --   invoiced_parts = parts lines under account W40 (W0000040) with the same GWS claim number, VIN and work order (WIP).
 -- The full SQL of both functions is in the project's migration history: sub_dealer_free_service_invoiced and
 -- sub_dealer_warranty_parts (+ sub_dealer_warranty_parts_w40_only).
+
+-- sub_dealer_warranty_parts (v3): the parts revenue of a closed warranty claim. 1) the claims batch when GWS claim ID, VIN and
+-- work order all match; 2) otherwise the PARTS lines invoiced under account W40 on the same WIP (work order number) and VIN, no
+-- GWS ID needed (when several claims share the WIP, only the lines of the claim's own part numbers); with no parts lines, the
+-- total invoiced under W40 minus the labor amount approved. p_items: [{ key, gws_claim_id?, work_order_no, vin, part_nos?,
+-- twins?, labor_amount? }] -> [{ key, batch_found, batch_parts, batch_status, invoiced_parts, invoiced_method }].

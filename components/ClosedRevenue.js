@@ -110,7 +110,11 @@ function Branch({ title, r }) {
         {r.parts_revenue != null && (
           <>
             {" "}
-            Parts: from the claims batch{r.parts_from_invoice > 0 ? ` (${r.parts_from_invoice} from the invoiced lines under account W40)` : ""}, only claims whose GWS claim ID, work order and VIN all match; the parts cost is not deducted.
+            Parts: from the claims batch when the GWS claim ID, work order and VIN all match
+            {r.parts_from_invoice > 0
+              ? `; ${r.parts_from_invoice} from the parts invoiced under account W40 on the same work order number and VIN${r.parts_from_total > 0 ? ` (${r.parts_from_total} of them as the total invoiced under W40 minus the labor approved, as no parts lines were found)` : ""}`
+              : ""}
+            . The parts cost is not deducted.
           </>
         )}
         {r.fs_revenue != null && (
