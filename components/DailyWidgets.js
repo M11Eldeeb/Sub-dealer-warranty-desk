@@ -76,7 +76,7 @@ export function MessageCard({ closedThisWeek, waiting, index = 0 }) {
   return (
     <motion.section
       {...rise(index)}
-      className="relative overflow-hidden rounded-[1.25rem] p-6 text-white"
+      className="relative overflow-hidden rounded-[1.25rem] p-4 text-white"
       style={{ background: "linear-gradient(140deg, #F2223F 0%, #C4001F 55%, #8F0016 100%)", boxShadow: "0 18px 36px -18px rgba(228,0,43,0.7)" }}
     >
       <span aria-hidden="true" className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-white/10" />
@@ -85,8 +85,8 @@ export function MessageCard({ closedThisWeek, waiting, index = 0 }) {
         <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-white/75">
           <Sparkles size={13} aria-hidden="true" /> Today&apos;s reminder
         </div>
-        <p className="mt-3 text-[1.45rem] leading-snug font-black tracking-tight">{text}</p>
-        <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold">
+        <p className="mt-2 text-[1.2rem] leading-snug font-black tracking-tight">{text}</p>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
           {closedThisWeek != null && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/18 px-3 py-1.5 backdrop-blur-sm" style={{ background: "rgba(255,255,255,0.18)" }}>
               <CheckCircle2 size={13} aria-hidden="true" /> <CountUp value={closedThisWeek} delay={0.5} /> closed this week
@@ -165,7 +165,7 @@ export function WeatherCard({ index = 0, sample = null }) {
 
   const now = w ? describe(w.code) : null;
   return (
-    <motion.section {...rise(index)} className="tint rounded-[1.25rem] p-5" style={{ "--tint": "#5B8DEF" }}>
+    <motion.section {...rise(index)} className="tint rounded-[1.25rem] p-4" style={{ "--tint": "#5B8DEF" }}>
       <div className="flex items-center justify-between text-xs font-bold text-[#4D4D4D]">
         <span className="flex items-center gap-1.5">
           <MapPin size={13} aria-hidden="true" /> {CITY.name}
@@ -181,16 +181,16 @@ export function WeatherCard({ index = 0, sample = null }) {
         </div>
       ) : (
         <>
-          <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="mt-2 flex items-center justify-between gap-3">
             <div>
-              <div className="text-[2.6rem] leading-none font-black text-[#111111] tabular-nums">
+              <div className="text-[2.2rem] leading-none font-black text-[#111111] tabular-nums">
                 <CountUp value={w.temp} format={(v) => `${Math.round(v)}°`} />
               </div>
-              <div className="mt-1.5 text-sm font-semibold text-[#262626]">{now.text}</div>
+              <div className="mt-1 text-sm font-semibold text-[#262626]">{now.text}</div>
             </div>
-            <now.Icon size={54} strokeWidth={1.5} className="text-[#5B8DEF]" aria-hidden="true" />
+            <now.Icon size={44} strokeWidth={1.5} className="text-[#5B8DEF]" aria-hidden="true" />
           </div>
-          <div className="mt-3 flex items-center gap-4 text-xs text-[#4D4D4D]">
+          <div className="mt-2 flex items-center gap-4 text-xs text-[#4D4D4D]">
             <span className="flex items-center gap-1">
               <Droplets size={13} aria-hidden="true" /> {Math.round(w.humidity)}%
             </span>
@@ -201,13 +201,13 @@ export function WeatherCard({ index = 0, sample = null }) {
               H {Math.round(w.days[0].max)}° · L {Math.round(w.days[0].min)}°
             </span>
           </div>
-          <ul className="mt-4 grid grid-cols-3 gap-2">
+          <ul className="mt-3 grid grid-cols-3 gap-2">
             {w.days.slice(1, 4).map((d) => {
               const x = describe(d.code);
               return (
-                <li key={d.date} className="rounded-xl bg-white/60 px-2 py-2 text-center" style={{ background: "color-mix(in srgb, var(--tint) 10%, transparent)" }}>
+                <li key={d.date} className="rounded-xl bg-white/60 px-2 py-1.5 text-center" style={{ background: "color-mix(in srgb, var(--tint) 10%, transparent)" }}>
                   <div className="text-[0.6875rem] font-bold text-[#6E6E6E]">{dayName(d.date)}</div>
-                  <x.Icon size={20} strokeWidth={1.8} className="mx-auto my-1 text-[#5B8DEF]" aria-hidden="true" />
+                  <x.Icon size={18} strokeWidth={1.8} className="mx-auto my-0.5 text-[#5B8DEF]" aria-hidden="true" />
                   <div className="text-[0.6875rem] font-bold text-[#111111] tabular-nums">
                     {Math.round(d.max)}° <span className="font-semibold text-[#6E6E6E]">{Math.round(d.min)}°</span>
                   </div>
@@ -247,7 +247,7 @@ export function CalendarCard({ index = 0 }) {
   const title = new Date(Date.UTC(year, month, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
   return (
-    <motion.section {...rise(index)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-5">
+    <motion.section {...rise(index)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold text-[#111111]">{title}</h2>
@@ -267,9 +267,9 @@ export function CalendarCard({ index = 0 }) {
           </button>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-7 gap-y-1 text-center">
+      <div className="mt-2 grid grid-cols-7 gap-y-0.5 text-center">
         {WEEKDAYS.map((w, i) => (
-          <div key={i} className={`text-[0.6875rem] font-bold pb-1 ${i >= 5 ? "text-[#ADADAD]" : "text-[#6E6E6E]"}`}>
+          <div key={i} className={`text-[0.6875rem] font-bold pb-0.5 ${i >= 5 ? "text-[#ADADAD]" : "text-[#6E6E6E]"}`}>
             {w}
           </div>
         ))}
@@ -279,7 +279,7 @@ export function CalendarCard({ index = 0 }) {
             <div key={i} className="flex items-center justify-center">
               {d && (
                 <span
-                  className={`w-8 h-8 flex items-center justify-center rounded-full text-xs tabular-nums transition-colors ${
+                  className={`w-7 h-6 flex items-center justify-center rounded-full text-xs tabular-nums transition-colors ${
                     isToday(d) ? "bg-[#E4002B] text-white font-black shadow-[0_6px_14px_-6px_rgba(228,0,43,0.8)]" : weekend ? "text-[#ADADAD] font-semibold" : "text-[#262626] font-semibold hover:bg-[#F4F4F4]"
                   }`}
                 >

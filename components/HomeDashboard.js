@@ -192,6 +192,28 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             )}
           </div>
 
+          {/* what waits for you */}
+          <motion.section {...rise(4)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-5">
+            <h2 className="text-sm font-bold text-[#111111]">Needs your action</h2>
+            <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              {(data?.actions || [null, null, null, null]).map((a, i) =>
+                a ? (
+                  <li key={a.key}>
+                    <Link href={a.href} className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 bg-[#F7F7F8] hover:bg-[#EFEFF1] transition-colors ${a.count > 0 ? "" : "opacity-60 hover:opacity-100"}`}>
+                      <span className={`min-w-8 h-8 px-2 rounded-lg flex items-center justify-center text-sm font-black tabular-nums ${a.count > 0 ? "bg-[#E4002B] text-white" : "bg-white text-[#6E6E6E]"}`}>{a.count}</span>
+                      <span className="text-[0.8125rem] font-semibold text-[#262626] leading-snug">{a.label}</span>
+                      <ArrowUpRight size={14} className="ml-auto shrink-0 text-[#ADADAD] group-hover:text-[#111111] transition-colors" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ) : (
+                  <li key={i}>
+                    <Skeleton className="h-12 !rounded-xl" />
+                  </li>
+                )
+              )}
+            </ul>
+          </motion.section>
+
           {!data ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               <Skeleton className="lg:col-span-7 h-72" />
@@ -298,37 +320,16 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
               </Card>
             </div>
           )}
+          <p className="px-2 pb-2 text-[0.6875rem] text-[#6E6E6E] leading-relaxed">
+            Figures count the claims opened in the period chosen above. Revenue is for all closed claims. Parts and Free Service figures come from the claims batch and the invoicing in the Self-Audit system.
+          </p>
         </div>
 
-        {/* the side panel: what waits for you */}
-        <aside className={`space-y-5 ${SCROLL}`}>
+        {/* the side panel: today's reminder, the weather and the calendar, all in view */}
+        <aside className={`space-y-3 ${SCROLL}`}>
           <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.reduce((s, a) => s + a.count, 0) : null} />
           <WeatherCard index={2} sample={weatherSample} />
           <CalendarCard index={3} />
-          <motion.section {...rise(2)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-5">
-            <h2 className="text-sm font-bold text-[#111111]">Needs your action</h2>
-            <p className="mt-0.5 text-xs text-[#6E6E6E]">Right now</p>
-            <ul className="mt-4 space-y-1.5">
-              {(data?.actions || [null, null, null, null]).map((a, i) =>
-                a ? (
-                  <li key={a.key}>
-                    <Link href={a.href} className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${a.count > 0 ? "hover:bg-[#F4F4F4]" : "opacity-60 hover:opacity-100 hover:bg-[#F4F4F4]"}`}>
-                      <span className={`min-w-8 h-8 px-2 rounded-lg flex items-center justify-center text-sm font-black tabular-nums ${a.count > 0 ? "bg-[#E4002B] text-white" : "bg-[#F1F2F4] text-[#6E6E6E]"}`}>{a.count}</span>
-                      <span className="text-sm font-semibold text-[#262626] leading-snug">{a.label}</span>
-                      <ArrowUpRight size={15} className="ml-auto text-[#ADADAD] group-hover:text-[#111111] transition-colors" aria-hidden="true" />
-                    </Link>
-                  </li>
-                ) : (
-                  <li key={i}>
-                    <Skeleton className="h-12 !rounded-xl" />
-                  </li>
-                )
-              )}
-            </ul>
-          </motion.section>
-          <p className="px-2 text-[0.6875rem] text-[#6E6E6E] leading-relaxed">
-            Figures count the claims opened in the period chosen above. Revenue is for all closed claims. Parts and Free Service figures come from the claims batch and the invoicing in the Self-Audit system.
-          </p>
         </aside>
       </div>
     </div>
