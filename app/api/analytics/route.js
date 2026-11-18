@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildAnalytics, claimBrief, monthKey, monthRange, partBriefs } from "@/lib/analytics";
+import { buildAnalytics, claimBrief, dealerTurns, monthKey, monthRange, partBriefs } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -60,6 +60,23 @@ export async function GET(request) {
     const { data } = await admin.from("claim_parts").select("claim_id, name, qty, status, defected_arrived_at").in("claim_id", ids.slice(i, i + 150));
     parts.push(...(data || []));
   }
+
+  // The dealer's own steps (decision, closing) are timed turn by turn from the status log, in working hours.
+  const logs = new Map();
+  for (let i = 0; i < ids.length; i += 60) {
+    for (let from = 0; ; from += 1000) {
+      const { data } = await admin
+        .from("claim_status_log")
+        .select("claim_id, from_status, to_status, at")
+        .in("claim_id", ids.slice(i, i + 60))
+        .or("kind.is.null,kind.neq.comment")
+        .order("at", { ascending: true })
+        .range(from, from + 999);
+      for (const r of data || []) (logs.get(r.claim_id) || logs.set(r.claim_id, []).get(r.claim_id)).push(r);
+      if ((data || []).length < 1000) break;
+    }
+  }
+  for (const c of claims) c.turns = dealerTurns(logs.get(c.id) || []);
 
   const analytics = buildAnalytics(claims, parts, months);
   // what the lists behind the charts (click a bar, a slice or a part) are drawn from
