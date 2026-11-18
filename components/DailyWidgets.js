@@ -79,7 +79,7 @@ export function MessageCard({ closedThisWeek, waiting, index = 0 }) {
     <motion.section
       {...rise(index)}
       className="relative overflow-hidden rounded-[1.25rem] p-3.5 text-white"
-      style={{ background: "linear-gradient(140deg, #F2223F 0%, #C4001F 55%, #8F0016 100%)", boxShadow: "0 18px 36px -18px rgba(228,0,43,0.7)" }}
+      style={{ background: "linear-gradient(140deg, #F2223F 0%, #C4001F 55%, #8F0016 100%)" }}
     >
       <span aria-hidden="true" className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-white/10" />
       <span aria-hidden="true" className="absolute -right-2 bottom-[-3.5rem] w-32 h-32 rounded-full bg-black/10" />

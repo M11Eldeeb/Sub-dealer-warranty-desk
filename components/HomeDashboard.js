@@ -305,7 +305,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 </div>
               </Card>
 
-              <Card index={7} className="lg:col-span-7" title="Lead time, A to Z" subtitle="Average time of each step. The dealer's steps run from a claim reaching the dealer to the reply, in working hours only (Sun to Thu, 9:00 to 17:00)">
+              <Card index={7} className="lg:col-span-7" title="Lead time, A to Z" subtitle="Average time of each step. The dealer's steps count working hours only (Sun to Thu, 9:00 to 17:00). Every other step starts its clock at 9:00 when the step before it ended out of hours">
                 <LeadTime lead={data.leadTimes} />
               </Card>
 
