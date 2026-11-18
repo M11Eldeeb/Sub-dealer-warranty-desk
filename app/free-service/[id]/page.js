@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, fmt } from "@/components/ui";
 import { FsStatusTag, Fact, SavedFiles, formatSar, FS_STATUS, RequiredDocsEditor, UploadProgress, docOf, docFileName, missingDocs } from "@/components/free-service";
 import { uploadEvidence, removeAttachment, syncClaimFolder } from "@/lib/evidence-upload";
-import { CommentBox, HistoryEntry } from "@/components/ClaimHistory";
+import { CommentBox, historyText } from "@/components/ClaimHistory";
 import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock, Ban } from "lucide-react";
 
 // Work orders are stored with the branch prefix (BAS-123); the edit box shows only the number after it.
@@ -462,23 +462,17 @@ export default function FreeServiceDetailPage() {
             }}
           />
           <ol className="space-y-3">
-            {log.map((l) =>
-              l.kind === "comment" ? (
-                <li key={l.id}>
-                  <HistoryEntry entry={l} formatDate={fmt} />
-                </li>
-              ) : (
+            {log.map((l) => (
               <li key={l.id} className="flex gap-3">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-[#E4002B] shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm text-[#262626] break-words">
-                    <span className="font-bold text-[#111111]">{l.actor_name}</span> — {l.note || l.to_status}
+                  <div className="text-sm text-[#262626] break-words whitespace-pre-wrap">
+                    <span className="font-bold text-[#111111]">{l.actor_name}</span> — {historyText(l) || l.to_status}
                   </div>
                   <div className="text-[0.6875rem] text-[#6E6E6E] font-mono">{fmt(l.at)}</div>
                 </div>
               </li>
-              )
-            )}
+            ))}
           </ol>
         </section>
       </div>

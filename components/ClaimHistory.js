@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Loader2, MessageSquare, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 /** Who wrote a comment, as a label. (The dealer and the admin work the same side.) */
@@ -14,35 +14,21 @@ const ROLE_LABEL = {
 
 const stamp = (iso) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-/** One line of a claim's history: a status change / note, or a comment. */
+/** The text of a history line. A comment reads like every other entry, marked "Comment:" and with who wrote it. */
+export function historyText(entry) {
+  if (entry.kind !== "comment") return entry.note;
+  const role = ROLE_LABEL[entry.actor_role]?.label;
+  return `${role ? `(${role}) ` : ""}Comment: ${entry.note}`;
+}
+
+/** One line of a claim's history: the same look for a status change, a note or a comment. */
 export function HistoryEntry({ entry, formatDate }) {
-  if (entry.kind === "comment") {
-    const role = ROLE_LABEL[entry.actor_role];
-    return (
-      <div className="flex flex-col sm:flex-row gap-0.5 sm:gap-3 text-sm">
-        <div className="text-xs text-[#6E6E6E] sm:w-32 sm:shrink-0 sm:pt-2 font-mono">{formatDate ? formatDate(entry.at) : stamp(entry.at)}</div>
-        <div className="min-w-0 flex-1 rounded-md border border-[#E0E0E0] border-l-[3px] border-l-[#5B4FB0] bg-[#FAFAFA] px-3 py-2">
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            <MessageSquare size={12} className="text-[#5B4FB0]" aria-hidden="true" />
-            <span className="font-bold text-[#111111]">{entry.actor_name}</span>
-            {role && (
-              <span className="pill px-2 py-0.5 rounded text-[0.6875rem] font-bold" style={{ "--pill-fg": role.fg, "--pill-bg": role.bg }}>
-                {role.label}
-              </span>
-            )}
-            <span className="text-[#6E6E6E]">commented</span>
-          </div>
-          <p className="mt-1 text-[#262626] whitespace-pre-wrap break-words">{entry.note}</p>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="flex flex-col sm:flex-row gap-0.5 sm:gap-3 text-sm">
       <div className="text-xs text-[#6E6E6E] sm:w-32 sm:shrink-0 sm:pt-0.5 font-mono">{formatDate ? formatDate(entry.at) : stamp(entry.at)}</div>
-      <div className="min-w-0 break-words">
+      <div className="min-w-0 break-words whitespace-pre-wrap">
         <span className="font-bold text-[#111111]">{entry.actor_name}</span>
-        <span className="text-[#4D4D4D]"> — {entry.note}</span>
+        <span className="text-[#4D4D4D]"> — {historyText(entry)}</span>
       </div>
     </div>
   );
