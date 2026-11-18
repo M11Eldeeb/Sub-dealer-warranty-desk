@@ -140,8 +140,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
 
   return (
     // On a wide screen the page itself does not scroll: the middle cards and the side widgets are two columns that scroll apart.
-    <div className="max-w-[88rem] mx-auto px-4 sm:px-6 py-5 sm:py-7 xl:h-[100dvh] xl:flex xl:flex-col xl:pb-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap mb-6 xl:shrink-0">
+    <div className="max-w-[88rem] mx-auto px-4 sm:px-6 py-5 sm:py-7 xl:h-[100dvh] xl:flex xl:flex-col xl:pt-4 xl:pb-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6 xl:mb-4 xl:shrink-0">
         <div>
           <h1 className="text-2xl sm:text-[1.7rem] font-black text-[#111111] leading-tight">
             {greeting}
@@ -326,7 +326,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
         </div>
 
         {/* the side panel: today's reminder, the weather and the calendar, all in view */}
-        <aside className={`space-y-3 ${SCROLL}`}>
+        <aside className={`space-y-2.5 ${SCROLL}`}>
           <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.reduce((s, a) => s + a.count, 0) : null} />
           <WeatherCard index={2} sample={weatherSample} />
           <CalendarCard index={3} />

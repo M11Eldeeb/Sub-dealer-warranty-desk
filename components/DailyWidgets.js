@@ -76,7 +76,7 @@ export function MessageCard({ closedThisWeek, waiting, index = 0 }) {
   return (
     <motion.section
       {...rise(index)}
-      className="relative overflow-hidden rounded-[1.25rem] p-4 text-white"
+      className="relative overflow-hidden rounded-[1.25rem] p-3.5 text-white"
       style={{ background: "linear-gradient(140deg, #F2223F 0%, #C4001F 55%, #8F0016 100%)", boxShadow: "0 18px 36px -18px rgba(228,0,43,0.7)" }}
     >
       <span aria-hidden="true" className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-white/10" />
@@ -205,7 +205,7 @@ export function WeatherCard({ index = 0, sample = null }) {
             {w.days.slice(1, 4).map((d) => {
               const x = describe(d.code);
               return (
-                <li key={d.date} className="rounded-xl bg-white/60 px-2 py-1.5 text-center" style={{ background: "color-mix(in srgb, var(--tint) 10%, transparent)" }}>
+                <li key={d.date} className="rounded-xl bg-white/60 px-2 py-1 text-center" style={{ background: "color-mix(in srgb, var(--tint) 10%, transparent)" }}>
                   <div className="text-[0.6875rem] font-bold text-[#6E6E6E]">{dayName(d.date)}</div>
                   <x.Icon size={18} strokeWidth={1.8} className="mx-auto my-0.5 text-[#5B8DEF]" aria-hidden="true" />
                   <div className="text-[0.6875rem] font-bold text-[#111111] tabular-nums">
@@ -279,7 +279,7 @@ export function CalendarCard({ index = 0 }) {
             <div key={i} className="flex items-center justify-center">
               {d && (
                 <span
-                  className={`w-7 h-6 flex items-center justify-center rounded-full text-xs tabular-nums transition-colors ${
+                  className={`w-7 h-[1.375rem] flex items-center justify-center rounded-full text-xs tabular-nums transition-colors ${
                     isToday(d) ? "bg-[#E4002B] text-white font-black shadow-[0_6px_14px_-6px_rgba(228,0,43,0.8)]" : weekend ? "text-[#ADADAD] font-semibold" : "text-[#262626] font-semibold hover:bg-[#F4F4F4]"
                   }`}
                 >
