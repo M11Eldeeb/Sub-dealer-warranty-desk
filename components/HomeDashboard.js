@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Receipt } from "lucide-react";
@@ -130,8 +130,40 @@ export default function HomeDashboard({ profile }) {
   return <HomeView profile={profile} range={range} setRange={setRange} data={data} failed={failed} revenue={revenue} workOrders={workOrders} />;
 }
 
+/**
+ * On a wide screen the side widgets are shrunk, if need be, to the height of the window, so all three show without scrolling.
+ * (CSS zoom re-flows the layout, so the cards simply get a little smaller.)
+ */
+function useFitHeight(outer, inner) {
+  useEffect(() => {
+    const o = outer.current;
+    const i = inner.current;
+    if (!o || !i) return;
+    const fit = () => {
+      if (!window.matchMedia("(min-width: 1280px)").matches) {
+        i.style.zoom = "";
+        return;
+      }
+      i.style.zoom = "1";
+      const natural = i.offsetHeight;
+      const cs = getComputedStyle(o);
+      const room = o.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const z = Math.max(0.6, Math.min(1, room / natural));
+      i.style.zoom = z < 1 ? String(Math.floor(z * 100) / 100) : "";
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(o);
+    ro.observe(i);
+    return () => ro.disconnect();
+  }, [outer, inner]);
+}
+
 /** The page itself, from the numbers it is given (so it can be drawn from sample data too). */
 export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders, weatherSample = null }) {
+  const asideRef = useRef(null);
+  const asideInner = useRef(null);
+  useFitHeight(asideRef, asideInner);
   const first = (profile?.full_name || "").split(/\s+/)[0];
   const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Riyadh", hour: "numeric", hour12: false }).format(new Date()));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -334,10 +366,12 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
         </div>
 
         {/* the side panel: today's reminder, the weather and the calendar, all in view */}
-        <aside onScroll={flashScrollbar} className={`space-y-2.5 ${SCROLL}`}>
+        <aside ref={asideRef} onScroll={flashScrollbar} className={SCROLL}>
+          <div ref={asideInner} className="space-y-2.5">
           <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.reduce((s, a) => s + a.count, 0) : null} />
           <WeatherCard index={2} sample={weatherSample} />
           <CalendarCard index={3} />
+          </div>
         </aside>
       </div>
     </div>
