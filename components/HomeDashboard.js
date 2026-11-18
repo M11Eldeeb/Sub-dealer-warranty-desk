@@ -232,7 +232,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             {data ? (
               <>
                 <StatCard index={2} Icon={ClipboardList} tint="#5B6270" label="Claims" value={<CountUp value={data.totals.claims} />} note={`${data.totals.open} open · ${data.totals.closed} closed · ${data.totals.rejected} rejected`} />
-                <StatCard index={3} Icon={Timer} tint="#2E9E5B" label="Average lead time" value={data.totals.avgLeadHours == null ? "—" : <CountUp value={data.totals.avgLeadHours} format={span} />} note={`Opened to closed, ${data.leadTimes.total.n} claims · clock starts at 9:00 when opened out of hours`} />
+                <StatCard index={3} Icon={Timer} tint="#2E9E5B" label="Average lead time" value={data.totals.avgLeadHours == null ? "—" : <CountUp value={data.totals.avgLeadHours} format={span} />} note={`All steps added up, ${data.leadTimes.total.n} closed claims`} />
               </>
             ) : (
               <>
@@ -426,6 +426,12 @@ function LeadTime({ lead }) {
           </li>
         ))}
       </ol>
+      <div className="mt-4 pt-3 border-t border-[#EEEEEE] flex items-center justify-between gap-3 flex-wrap">
+        <span className="text-xs font-semibold text-[#6E6E6E]">Total, all steps added up ({lead.total.n} claims)</span>
+        <span className="text-lg font-black text-[#111111] tabular-nums whitespace-nowrap">
+          {span(lead.total.avgHours)} <span className="text-xs font-semibold text-[#6E6E6E]">average · {span(lead.total.medianHours)} median</span>
+        </span>
+      </div>
     </div>
   );
 }
