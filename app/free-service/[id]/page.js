@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, fmt } from "@/components/ui";
 import { FsStatusTag, Fact, SavedFiles, formatSar, FS_STATUS, RequiredDocsEditor, UploadProgress, docOf, docFileName, missingDocs } from "@/components/free-service";
 import { uploadEvidence, removeAttachment, syncClaimFolder } from "@/lib/evidence-upload";
+import { CommentBox, HistoryEntry } from "@/components/ClaimHistory";
 import { ChevronLeft, Check, CornerUpLeft, XCircle, Loader2, Send, Info, CheckCircle2, AlertCircle, Receipt, Lock, Ban } from "lucide-react";
 
 // Work orders are stored with the branch prefix (BAS-123); the edit box shows only the number after it.
@@ -451,8 +452,22 @@ export default function FreeServiceDetailPage() {
         {/* History */}
         <section className="bg-white border border-[#E0E0E0] rounded-lg p-4 sm:p-5">
           <h3 className="text-sm font-bold text-[#111111] mb-3">History</h3>
+          <CommentBox
+            claimId={claim.id}
+            status={claim.status}
+            profile={profile}
+            onPosted={async () => {
+              const { data } = await supabase.from("claim_status_log").select("*").eq("claim_id", claim.id).order("at", { ascending: false });
+              setLog(data || []);
+            }}
+          />
           <ol className="space-y-3">
-            {log.map((l) => (
+            {log.map((l) =>
+              l.kind === "comment" ? (
+                <li key={l.id}>
+                  <HistoryEntry entry={l} formatDate={fmt} />
+                </li>
+              ) : (
               <li key={l.id} className="flex gap-3">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-[#E4002B] shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -462,7 +477,8 @@ export default function FreeServiceDetailPage() {
                   <div className="text-[0.6875rem] text-[#6E6E6E] font-mono">{fmt(l.at)}</div>
                 </div>
               </li>
-            ))}
+              )
+            )}
           </ol>
         </section>
       </div>

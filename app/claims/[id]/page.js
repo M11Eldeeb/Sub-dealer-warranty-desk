@@ -9,6 +9,7 @@ import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import DialogFocus from "@/components/DialogFocus";
 import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
 import { VEHICLE_MODELS } from "@/lib/vehicle-models";
+import { CommentBox, HistoryEntry } from "@/components/ClaimHistory";
 import {
   ChevronLeft, ChevronRight, Check, X, RotateCcw, Package, Wrench, Clock,
   FileText, History, Paperclip, Plus, CheckCircle2, Loader2, Stethoscope, Pencil,
@@ -2029,15 +2030,18 @@ export default function ClaimDetailPage() {
           <div className="text-xs font-bold text-[#6E6E6E] mb-2 flex items-center gap-1.5">
             <History size={13} /> Claim History
           </div>
+          <CommentBox
+            claimId={claim.id}
+            status={claim.status}
+            profile={profile}
+            onPosted={async () => {
+              const { data } = await supabase.from("claim_status_log").select("*").eq("claim_id", claim.id).order("at", { ascending: false });
+              setLog(data || []);
+            }}
+          />
           <div className="space-y-2">
             {log.map((l) => (
-              <div key={l.id} className="flex flex-col sm:flex-row gap-0.5 sm:gap-3 text-sm">
-                <div className="text-xs text-[#6E6E6E] sm:w-32 sm:shrink-0 sm:pt-0.5 font-mono">{fmt(l.at)}</div>
-                <div className="min-w-0 break-words">
-                  <span className="font-bold text-[#111111]">{l.actor_name}</span>
-                  <span className="text-[#4D4D4D]"> — {l.note}</span>
-                </div>
-              </div>
+              <HistoryEntry key={l.id} entry={l} formatDate={fmt} />
             ))}
           </div>
         </div>
