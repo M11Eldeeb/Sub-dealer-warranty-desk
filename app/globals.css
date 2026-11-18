@@ -50,7 +50,7 @@ body {
   .claim-card {
     background: #ffffff;
     border: 1px solid #ececec;
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 1px 1px rgba(17, 17, 17, 0.03);
     transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
   }
@@ -802,4 +802,122 @@ label {
   :root[data-theme="dark"] .claim-card:hover {
     border-color: #5a2a31; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
   }
+}
+
+/* ---- The new look: a black rail, a soft canvas, round cards ------------------------------------------------------------
+   Desktop navigation is a black rounded rail with icons (components/Sidebar.js); the content makes room for it. Cards are
+   rounder; white panels in the page body get the same rounder corners. MG red stays the one accent. */
+.rail {
+  position: fixed;
+  z-index: 40;
+  left: 0.75rem;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 4.5rem;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  border-radius: 1.75rem;
+  background: #111111;
+}
+.rail-logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff2447, #b8001f);
+  box-shadow: 0 6px 16px -4px rgba(228, 0, 43, 0.6);
+}
+.rail-item {
+  position: relative;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.62);
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.rail-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+.rail-item-active,
+.rail-item-active:hover {
+  background: #ffffff;
+  color: #111111;
+}
+.rail-tip {
+  position: absolute;
+  left: calc(100% + 0.75rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: #111111;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+}
+.rail-item:hover .rail-tip,
+.rail-item:focus-visible .rail-tip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+.rail-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2d;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.rail-avatar:hover,
+.rail-avatar[aria-expanded="true"] {
+  background: #3a3a3e;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+@media (min-width: 1024px) {
+  body.has-sidebar {
+    padding-left: calc(5.75rem + env(safe-area-inset-left));
+  }
+  /* The phone top bar is replaced by the rail. */
+  body.has-sidebar .app-header {
+    display: none;
+  }
+  /* Panels in the page body: rounder, like the cards. */
+  body.has-sidebar [role="main"] .rounded-lg.bg-white {
+    border-radius: 1rem;
+  }
+}
+
+/* Soft tinted card backgrounds for the home dashboard: one accent colour per card (set --tint), the rest is mixed in. */
+.tint {
+  background: color-mix(in srgb, var(--tint) 11%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--tint) 16%, #ffffff);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tint {
+    background: color-mix(in srgb, var(--tint) 20%, #1c1c1e);
+    border-color: color-mix(in srgb, var(--tint) 28%, #1c1c1e);
+  }
+}
+:root[data-theme="dark"] .tint {
+  background: color-mix(in srgb, var(--tint) 20%, #1c1c1e);
+  border-color: color-mix(in srgb, var(--tint) 28%, #1c1c1e);
 }

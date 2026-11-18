@@ -1,12 +1,11 @@
 "use client";
 import { Children, cloneElement, isValidElement, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ExportDataButton from "@/components/ExportDataButton";
 import LiveSheetButton from "@/components/LiveSheetButton";
-import ClosedRevenue from "@/components/ClosedRevenue";
-import DialogFocus from "@/components/DialogFocus";
+import RevenueDialog from "@/components/RevenueDialog";
+import Sidebar from "@/components/Sidebar";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
@@ -201,6 +200,7 @@ export function Header({ profile, onSignOut }) {
         </div>
       </div>
     </header>
+    <Sidebar profile={profile} menu={<HeaderMenu profile={profile} onSignOut={onSignOut} rail />} />
     <BottomNav profile={profile} />
     </>
   );
@@ -218,7 +218,7 @@ function ActionDot({ show }) {
 }
 
 /** The sandwich menu: user + e-mail settings and data export for dealer / admin accounts, and Sign out for everyone. */
-function HeaderMenu({ profile, onSignOut }) {
+function HeaderMenu({ profile, onSignOut, rail = false }) {
   const [open, setOpen] = useState(false);
   const [revenueOpen, setRevenueOpen] = useState(false); // the Revenue window (dealer, admin, manager)
   const ref = useRef(null);
@@ -247,53 +247,65 @@ function HeaderMenu({ profile, onSignOut }) {
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Menu"
-        aria-haspopup="true"
-        aria-expanded={open}
-        className="no-press tap-icon sm:min-w-0 sm:min-h-0 relative w-11 h-11 sm:w-9 sm:h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-colors"
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            key={open ? "close" : "open"}
-            initial={{ opacity: 0, rotate: open ? -45 : 45 }}
-            animate={{ opacity: 1, rotate: 0 }}
-            exit={{ opacity: 0, rotate: open ? 45 : -45 }}
-            transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
-            className="flex"
-          >
-            {open ? <X size={18} /> : <Menu size={18} />}
-          </motion.span>
-        </AnimatePresence>
-        {anyAction && !open && <span aria-hidden="true" className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#E4002B] border-2 border-[#1A1A1A]" />}
-      </button>
+      {rail ? (
+        // In the desktop rail the account is a round avatar with the person's initials.
+        <button onClick={() => setOpen((o) => !o)} aria-label="Account menu" aria-haspopup="true" aria-expanded={open} title={profile?.full_name} className="rail-avatar no-press">
+          {(profile?.full_name || "?")
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w) => w[0].toUpperCase())
+            .join("")}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Menu"
+          aria-haspopup="true"
+          aria-expanded={open}
+          className="no-press tap-icon sm:min-w-0 sm:min-h-0 relative w-11 h-11 sm:w-9 sm:h-9 rounded-md flex items-center justify-center bg-[#1A1A1A] hover:bg-[#2A2A2A] active:scale-95 transition-colors"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={open ? "close" : "open"}
+              initial={{ opacity: 0, rotate: open ? -45 : 45 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={{ opacity: 0, rotate: open ? 45 : -45 }}
+              transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
+              className="flex"
+            >
+              {open ? <X size={18} /> : <Menu size={18} />}
+            </motion.span>
+          </AnimatePresence>
+          {anyAction && !open && <span aria-hidden="true" className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#E4002B] border-2 border-[#1A1A1A]" />}
+        </button>
+      )}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] } }}
-            exit={{ opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.1, ease: [0.23, 1, 0.32, 1] } }}
-            className="absolute right-0 mt-2 w-60 bg-white text-[#111111] rounded-lg border border-[#E0E0E0] overflow-hidden origin-top-right"
+            initial={rail ? { opacity: 0, x: -6, scale: 0.97 } : { opacity: 0, y: -4, scale: 0.97 }}
+            animate={rail ? { opacity: 1, x: 0, scale: 1, transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] } } : { opacity: 1, y: 0, scale: 1, transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] } }}
+            exit={rail ? { opacity: 0, x: -6, scale: 0.97, transition: { duration: 0.1, ease: [0.23, 1, 0.32, 1] } } : { opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.1, ease: [0.23, 1, 0.32, 1] } }}
+            className={`absolute w-60 bg-white text-[#111111] rounded-2xl border border-[#E0E0E0] overflow-hidden ${rail ? "left-full bottom-0 ml-4 origin-bottom-left" : "right-0 mt-2 origin-top-right"}`}
             style={{ boxShadow: "0 18px 40px -12px rgba(0,0,0,0.45)" }}
           >
             <div className="px-3.5 py-3 border-b border-[#EEEEEE] bg-[#FAFAFA]">
               <div className="text-sm font-bold truncate">{profile?.full_name}</div>
               <div className="text-[0.6875rem] text-[#6E6E6E]">{(profile?.role || "").replace("_", " ")}</div>
             </div>
-            {(staff || viewer || profile?.role === "sub_dealer") && (
+            {!rail && (staff || viewer || profile?.role === "sub_dealer") && (
               <Link href={profile?.role === "sub_dealer" ? "/dashboard/sub-dealer" : "/dashboard/dealer"} onClick={() => setOpen(false)} className={item}>
                 <ClipboardList size={16} className="text-[#6E6E6E]" /> Warranty Claims
                 <ActionDot show={actions.claims > 0} />
               </Link>
             )}
-            {(staff || viewer || profile?.role === "sub_dealer") && (
+            {!rail && (staff || viewer || profile?.role === "sub_dealer") && (
               <Link href="/dashboard/defect-returns" onClick={() => setOpen(false)} className={item}>
                 <PackageOpen size={16} className="text-[#6E6E6E]" /> Defected parts
                 <ActionDot show={actions.defects > 0} />
               </Link>
             )}
-            {freeService?.canUse && (
+            {!rail && freeService?.canUse && (
               <Link href="/dashboard/free-service" onClick={() => setOpen(false)} className={item}>
                 <BadgeCheck size={16} className="text-[#6E6E6E]" /> Free Service
                 <ActionDot show={actions.free > 0} />
@@ -301,9 +313,11 @@ function HeaderMenu({ profile, onSignOut }) {
             )}
             {viewer && (
               <>
-                <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
-                  <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
-                </button>
+                {!rail && (
+                  <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
+                    <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
+                  </button>
+                )}
                 <ExportDataButton variant="menu" className={item} />
                 <LiveSheetButton className={item} canRefresh={false} />
                 <div className="border-t border-[#EEEEEE]" />
@@ -311,18 +325,22 @@ function HeaderMenu({ profile, onSignOut }) {
             )}
             {staff && (
               <>
-                <Link href="/dashboard/users" onClick={() => setOpen(false)} className={item}>
-                  <Users size={16} className="text-[#6E6E6E]" /> User settings
-                </Link>
-                <Link href="/dashboard/settings" onClick={() => setOpen(false)} className={item}>
-                  <Settings size={16} className="text-[#6E6E6E]" /> Settings
-                </Link>
-                <Link href="/dashboard/billing" onClick={() => setOpen(false)} className={item}>
-                  <Receipt size={16} className="text-[#6E6E6E]" /> Sub-dealer bill
-                </Link>
-                <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
-                  <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
-                </button>
+                {!rail && (
+                  <>
+                    <Link href="/dashboard/users" onClick={() => setOpen(false)} className={item}>
+                      <Users size={16} className="text-[#6E6E6E]" /> User settings
+                    </Link>
+                    <Link href="/dashboard/settings" onClick={() => setOpen(false)} className={item}>
+                      <Settings size={16} className="text-[#6E6E6E]" /> Settings
+                    </Link>
+                    <Link href="/dashboard/billing" onClick={() => setOpen(false)} className={item}>
+                      <Receipt size={16} className="text-[#6E6E6E]" /> Sub-dealer bill
+                    </Link>
+                    <button onClick={() => { setOpen(false); setRevenueOpen(true); }} className={item}>
+                      <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
+                    </button>
+                  </>
+                )}
                 <ExportDataButton variant="menu" className={item} />
                 <LiveSheetButton className={item} canRefresh={true} />
                 <div className="border-t border-[#EEEEEE]" />
@@ -359,24 +377,7 @@ function HeaderMenu({ profile, onSignOut }) {
           </motion.div>
         )}
       </AnimatePresence>
-      {revenueOpen &&
-        createPortal(
-          <div role="dialog" aria-modal="true" aria-label="Revenue" className="fade-in fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRevenueOpen(false)}>
-            <DialogFocus onClose={() => setRevenueOpen(false)} />
-            <div className="dialog-in bg-white text-[#111111] rounded-lg p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <h2 className="flex items-center gap-2 text-base font-bold text-[#111111]">
-                  <Wallet size={17} className="text-[#6E6E6E]" /> Revenue
-                </h2>
-                <button onClick={() => setRevenueOpen(false)} aria-label="Close" className="tap-icon p-1.5 rounded-md text-[#6E6E6E] hover:bg-[#F1F2F4]">
-                  <X size={16} />
-                </button>
-              </div>
-              <ClosedRevenue />
-            </div>
-          </div>,
-          document.body
-        )}
+      {revenueOpen && <RevenueDialog onClose={() => setRevenueOpen(false)} />}
     </div>
   );
 }
@@ -505,8 +506,18 @@ function BottomNav({ profile }) {
 
 /** What shows while a page loads its data: the bar and the shape of the cards, instead of an empty screen. */
 export function LoadingShell({ cards = 4 }) {
+  // The same room for the desktop rail as the real page, so nothing jumps when the page arrives.
+  useEffect(() => {
+    document.body.classList.add("has-sidebar");
+    return () => document.body.classList.remove("has-sidebar");
+  }, []);
   return (
     <div className="min-h-screen bg-[#F4F4F4]" role="status" aria-label="Loading">
+      <div className="rail hidden lg:flex" aria-hidden="true">
+        <div className="rail-logo">
+          <Wrench size={18} className="text-white" />
+        </div>
+      </div>
       <header className="app-header bg-[#111111] text-white px-4 sm:px-6 pb-3 sm:pb-4 sm:pt-4 border-b border-white/5">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
