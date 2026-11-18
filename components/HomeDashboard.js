@@ -305,7 +305,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 </div>
               </Card>
 
-              <Card index={7} className="lg:col-span-7" title="Lead time, A to Z" subtitle="Average time of each step, on working hours (Sun to Thu, 9:00 to 17:00)">
+              <Card index={7} className="lg:col-span-7" title="Lead time, A to Z">
                 <LeadTime lead={data.leadTimes} />
               </Card>
 
