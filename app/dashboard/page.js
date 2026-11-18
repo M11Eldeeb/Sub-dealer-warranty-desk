@@ -21,6 +21,8 @@ export default function HomePage() {
       if (!user) return router.push("/login");
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       if (!prof) return router.push("/login?setup=1");
+      // with the classic look the first page is the claims list, as before
+      if (document.documentElement.getAttribute("data-look") === "classic") return router.replace("/dashboard/dealer");
       // the other roles have their own first page
       if (prof.role === "sub_dealer") return router.push("/dashboard/sub-dealer");
       if (prof.role === "parts_team") return router.push("/dashboard/parts-team");

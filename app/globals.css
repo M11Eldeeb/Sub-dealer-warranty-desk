@@ -50,7 +50,7 @@ body {
   .claim-card {
     background: #ffffff;
     border: 1px solid #ececec;
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 1px 1px rgba(17, 17, 17, 0.03);
     transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
   }
@@ -892,18 +892,79 @@ label {
   background: #3a3a3e;
   border-color: rgba(255, 255, 255, 0.4);
 }
+/* Everything of the new look is scoped to html[data-look="new"] (see lib/look.js): with "classic" the rail is gone and the
+   earlier top bar, menu and corners are back. */
+html[data-look="classic"] .rail {
+  display: none !important;
+}
 @media (min-width: 1024px) {
-  body.has-sidebar {
+  html[data-look="new"] body.has-sidebar {
     padding-left: calc(5.75rem + env(safe-area-inset-left));
   }
-  /* The phone top bar is replaced by the rail. */
-  body.has-sidebar .app-header {
+  /* The top bar is replaced by the rail. */
+  html[data-look="new"] body.has-sidebar .app-header {
     display: none;
   }
-  /* Panels in the page body: rounder, like the cards. */
-  body.has-sidebar [role="main"] .rounded-lg.bg-white {
-    border-radius: 1rem;
+}
+
+/* ---- The new look, for every page ---------------------------------------------------------------------------------
+   Rounder corners everywhere, pill tabs and status pills, softer cards and fields, a slightly cooler canvas. */
+html[data-look="new"] body {
+  background: #f3f3f5;
+}
+html[data-look="new"] .claim-card {
+  border-radius: 1.25rem;
+  border-color: #ebebee;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.03);
+}
+html[data-look="new"] [role="main"] .rounded-lg {
+  border-radius: 1rem;
+}
+html[data-look="new"] [role="main"] .rounded-md {
+  border-radius: 0.75rem;
+}
+html[data-look="new"] [role="main"] .rounded {
+  border-radius: 0.625rem;
+}
+html[data-look="new"] .input {
+  border-radius: 0.75rem;
+  border-color: #e3e3e8;
+  padding: 9px 12px;
+}
+html[data-look="new"] .pill {
+  border-radius: 999px;
+}
+/* Tab strips (Needs review / Ongoing / History ...) become pills. */
+html[data-look="new"] [role="tablist"],
+html[data-look="new"] [role="tablist"] > button,
+html[data-look="new"] [role="tablist"] > button > span {
+  border-radius: 999px;
+}
+html[data-look="new"] [role="main"] h1 {
+  letter-spacing: -0.01em;
+}
+html[data-look="new"] .dialog-in {
+  border-radius: 1.25rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-look="new"] body {
+    background: #0f0f11;
   }
+  :root:not([data-theme="light"])[data-look="new"] .claim-card {
+    border-color: #2c2c30;
+  }
+  :root:not([data-theme="light"])[data-look="new"] .input {
+    border-color: #3a3a3f;
+  }
+}
+:root[data-theme="dark"][data-look="new"] body {
+  background: #0f0f11;
+}
+:root[data-theme="dark"][data-look="new"] .claim-card {
+  border-color: #2c2c30;
+}
+:root[data-theme="dark"][data-look="new"] .input {
+  border-color: #3a3a3f;
 }
 
 /* Soft tinted card backgrounds for the home dashboard: one accent colour per card (set --tint), the rest is mixed in. */

@@ -8,6 +8,7 @@ import RevenueDialog from "@/components/RevenueDialog";
 import Sidebar from "@/components/Sidebar";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
+import { useLook } from "@/lib/look";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet, Receipt } from "lucide-react";
 
@@ -228,6 +229,7 @@ function HeaderMenu({ profile, onSignOut, rail = false }) {
   const actions = freeService?.actions || { claims: 0, free: 0, defects: 0 };
   const anyAction = actions.claims > 0 || actions.free > 0 || actions.defects > 0;
   const [theme, setTheme] = useTheme();
+  const [look, setLook] = useLook();
 
   useEffect(() => {
     if (!open) return;
@@ -366,6 +368,29 @@ function HeaderMenu({ profile, onSignOut, rail = false }) {
                     }`}
                   >
                     <Icon size={14} aria-hidden="true" /> {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="px-3.5 pb-3">
+              <div id="look-label" className="text-xs font-semibold text-[#6E6E6E] mb-2">
+                Look
+              </div>
+              <div role="radiogroup" aria-labelledby="look-label" className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-[#F1F2F4]">
+                {[
+                  ["new", "New"],
+                  ["classic", "Classic"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    role="radio"
+                    aria-checked={look === value}
+                    onClick={() => setLook(value)}
+                    className={`no-press tap-auto flex items-center justify-center min-h-9 rounded-md text-xs font-semibold transition-colors ${
+                      look === value ? "bg-white text-[#111111] shadow-sm" : "text-[#6E6E6E] hover:text-[#111111]"
+                    }`}
+                  >
+                    {label}
                   </button>
                 ))}
               </div>
