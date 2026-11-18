@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Receipt } from "lucide-react";
-import { ColumnChart, Donut, Ring, HBars, monthLabel } from "@/components/charts";
+import { ColumnChart, Donut, Ring, HBars, CountUp, monthLabel } from "@/components/charts";
 import { STATUS } from "@/components/ui";
 
 const RANGES = [
@@ -20,8 +20,9 @@ const pct = (v) => (v == null ? "—" : `${Math.round(v * 100)}%`);
 const span = (hours) => (hours == null ? "—" : hours < 48 ? `${hours.toFixed(1)} h` : `${(hours / 24).toFixed(1)} d`);
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Riyadh", day: "2-digit", month: "short" }) : "—");
 
-const ease = [0.23, 1, 0.32, 1];
-const rise = (i = 0) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.32, delay: Math.min(i, 10) * 0.045, ease } });
+const ease = [0.22, 1, 0.36, 1];
+// Cards come up from the bottom of the screen one after another (like a story feed), then their numbers and charts fill in.
+const rise = (i = 0) => ({ initial: { opacity: 0, y: 56 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.75, delay: Math.min(i, 12) * 0.08, ease } });
 
 /** A white card with a title, used for every widget. */
 function Card({ title, subtitle, action, className = "", children, index = 0 }) {
@@ -161,14 +162,14 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
               </>
             ) : (
               <>
-                <StatCard index={0} Icon={Wallet} tint="#E4002B" label={`Revenue to ${branchName}`} value={revenue === null || !revenue.length ? "—" : sar(toBranch)} note="Closed claims and Free Service, VAT incl." />
-                <StatCard index={1} Icon={Landmark} tint="#F29D38" label="Dealer revenue" value={revenue === null || !revenue.length ? "—" : sar(dealerTotal)} note="Labor + parts + Free Service" />
+                <StatCard index={0} Icon={Wallet} tint="#E4002B" label={`Revenue to ${branchName}`} value={revenue === null || !revenue.length ? "—" : <CountUp value={toBranch} format={sar} />} note="Closed claims and Free Service, VAT incl." />
+                <StatCard index={1} Icon={Landmark} tint="#F29D38" label="Dealer revenue" value={revenue === null || !revenue.length ? "—" : <CountUp value={dealerTotal} format={sar} />} note="Labor + parts + Free Service" />
               </>
             )}
             {data ? (
               <>
-                <StatCard index={2} Icon={ClipboardList} tint="#5B6270" label="Claims" value={num(data.totals.claims)} note={`${data.totals.open} open · ${data.totals.closed} closed · ${data.totals.rejected} rejected`} />
-                <StatCard index={3} Icon={Timer} tint="#2E9E5B" label="Average lead time" value={span(data.totals.avgLeadHours)} note={`Opened to closed, ${data.leadTimes.total.n} claims`} />
+                <StatCard index={2} Icon={ClipboardList} tint="#5B6270" label="Claims" value={<CountUp value={data.totals.claims} />} note={`${data.totals.open} open · ${data.totals.closed} closed · ${data.totals.rejected} rejected`} />
+                <StatCard index={3} Icon={Timer} tint="#2E9E5B" label="Average lead time" value={data.totals.avgLeadHours == null ? "—" : <CountUp value={data.totals.avgLeadHours} format={span} />} note={`Opened to closed, ${data.leadTimes.total.n} claims`} />
               </>
             ) : (
               <>
@@ -210,7 +211,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
                   <Ring value={data.quality.firstTimeRightRate} color="#2E9E5B" label="first time right" />
                   <dl className="flex-1 min-w-0 space-y-3 text-sm">
-                    <Fact label="Decided on" value={num(data.quality.decided)} />
+                    <Fact label="Decided on" value={<CountUp value={data.quality.decided} />} />
                     <Fact label="Sent back at least once" value={`${data.quality.returned} · ${pct(data.quality.returnedRate)}`} />
                     <Fact label="Rejected" value={`${data.quality.rejected} · ${pct(data.quality.rejectionRate)}`} tone="#E4002B" />
                   </dl>
@@ -245,7 +246,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                         {sum("warranty_count")} warranty claims and {sum("free_service_count")} Free Service closed
                         {parts == null || free == null ? " · some figures are not available right now" : ""}
                       </span>
-                      <span className="text-xl font-black text-[#111111] tabular-nums">{sar(dealerTotal)}</span>
+                      <span className="text-xl font-black text-[#111111] tabular-nums"><CountUp value={dealerTotal} format={sar} delay={0.4} /></span>
                     </div>
                   </div>
                 )}
@@ -264,13 +265,13 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                       { label: "Returned", value: data.defected.returned, color: "#2E9E5B" },
                       { label: "Still at the sub-dealer", value: data.defected.pending, color: "#F29D38" },
                     ]}
-                    center={{ value: data.defected.total ? `${Math.round((data.defected.returned / data.defected.total) * 100)}%` : "—", label: "returned" }}
+                    center={{ value: data.defected.total ? (data.defected.returned / data.defected.total) * 100 : "—", format: (v) => `${Math.round(v)}%`, label: "returned" }}
                     ariaLabel="Defective parts returned"
                   />
                   <dl className="flex-1 min-w-0 space-y-3 text-sm">
-                    <Fact label="Parts on closed claims" value={num(data.defected.total)} />
-                    <Fact label="Back at the dealer" value={num(data.defected.returned)} tone="#2E9E5B" />
-                    <Fact label="Still at the sub-dealer" value={num(data.defected.pending)} tone="#F29D38" />
+                    <Fact label="Parts on closed claims" value={<CountUp value={data.defected.total} />} />
+                    <Fact label="Back at the dealer" value={<CountUp value={data.defected.returned} />} tone="#2E9E5B" />
+                    <Fact label="Still at the sub-dealer" value={<CountUp value={data.defected.pending} />} tone="#F29D38" />
                   </dl>
                 </div>
               </Card>
@@ -347,7 +348,7 @@ function LeadTime({ lead }) {
               </span>
             </div>
             <div className="mt-1.5 h-2 rounded-full bg-[#E0E0E0] overflow-hidden">
-              <div className="h-full rounded-full bg-[#E4002B] transition-[width] duration-500" style={{ width: `${s.avgHours ? Math.max(3, (s.avgHours / max) * 100) : 0}%`, opacity: 1 - i * 0.12 }} />
+              <motion.div className="h-full rounded-full bg-[#E4002B]" initial={{ width: 0 }} animate={{ width: `${s.avgHours ? Math.max(3, (s.avgHours / max) * 100) : 0}%` }} transition={{ duration: 0.85, delay: 0.25 + i * 0.09, ease }} style={{ opacity: 1 - i * 0.12 }} />
             </div>
           </li>
         ))}
