@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Sun, Cloud, CloudSun, CloudRain, CloudDrizzle, CloudLightning, CloudFog, Snowflake, Wind, Droplets, ChevronLeft, ChevronRight, Sparkles, MapPin, CheckCircle2 } from "lucide-react";
+import { Sun, Cloud, CloudSun, CloudRain, CloudDrizzle, CloudLightning, CloudFog, Snowflake, Wind, Droplets, ChevronLeft, ChevronRight, Sparkles, MapPin, CheckCircle2, X, StickyNote } from "lucide-react";
 import { CountUp } from "@/components/charts";
+import { createClient } from "@/lib/supabase/client";
 
 const ease = [0.22, 1, 0.36, 1];
 const rise = (i = 0) => ({ initial: { opacity: 0, y: 56 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.75, delay: Math.min(i, 12) * 0.08, ease } });
@@ -230,6 +232,15 @@ const hijri = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { day: "numeri
 export function CalendarCard({ index = 0 }) {
   const [offset, setOffset] = useState(0);
   const [today, setToday] = useState(null);
+  const [notes, setNotes] = useState({}); // "YYYY-MM-DD" -> the person's note on that day
+  const [open, setOpen] = useState(null); // the day whose note is open
+  useEffect(() => {
+    // the notes are the person's own (a table only they can read), so they are there on every device
+    createClient()
+      .from("calendar_notes")
+      .select("day, note")
+      .then(({ data }) => data && setNotes(Object.fromEntries(data.map((r) => [r.day, r.note]))));
+  }, []);
   useEffect(() => {
     const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).split("-").map(Number);
     setToday({ y, m, d });
@@ -244,6 +255,7 @@ export function CalendarCard({ index = 0 }) {
   const cells = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7) cells.push(null);
   const isToday = (d) => today && d === today.d && month + 1 === today.m && year === today.y;
+  const dayKey = (d) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   const title = new Date(Date.UTC(year, month, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
   return (
@@ -278,18 +290,110 @@ export function CalendarCard({ index = 0 }) {
           return (
             <div key={i} className="flex items-center justify-center">
               {d && (
-                <span
-                  className={`w-7 h-[1.375rem] flex items-center justify-center rounded-full text-xs tabular-nums transition-colors ${
-                    isToday(d) ? "bg-[#E4002B] text-white font-black shadow-[0_6px_14px_-6px_rgba(228,0,43,0.8)]" : weekend ? "text-[#ADADAD] font-semibold" : "text-[#262626] font-semibold hover:bg-[#F4F4F4]"
-                  }`}
+                <button
+                  type="button"
+                  onClick={() => setOpen(dayKey(d))}
+                  title={notes[dayKey(d)] ? notes[dayKey(d)] : "Add a note"}
+                  aria-label={`${d} ${title}${notes[dayKey(d)] ? ", has a note" : ""}`}
+                  className={`relative w-7 h-[1.375rem] flex items-center justify-center rounded-full text-xs tabular-nums transition-colors ${
+                    isToday(d) ? "bg-[#E4002B] text-white font-black shadow-[0_6px_14px_-6px_rgba(228,0,43,0.8)]" : weekend ? "text-[#ADADAD] font-semibold hover:bg-[#F4F4F4]" : "text-[#262626] font-semibold hover:bg-[#F4F4F4]"
+                  } ${notes[dayKey(d)] && !isToday(d) ? "ring-2 ring-[#F29D38]/70 !text-[#262626]" : ""}`}
                 >
                   {d}
-                </span>
+                  {notes[dayKey(d)] && <span aria-hidden="true" className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${isToday(d) ? "bg-white ring-1 ring-[#E4002B]" : "bg-[#F29D38]"}`} />}
+                </button>
               )}
             </div>
           );
         })}
       </div>
+      {open && (
+        <NoteDialog
+          day={open}
+          note={notes[open] || ""}
+          onClose={() => setOpen(null)}
+          onSave={async (text) => {
+            const supabase = createClient();
+            const clean = text.trim();
+            const { error } = clean ? await supabase.from("calendar_notes").upsert({ day: open, note: clean, updated_at: new Date().toISOString() }, { onConflict: "user_id,day" }) : await supabase.from("calendar_notes").delete().eq("day", open);
+            if (error) return false;
+            setNotes((n) => {
+              const next = { ...n };
+              if (clean) next[open] = clean;
+              else delete next[open];
+              return next;
+            });
+            return true;
+          }}
+        />
+      )}
     </motion.section>
+  );
+}
+
+/** The note on one day: a small window with a text box. Saving an empty box removes the note. */
+function NoteDialog({ day, note, onSave, onClose }) {
+  const [text, setText] = useState(note);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const heading = new Date(`${day}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const save = async () => {
+    setBusy(true);
+    setFailed(false);
+    const ok = await onSave(text);
+    setBusy(false);
+    if (ok) onClose();
+    else setFailed(true);
+  };
+
+  // drawn on the page itself (not inside the card), so the card's own scaling and clipping do not touch it
+  return createPortal(
+    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/45" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-label={`Note for ${heading}`} className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#F29D38]">
+              <StickyNote size={13} aria-hidden="true" /> Note
+            </div>
+            <h2 className="mt-1 text-base font-black text-[#111111]">{heading}</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="tap-icon shrink-0 w-9 h-9 -mr-2 -mt-1 rounded-full flex items-center justify-center text-[#4D4D4D] hover:bg-[#F1F2F4]">
+            <X size={18} />
+          </button>
+        </div>
+        <textarea
+          autoFocus
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={2000}
+          rows={5}
+          placeholder="Write a note for this day…"
+          className="mt-3 w-full rounded-2xl border border-[#E4E4E8] bg-[#FAFAFB] px-3.5 py-3 text-sm text-[#111111] placeholder:text-[#ADADAD] focus:outline-none focus:border-[#111111] resize-none"
+        />
+        {failed && (
+          <p role="alert" className="mt-2 text-xs font-semibold text-[#B23A32]">
+            The note could not be saved. Try again.
+          </p>
+        )}
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-[0.6875rem] text-[#6E6E6E]">{note ? "Clear the box and save to remove the note." : "The day gets marked on the calendar."}</span>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-full text-xs font-bold text-[#4D4D4D] hover:bg-[#F1F2F4]">
+              Cancel
+            </button>
+            <button type="button" onClick={save} disabled={busy || text.trim() === note.trim()} className="px-4 py-2 rounded-full text-xs font-bold bg-[#111111] text-white disabled:opacity-40">
+              {busy ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }

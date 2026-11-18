@@ -6,6 +6,7 @@ import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Rece
 import { ColumnChart, Donut, Ring, HBars, CountUp, monthLabel } from "@/components/charts";
 import { STATUS } from "@/components/ui";
 import { MessageCard, WeatherCard, CalendarCard } from "@/components/DailyWidgets";
+import DrillDown from "@/components/DrillDown";
 
 const RANGES = [
   ["3", "3 months"],
@@ -161,6 +162,15 @@ function useFitHeight(outer, inner) {
 
 /** The page itself, from the numbers it is given (so it can be drawn from sample data too). */
 export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders, weatherSample = null }) {
+  // the list behind a chart (a bar, a slice or a part that was clicked), or null
+  const [drill, setDrill] = useState(null);
+  const longMonth = (m) => new Date(`${m}-01T12:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const openMonth = (list, i, title, filterKey, revenue) => {
+    const month = list[i].month;
+    setDrill({ title: `${title} ${longMonth(month)}`, kind: "claims", revenue, claimFilter: (c) => c[filterKey] === month });
+  };
+  const openStage = (slice) => setDrill({ title: slice.label, subtitle: slice.key === "closed" ? "closed claims" : "", kind: "claims", revenue: slice.key === "closed", claimFilter: (c) => c.g === slice.key });
+  const partClaimIds = (name) => new Set((data?.partList || []).filter((p) => p.name === name).map((p) => p.c));
   const asideRef = useRef(null);
   const asideInner = useRef(null);
   useFitHeight(asideRef, asideInner);
@@ -263,19 +273,21 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              <Card index={4} className="lg:col-span-7" title="Claims over time" subtitle="Claims the sub-dealer opened each month">
-                <ColumnChart data={data.claimsPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Claims opened per month" />
+              <Card index={4} className="lg:col-span-7" title="Claims over time" subtitle="Claims the sub-dealer opened each month · click a month to see them">
+                <ColumnChart onSelect={(i) => openMonth(data.claimsPerMonth, i, "Claims opened in", "cm", true)} data={data.claimsPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Claims opened per month" />
               </Card>
 
               <Card index={5} className="lg:col-span-5" title="Where the claims stand" subtitle="Every claim by its stage">
                 <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
-                  <Donut size={148} thickness={17} slices={data.board} center={{ value: data.totals.claims, label: "claims" }} ariaLabel="Claims by stage" />
+                  <Donut size={148} thickness={17} slices={data.board} onSelect={(s) => openStage(s)} center={{ value: data.totals.claims, label: "claims" }} ariaLabel="Claims by stage" />
                   <ul className="min-w-0 flex-1 space-y-1.5 text-xs">
                     {data.board.map((b) => (
-                      <li key={b.key} className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: b.color }} />
-                        <span className="text-[#4D4D4D] truncate">{b.label}</span>
-                        <span className="ml-auto font-bold text-[#111111] tabular-nums">{b.value}</span>
+                      <li key={b.key}>
+                        <button type="button" onClick={() => openStage(b)} title="Click to see the work orders" className="w-full flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-black/[0.04] transition-colors">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: b.color }} />
+                          <span className="text-[#4D4D4D] truncate">{b.label}</span>
+                          <span className="ml-auto font-bold text-[#111111] tabular-nums">{b.value}</span>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -284,7 +296,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
 
               <Card index={6} className="lg:col-span-5" title="First time right & rejection" subtitle="Of the claims the dealer has decided on">
                 <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
-                  <Ring value={data.quality.firstTimeRightRate} color="#2E9E5B" label="first time right" />
+                  <Ring value={data.quality.firstTimeRightRate} color="#2E9E5B" restColor="#F29D38" label="first time right" onSelect={(key) => setDrill(key === "share" ? { title: "First time right", subtitle: "approved with no sending back or rejection", kind: "claims", revenue: false, claimFilter: (c) => c.q === "right" } : { title: "Not first time right", subtitle: "sent back or rejected at least once", kind: "claims", revenue: false, claimFilter: (c) => c.q === "other" })} />
                   <dl className="flex-1 min-w-0 space-y-3 text-sm">
                     <Fact label="Decided on" value={<CountUp value={data.quality.decided} />} />
                     <Fact label="Sent back at least once" value={`${data.quality.returned} · ${pct(data.quality.returnedRate)}`} />
@@ -297,8 +309,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 <LeadTime lead={data.leadTimes} />
               </Card>
 
-              <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle="Approved to the sub-dealer each month (SAR, VAT incl.)">
-                <ColumnChart format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
+              <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle="Approved to the sub-dealer each month (SAR, VAT incl.) · click a month">
+                <ColumnChart onSelect={(i) => openMonth(data.laborPerMonth, i, "Labor approved in", "dm", true)} format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
               </Card>
 
               <Card index={9} className="lg:col-span-7" title="Dealer revenue" subtitle="What the dealer earns on closed claims (all time)">
@@ -327,8 +339,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 )}
               </Card>
 
-              <Card index={10} className="lg:col-span-6" title="Most replaced parts" subtitle="By quantity on the claims">
-                <HBars rows={data.topParts.map((p) => ({ label: p.name, value: p.qty }))} format={(v) => `${v}×`} emptyText="No parts on these claims yet." />
+              <Card index={10} className="lg:col-span-6" title="Most replaced parts" subtitle="By quantity on the claims · click a part">
+                <HBars onSelect={(row) => { const ids = partClaimIds(row.label); setDrill({ title: row.label, subtitle: "claims that replaced it", kind: "claims", revenue: true, claimFilter: (c) => ids.has(c.id) }); }} rows={data.topParts.map((p) => ({ label: p.name, value: p.qty }))} format={(v) => `${v}×`} emptyText="No parts on these claims yet." />
               </Card>
 
               <Card index={11} className="lg:col-span-6" title="Defective parts returned" subtitle="Closed claims: parts sent back to the dealer">
@@ -337,9 +349,10 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                     size={132}
                     thickness={15}
                     slices={[
-                      { label: "Returned", value: data.defected.returned, color: "#2E9E5B" },
-                      { label: "Still at the sub-dealer", value: data.defected.pending, color: "#F29D38" },
+                      { key: "returned", label: "Returned", value: data.defected.returned, color: "#2E9E5B" },
+                      { key: "pending", label: "Still at the sub-dealer", value: data.defected.pending, color: "#F29D38" },
                     ]}
+                    onSelect={(s) => setDrill({ title: s.key === "returned" ? "Parts returned to the dealer" : "Parts still at the sub-dealer", subtitle: "on closed claims", kind: "parts", partFilter: (p, c) => c.st === "closed" && p.back === (s.key === "returned") })}
                     center={{ value: data.defected.total ? (data.defected.returned / data.defected.total) * 100 : "—", format: (v) => `${Math.round(v)}%`, label: "returned" }}
                     ariaLabel="Defective parts returned"
                   />
@@ -374,6 +387,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
           </div>
         </aside>
       </div>
+      {drill && data && <DrillDown spec={drill} data={data} workOrders={workOrders} onClose={() => setDrill(null)} />}
     </div>
   );
 }

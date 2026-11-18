@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildAnalytics, monthKey, monthRange } from "@/lib/analytics";
+import { buildAnalytics, claimBrief, monthKey, monthRange, partBriefs } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -62,6 +62,9 @@ export async function GET(request) {
   }
 
   const analytics = buildAnalytics(claims, parts, months);
+  // what the lists behind the charts (click a bar, a slice or a part) are drawn from
+  analytics.claimList = claims.map(claimBrief);
+  analytics.partList = partBriefs(parts);
   // the latest closed work orders, each with what was approved to the sub-dealer and whether it is invoiced yet
   analytics.recent = claims
     .filter((c) => c.status === "closed" && c.closed_at)
