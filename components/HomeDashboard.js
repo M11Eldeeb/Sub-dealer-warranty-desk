@@ -305,7 +305,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 </div>
               </Card>
 
-              <Card index={7} className="lg:col-span-7" title="Lead time, A to Z" subtitle="Average time of each step. The dealer's steps count working hours only (Sun to Thu, 9:00 to 17:00). Every other step starts its clock at 9:00 when the step before it ended out of hours">
+              <Card index={7} className="lg:col-span-7" title="Lead time, A to Z" subtitle="Average time of each step, on working hours (Sun to Thu, 9:00 to 17:00)">
                 <LeadTime lead={data.leadTimes} />
               </Card>
 
@@ -415,7 +415,6 @@ function LeadTime({ lead }) {
               <span className="font-semibold text-[#262626]">
                 <span className="text-[#ADADAD] mr-1.5">{i + 1}</span>
                 {s.label}
-                {s.working && <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-[#F1F2F4] text-[0.625rem] font-bold text-[#6E6E6E]">working hours</span>}
               </span>
               <span className="text-[#6E6E6E] tabular-nums">
                 <b className="text-[#111111]">{span(s.avgHours)}</b> average · {span(s.medianHours)} median{s.n ? ` · ${s.n}${s.working ? " replies" : ""}` : ""}
@@ -427,12 +426,6 @@ function LeadTime({ lead }) {
           </li>
         ))}
       </ol>
-      <div className="mt-4 pt-3 border-t border-[#EEEEEE] flex items-baseline justify-between gap-3">
-        <span className="text-xs font-semibold text-[#6E6E6E]">From opening to closing ({lead.total.n} claims, clock starts at 9:00 when opened out of hours)</span>
-        <span className="text-lg font-black text-[#111111] tabular-nums">
-          {span(lead.total.avgHours)} <span className="text-xs font-semibold text-[#6E6E6E]">average · {span(lead.total.medianHours)} median</span>
-        </span>
-      </div>
     </div>
   );
 }
