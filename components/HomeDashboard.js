@@ -232,7 +232,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             {data ? (
               <>
                 <StatCard index={2} Icon={ClipboardList} tint="#5B6270" label="Claims" value={<CountUp value={data.totals.claims} />} note={`${data.totals.open} open · ${data.totals.closed} closed · ${data.totals.rejected} rejected`} />
-                <StatCard index={3} Icon={Timer} tint="#2E9E5B" label="Average lead time" value={data.totals.avgLeadHours == null ? "—" : <CountUp value={data.totals.avgLeadHours} format={span} />} note={`Opened to closed, ${data.leadTimes.total.n} claims`} />
+                <StatCard index={3} Icon={Timer} tint="#2E9E5B" label="Average lead time" value={data.totals.avgLeadHours == null ? "—" : <CountUp value={data.totals.avgLeadHours} format={span} />} note={`Opened to closed, ${data.leadTimes.total.n} claims · clock starts at 9:00 when opened out of hours`} />
               </>
             ) : (
               <>
@@ -428,7 +428,7 @@ function LeadTime({ lead }) {
         ))}
       </ol>
       <div className="mt-4 pt-3 border-t border-[#EEEEEE] flex items-baseline justify-between gap-3">
-        <span className="text-xs font-semibold text-[#6E6E6E]">From opening to closing ({lead.total.n} claims)</span>
+        <span className="text-xs font-semibold text-[#6E6E6E]">From opening to closing ({lead.total.n} claims, clock starts at 9:00 when opened out of hours)</span>
         <span className="text-lg font-black text-[#111111] tabular-nums">
           {span(lead.total.avgHours)} <span className="text-xs font-semibold text-[#6E6E6E]">average · {span(lead.total.medianHours)} median</span>
         </span>
