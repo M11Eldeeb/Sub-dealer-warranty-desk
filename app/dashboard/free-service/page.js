@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, Tabs, ClaimGrid, ClaimCard, fmt } from "@/components/ui";
 import { FsStatusTag, formatSar } from "@/components/free-service";
-import { ChevronLeft, Plus, Search, Paperclip, Lock, Inbox } from "lucide-react";
+import { Plus, Search, Paperclip, Lock, Inbox } from "lucide-react";
 
 const WITH_DEALER = ["submitted", "invoice_submitted"];
 const WITH_SUB_DEALER = ["returned", "invoice_returned", "approved"];
@@ -86,10 +86,6 @@ export default function FreeServiceListPage() {
     <div className="min-h-screen bg-[#F4F4F4]">
       <Header profile={profile} onSignOut={signOut} />
       <div role="main" className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 page-in">
-        <button onClick={() => router.push(isSub ? "/dashboard/sub-dealer" : "/dashboard/dealer")} className="flex items-center gap-1 text-sm text-[#6E6E6E] hover:text-[#111111] mb-4">
-          <ChevronLeft size={16} /> Claims
-        </button>
-
         <div className="flex items-start justify-between gap-3 flex-wrap mb-5">
           <div>
             <h1 className="text-xl font-bold text-[#111111] mb-1">Free Service approvals</h1>
