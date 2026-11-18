@@ -21,8 +21,16 @@ const pct = (v) => (v == null ? "—" : `${Math.round(v * 100)}%`);
 const span = (hours) => (hours == null ? "—" : hours < 48 ? `${hours.toFixed(1)} h` : `${(hours / 24).toFixed(1)} d`);
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Riyadh", day: "2-digit", month: "short" }) : "—");
 
-// A column that scrolls on its own on wide screens (the wheel over it moves only it), with a slim scrollbar.
-const SCROLL = "xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pr-1.5 xl:pb-2 xl:[scrollbar-width:thin] xl:[scrollbar-color:#D0D0D4_transparent]";
+// A column that scrolls on its own on wide screens (the wheel over it moves only it); its scrollbar shows only while in use.
+const SCROLL = "xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pr-1.5 xl:pb-2 fade-scroll";
+
+/** Keeps a column's scrollbar visible while it scrolls (and a moment after), so it fades only when unused. */
+function flashScrollbar(e) {
+  const el = e.currentTarget;
+  el.classList.add("is-scrolling");
+  clearTimeout(el._fade);
+  el._fade = setTimeout(() => el.classList.remove("is-scrolling"), 900);
+}
 
 const ease = [0.22, 1, 0.36, 1];
 // Cards come up from the bottom of the screen one after another (like a story feed), then their numbers and charts fill in.
@@ -165,7 +173,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem] xl:grid-rows-[minmax(0,1fr)] gap-5 items-start xl:items-stretch xl:flex-1 xl:min-h-0">
-        <div className={`min-w-0 space-y-5 ${SCROLL}`}>
+        <div onScroll={flashScrollbar} className={`min-w-0 space-y-5 ${SCROLL}`}>
           {/* the four big numbers */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {revenue === undefined ? (
@@ -326,7 +334,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
         </div>
 
         {/* the side panel: today's reminder, the weather and the calendar, all in view */}
-        <aside className={`space-y-2.5 ${SCROLL}`}>
+        <aside onScroll={flashScrollbar} className={`space-y-2.5 ${SCROLL}`}>
           <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.reduce((s, a) => s + a.count, 0) : null} />
           <WeatherCard index={2} sample={weatherSample} />
           <CalendarCard index={3} />

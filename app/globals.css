@@ -1010,3 +1010,16 @@ html[data-look="new"] .dialog-in {
 .rail-item > .sr-only {
   z-index: 20;
 }
+
+/* A scroll column whose scrollbar is invisible until it is used: it shows while the pointer is over the column or it is
+   scrolling, then fades away again (see flashScrollbar in components/HomeDashboard.js). */
+.fade-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 500ms ease;
+}
+.fade-scroll:hover,
+.fade-scroll.is-scrolling {
+  scrollbar-color: rgba(128, 128, 134, 0.55) transparent;
+  transition-duration: 150ms;
+}
