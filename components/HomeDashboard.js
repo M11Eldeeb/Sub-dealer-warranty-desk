@@ -21,6 +21,9 @@ const pct = (v) => (v == null ? "—" : `${Math.round(v * 100)}%`);
 const span = (hours) => (hours == null ? "—" : hours < 48 ? `${hours.toFixed(1)} h` : `${(hours / 24).toFixed(1)} d`);
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { timeZone: "Asia/Riyadh", day: "2-digit", month: "short" }) : "—");
 
+// A column that scrolls on its own on wide screens (the wheel over it moves only it), with a slim scrollbar.
+const SCROLL = "xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pr-1.5 xl:pb-2 xl:[scrollbar-width:thin] xl:[scrollbar-color:#D0D0D4_transparent]";
+
 const ease = [0.22, 1, 0.36, 1];
 // Cards come up from the bottom of the screen one after another (like a story feed), then their numbers and charts fill in.
 const rise = (i = 0) => ({ initial: { opacity: 0, y: 56 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.75, delay: Math.min(i, 12) * 0.08, ease } });
@@ -75,29 +78,25 @@ export default function HomeDashboard({ profile }) {
     setFailed(false);
     fetch(`/api/analytics?range=${range}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => alive && setData(d))
+      .then((d) => {
+        if (!alive) return;
+        setData(d);
+        // the money figures worked out last time arrive in the same answer, so those cards appear with the others
+        setRevenue((cur) => (cur === undefined && d.revenueCached ? d.revenueCached : cur));
+      })
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
   }, [range]);
 
-  // The money comes from the self-audit system too, so it takes a few seconds: it fills in on its own.
-  // The last answer comes first (instantly), so these cards appear together with the rest; the fresh figures follow and the
+  // The money comes from the self-audit system too, so the fresh figures take a few seconds: they fill in on their own and the
   // numbers settle on them if anything changed.
   useEffect(() => {
     let alive = true;
-    let gotFresh = false;
-    fetch("/api/revenue?cached=1", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (alive && !gotFresh && d?.rows) setRevenue(d.rows);
-      })
-      .catch(() => {});
     fetch("/api/revenue", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => {
-        gotFresh = true;
         if (alive) setRevenue(d.rows || []);
       })
       .catch(() => alive && setRevenue((cur) => (cur === undefined ? null : cur)));
@@ -140,8 +139,9 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
   const dealerTotal = labor + (parts || 0) + (free || 0);
 
   return (
-    <div className="max-w-[88rem] mx-auto px-4 sm:px-6 py-5 sm:py-7">
-      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
+    // On a wide screen the page itself does not scroll: the middle cards and the side widgets are two columns that scroll apart.
+    <div className="max-w-[88rem] mx-auto px-4 sm:px-6 py-5 sm:py-7 xl:h-[100dvh] xl:flex xl:flex-col xl:pb-5">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6 xl:shrink-0">
         <div>
           <h1 className="text-2xl sm:text-[1.7rem] font-black text-[#111111] leading-tight">
             {greeting}
@@ -159,13 +159,13 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
       </div>
 
       {failed && (
-        <div role="alert" className="mb-5 text-sm rounded-2xl border p-4 flex items-start gap-2 bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]">
+        <div role="alert" className="mb-5 xl:shrink-0 text-sm rounded-2xl border p-4 flex items-start gap-2 bg-[#FDEBE0] border-[#F2C9A8] text-[#C4551B]">
           <AlertCircle size={16} className="mt-0.5 shrink-0" /> The numbers could not be loaded. Refresh the page.
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem] gap-5 items-start">
-        <div className="min-w-0 space-y-5">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem] xl:grid-rows-[minmax(0,1fr)] gap-5 items-start xl:items-stretch xl:flex-1 xl:min-h-0">
+        <div className={`min-w-0 space-y-5 ${SCROLL}`}>
           {/* the four big numbers */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {revenue === undefined ? (
@@ -236,7 +236,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
               </Card>
 
               <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle="Approved to the sub-dealer each month (SAR, VAT incl.)">
-                <ColumnChart color="#111111" format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
+                <ColumnChart format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
               </Card>
 
               <Card index={9} className="lg:col-span-7" title="Dealer revenue" subtitle="What the dealer earns on closed claims (all time)">
@@ -301,15 +301,15 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
         </div>
 
         {/* the side panel: what waits for you */}
-        <aside className="space-y-5">
-          <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.filter((a) => a.key !== "bill").reduce((s, a) => s + a.count, 0) : null} />
+        <aside className={`space-y-5 ${SCROLL}`}>
+          <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.reduce((s, a) => s + a.count, 0) : null} />
           <WeatherCard index={2} sample={weatherSample} />
           <CalendarCard index={3} />
           <motion.section {...rise(2)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-5">
             <h2 className="text-sm font-bold text-[#111111]">Needs your action</h2>
             <p className="mt-0.5 text-xs text-[#6E6E6E]">Right now</p>
             <ul className="mt-4 space-y-1.5">
-              {(data?.actions || [null, null, null, null, null]).map((a, i) =>
+              {(data?.actions || [null, null, null, null]).map((a, i) =>
                 a ? (
                   <li key={a.key}>
                     <Link href={a.href} className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${a.count > 0 ? "hover:bg-[#F4F4F4]" : "opacity-60 hover:opacity-100 hover:bg-[#F4F4F4]"}`}>
