@@ -2,9 +2,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { LayoutDashboard, ClipboardList, PackageOpen, BadgeCheck, Receipt, Wallet, Users, Settings, Wrench, Package, Stethoscope } from "lucide-react";
 import { useFreeService } from "@/lib/use-free-service";
 import RevenueDialog from "@/components/RevenueDialog";
+
+// Each page draws its own rail, so the rail starts afresh on every click. To still show the white marker travelling from the
+// button you left to the one you pressed, the last active button is remembered here (this module stays loaded between pages).
+let lastActiveKey = null;
+const ROW_STEP = 50; // a button (44px) plus the gap between buttons (6px)
 
 /**
  * The desktop navigation: a black rounded rail on the left with an icon for each place, a label that slides out on hover,
@@ -54,6 +60,13 @@ export default function Sidebar({ profile, menu }) {
     bottom.push({ key: "settings", href: "/dashboard/settings", label: "Settings", Icon: Settings, active: on("/dashboard/settings") });
   }
 
+  // where the marker was on the previous page, in rows above (-) or below (+) the button that is active now
+  const activeKey = [...top, ...bottom].find((i) => i.active)?.key ?? null;
+  const prevIndex = top.findIndex((i) => i.key === lastActiveKey);
+  useEffect(() => {
+    if (activeKey) lastActiveKey = activeKey;
+  }, [activeKey]);
+
   return (
     <>
       <nav aria-label="Main" className="rail hidden lg:flex" style={{ boxShadow: "0 18px 40px -16px rgba(0,0,0,0.45)" }}>
@@ -61,8 +74,8 @@ export default function Sidebar({ profile, menu }) {
           <Wrench size={18} className="text-white" />
         </Link>
         <ul className="flex flex-col items-center gap-1.5 mt-5">
-          {top.map((item) => (
-            <RailItem key={item.key} item={item} />
+          {top.map((item, i) => (
+            <RailItem key={item.key} item={item} slideFrom={item.active && prevIndex >= 0 && prevIndex !== i ? (prevIndex - i) * ROW_STEP : 0} />
           ))}
         </ul>
         <ul className="flex flex-col items-center gap-1.5 mt-auto">
@@ -77,12 +90,22 @@ export default function Sidebar({ profile, menu }) {
   );
 }
 
-function RailItem({ item }) {
+function RailItem({ item, slideFrom = 0 }) {
   const { href, label, Icon, active, dot, onClick } = item;
   const cls = `rail-item no-press ${active ? "rail-item-active" : ""}`;
   const inner = (
     <>
-      <Icon size={19} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+      {active && (
+        // the white marker: it slides in from the button the person came from
+        <motion.span
+          aria-hidden="true"
+          className="rail-pill"
+          initial={slideFrom ? { y: slideFrom } : false}
+          animate={{ y: 0 }}
+          transition={{ type: "spring", stiffness: 460, damping: 36, mass: 0.9 }}
+        />
+      )}
+      <Icon size={19} strokeWidth={active ? 2.4 : 2} aria-hidden="true" className="relative z-10" />
       {dot && <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#E4002B] border-2 border-[#111111]" />}
       <span className="rail-tip" role="tooltip">
         {label}

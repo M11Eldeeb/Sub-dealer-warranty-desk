@@ -982,3 +982,21 @@ html[data-look="new"] .dialog-in {
   background: color-mix(in srgb, var(--tint) 20%, #1c1c1e);
   border-color: color-mix(in srgb, var(--tint) 28%, #1c1c1e);
 }
+
+/* The rail's active marker is its own element so it can travel between buttons (see components/Sidebar.js). */
+.rail-pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 1rem;
+  background: #ffffff;
+  pointer-events: none;
+}
+.rail-item-active,
+.rail-item-active:hover {
+  background: transparent;
+}
+.rail-item > .rail-tip,
+.rail-item > .sr-only {
+  z-index: 20;
+}
