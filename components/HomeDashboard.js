@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Receipt } from "lucide-react";
 import { ColumnChart, Donut, Ring, HBars, monthLabel } from "@/components/charts";
+import { STATUS } from "@/components/ui";
 
 const RANGES = [
   ["3", "3 months"],
@@ -91,11 +92,25 @@ export default function HomeDashboard({ profile }) {
     };
   }, []);
 
-  return <HomeView profile={profile} range={range} setRange={setRange} data={data} failed={failed} revenue={revenue} />;
+  // Work order by work order also asks the self-audit system (the claims batch), so it loads apart.
+  const [workOrders, setWorkOrders] = useState(undefined); // undefined = loading, null = could not be read, otherwise { rows, batchAvailable }
+  useEffect(() => {
+    let alive = true;
+    setWorkOrders(undefined);
+    fetch(`/api/work-orders?range=${range}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => alive && setWorkOrders(d))
+      .catch(() => alive && setWorkOrders(null));
+    return () => {
+      alive = false;
+    };
+  }, [range]);
+
+  return <HomeView profile={profile} range={range} setRange={setRange} data={data} failed={failed} revenue={revenue} workOrders={workOrders} />;
 }
 
 /** The page itself, from the numbers it is given (so it can be drawn from sample data too). */
-export function HomeView({ profile, range, setRange, data, failed, revenue }) {
+export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders }) {
   const first = (profile?.full_name || "").split(/\s+/)[0];
   const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Riyadh", hour: "numeric", hour12: false }).format(new Date()));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -260,7 +275,11 @@ export function HomeView({ profile, range, setRange, data, failed, revenue }) {
                 </div>
               </Card>
 
-              <Card index={12} className="lg:col-span-12" title="Latest closed work orders" subtitle="What was approved to the sub-dealer, and whether it is invoiced yet">
+              <Card index={12} className="lg:col-span-12" title="Work order by work order" subtitle="Each work order next to what the dealer's claims batch holds for the same car" action={workOrders?.rows ? <span className="px-2.5 py-1 rounded-full bg-[#F1F2F4] text-[0.6875rem] font-bold text-[#6E6E6E]">{workOrders.rows.length} work orders</span> : null}>
+                {workOrders === undefined ? <Skeleton className="h-48" /> : workOrders === null ? <p className="text-sm text-[#6E6E6E]">The work orders could not be loaded right now.</p> : <WorkOrders data={workOrders} />}
+              </Card>
+
+              <Card index={13} className="lg:col-span-12" title="Latest closed work orders" subtitle="What was approved to the sub-dealer, and whether it is invoiced yet">
                 <Recent rows={data.recent} />
               </Card>
             </div>
@@ -339,6 +358,94 @@ function LeadTime({ lead }) {
           {span(lead.total.avgHours)} <span className="text-xs font-semibold text-[#6E6E6E]">average · {span(lead.total.medianHours)} median</span>
         </span>
       </div>
+    </div>
+  );
+}
+
+const statusPill = (s) => {
+  const spec = STATUS[s];
+  return (
+    <span key={s} className="pill inline-flex px-2 py-0.5 rounded-full text-[0.6875rem] font-bold whitespace-nowrap" style={{ "--pill-fg": spec?.color || "#656970", "--pill-bg": spec?.bg || "#F1F2F4" }}>
+      {spec?.label || s}
+    </span>
+  );
+};
+
+/** One row per dealer work order and VIN: the sub-dealer's side, the batch's side, and what the dealer is left with. */
+function WorkOrders({ data }) {
+  const [all, setAll] = useState(false);
+  const { rows, batchAvailable } = data;
+  if (!rows.length) return <p className="text-sm text-[#6E6E6E]">No claims in this period.</p>;
+  const shown = all ? rows : rows.slice(0, 12);
+  return (
+    <div>
+      <div className="overflow-x-auto -mx-1 px-1">
+        <table className="w-full min-w-[54rem] text-left text-[13px]">
+          <thead>
+            <tr className="border-b border-[#ECECEC] text-[0.6875rem] font-bold uppercase tracking-wide text-[#6E6E6E]">
+              <th className="py-2 pr-3">Dealer WO</th>
+              <th className="py-2 pr-3">Sub-dealer WO</th>
+              <th className="py-2 pr-3">Opened</th>
+              <th className="py-2 pr-3">Sub-dealer status</th>
+              <th className="py-2 pr-3 text-right">Settled with sub-dealer</th>
+              <th className="py-2 pr-3 text-right">Paid on the batch</th>
+              <th className="py-2 pr-3">Batch status</th>
+              <th className="py-2 text-right">Revenue to dealer</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#F0F0F0]">
+            {shown.map((r) => (
+              <tr key={r.key} className="align-top">
+                <td className="py-2.5 pr-3 font-mono font-semibold whitespace-nowrap text-[#111111]">
+                  {r.claimId ? (
+                    <Link href={`/claims/${r.claimId}`} className="hover:text-[#E4002B] transition-colors">
+                      {r.workOrder || <span className="font-sans font-normal text-[#6E6E6E]">No dealer WO yet</span>}
+                    </Link>
+                  ) : (
+                    r.workOrder || <span className="font-sans font-normal text-[#6E6E6E]">No dealer WO yet</span>
+                  )}
+                </td>
+                <td className="py-2.5 pr-3 whitespace-nowrap text-[#6E6E6E]">{r.subWorkOrders.join(", ") || "—"}</td>
+                <td className="py-2.5 pr-3 whitespace-nowrap text-[#6E6E6E]">{day(r.created)}</td>
+                <td className="py-2.5 pr-3">
+                  <div className="flex flex-wrap gap-1">{r.statuses.map(statusPill)}</div>
+                </td>
+                <td className="py-2.5 pr-3 text-right tabular-nums">{r.approved != null ? num(r.approved, 2) : "—"}</td>
+                <td className="py-2.5 pr-3 text-right tabular-nums">
+                  {r.batch ? (
+                    <>
+                      {num(r.batch.sar, 2)}
+                      <div className="text-[0.6875rem] text-[#6E6E6E]">${num(r.batch.usd, 2)}</div>
+                    </>
+                  ) : (
+                    <span className="text-[#6E6E6E]">{!batchAvailable ? "not available" : r.workOrder ? "not on batch" : "—"}</span>
+                  )}
+                </td>
+                <td className="py-2.5 pr-3">
+                  {r.batch?.statuses?.length ? (
+                    <div className="flex flex-wrap gap-1">
+                      {r.batch.statuses.map((s) => (
+                        <span key={s} className="inline-flex px-2 py-0.5 rounded-full text-[0.6875rem] font-bold whitespace-nowrap" style={/settled/i.test(s) ? { background: "#E5F3E8", color: "#1E6B35" } : { background: "#F1F2F4", color: "#656970" }}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className={`py-2.5 text-right font-bold tabular-nums ${r.dealerRevenue != null && r.dealerRevenue < 0 ? "text-[#B23A32]" : "text-[#111111]"}`}>{r.dealerRevenue != null ? num(r.dealerRevenue, 2) : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-[0.6875rem] text-[#6E6E6E]">Amounts in SAR (batch dollars × 3.75). Revenue to dealer = paid on the batch minus the labor approved to the sub-dealer. A work order with several claims (-1, -2) is one row.</p>
+      {rows.length > 12 && (
+        <button type="button" onClick={() => setAll((v) => !v)} className="mt-2 text-xs font-bold text-[#E4002B] hover:underline">
+          {all ? "Show fewer" : `Show all ${rows.length}`}
+        </button>
+      )}
     </div>
   );
 }
