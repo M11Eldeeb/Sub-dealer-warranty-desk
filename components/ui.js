@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import ExportDataButton from "@/components/ExportDataButton";
 import LiveSheetButton from "@/components/LiveSheetButton";
 import RevenueDialog from "@/components/RevenueDialog";
-import Sidebar from "@/components/Sidebar";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { useLook } from "@/lib/look";
@@ -199,7 +198,6 @@ export function Header({ profile, onSignOut }) {
         </div>
       </div>
     </header>
-    <Sidebar profile={profile} menu={<HeaderMenu profile={profile} onSignOut={onSignOut} rail />} />
     <BottomNav profile={profile} />
     </>
   );
@@ -217,7 +215,7 @@ function ActionDot({ show }) {
 }
 
 /** The sandwich menu: user + e-mail settings and data export for dealer / admin accounts, and Sign out for everyone. */
-function HeaderMenu({ profile, onSignOut, rail = false }) {
+export function HeaderMenu({ profile, onSignOut, rail = false }) {
   const [open, setOpen] = useState(false);
   const [revenueOpen, setRevenueOpen] = useState(false); // the Revenue window (dealer, admin, manager)
   const ref = useRef(null);
@@ -529,18 +527,9 @@ function BottomNav({ profile }) {
 
 /** What shows while a page loads its data: the bar and the shape of the cards, instead of an empty screen. */
 export function LoadingShell({ cards = 4 }) {
-  // The same room for the desktop rail as the real page, so nothing jumps when the page arrives.
-  useEffect(() => {
-    document.body.classList.add("has-sidebar");
-    return () => document.body.classList.remove("has-sidebar");
-  }, []);
+  // (the desktop rail is not drawn here: it is one piece of the root layout and stays on screen while pages load)
   return (
     <div className="min-h-screen bg-[#F4F4F4]" role="status" aria-label="Loading">
-      <div className="rail hidden lg:flex" aria-hidden="true">
-        <div className="rail-logo">
-          <img src="/mg-logo.png" alt="" width="30" height="30" draggable="false" />
-        </div>
-      </div>
       <header className="app-header bg-[#111111] text-white px-4 sm:px-6 pb-3 sm:pb-4 sm:pt-4 border-b border-white/5">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">

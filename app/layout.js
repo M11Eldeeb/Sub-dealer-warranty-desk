@@ -1,5 +1,6 @@
 import "./globals.css";
 import MotionProvider from "@/components/MotionProvider";
+import AppRail from "@/components/AppRail";
 import { Barlow } from "next/font/google";
 import { DEFAULT_LOOK } from "@/lib/look-config";
 
@@ -35,7 +36,10 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={barlow.className}>
-        <MotionProvider>{children}</MotionProvider>
+        <MotionProvider>
+          <AppRail />
+          {children}
+        </MotionProvider>
       </body>
     </html>
   );

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -8,14 +8,11 @@ import { useFreeService } from "@/lib/use-free-service";
 import RevenueDialog from "@/components/RevenueDialog";
 import { homeHref } from "@/lib/home-href";
 
-// Each page draws its own rail, so the rail starts afresh on every click. To still show the white marker travelling from the
-// button you left to the one you pressed, the last active button is remembered here (this module stays loaded between pages).
-let lastActiveKey = null;
-const ROW_STEP = 50; // a button (44px) plus the gap between buttons (6px)
-
 /**
  * The desktop navigation: a black rounded rail on the left with an icon for each place, a label that slides out on hover,
- * and a red dot where something waits for you. Phones and tablets keep the top bar with its menu (and the bottom tabs).
+ * and a red dot where something waits for you. It lives in the root layout (components/AppRail.js), so it stays on screen
+ * while pages change and the white marker really travels from one button to the next (shared layoutId).
+ * Phones and tablets keep the top bar with its menu (and the bottom tabs).
  * `menu` is the account button shown at the bottom of the rail (the menu with export, appearance and sign out).
  */
 export default function Sidebar({ profile, menu }) {
@@ -24,12 +21,6 @@ export default function Sidebar({ profile, menu }) {
   const freeService = useFreeService(role, profile?.id);
   const actions = freeService?.actions || { claims: 0, free: 0, defects: 0 };
   const [revenueOpen, setRevenueOpen] = useState(false);
-
-  // Page content makes room for the rail (see .has-sidebar in globals.css).
-  useEffect(() => {
-    document.body.classList.add("has-sidebar");
-    return () => document.body.classList.remove("has-sidebar");
-  }, []);
 
   const staff = role === "dealer" || role === "admin";
   const viewer = role === "manager";
@@ -61,13 +52,6 @@ export default function Sidebar({ profile, menu }) {
     bottom.push({ key: "settings", href: "/dashboard/settings", label: "Settings", Icon: Settings, active: on("/dashboard/settings") });
   }
 
-  // where the marker was on the previous page, in rows above (-) or below (+) the button that is active now
-  const activeKey = [...top, ...bottom].find((i) => i.active)?.key ?? null;
-  const prevIndex = top.findIndex((i) => i.key === lastActiveKey);
-  useEffect(() => {
-    if (activeKey) lastActiveKey = activeKey;
-  }, [activeKey]);
-
   return (
     <>
       <nav aria-label="Main" className="rail hidden lg:flex" style={{ boxShadow: "0 18px 40px -16px rgba(0,0,0,0.45)" }}>
@@ -75,8 +59,8 @@ export default function Sidebar({ profile, menu }) {
           <img src="/mg-logo.png" alt="MG" width="30" height="30" draggable="false" />
         </Link>
         <ul className="flex flex-col items-center gap-1.5 mt-5">
-          {top.map((item, i) => (
-            <RailItem key={item.key} item={item} slideFrom={item.active && prevIndex >= 0 && prevIndex !== i ? (prevIndex - i) * ROW_STEP : 0} />
+          {top.map((item) => (
+            <RailItem key={item.key} item={item} />
           ))}
         </ul>
         <ul className="flex flex-col items-center gap-1.5 mt-auto">
@@ -91,27 +75,25 @@ export default function Sidebar({ profile, menu }) {
   );
 }
 
-function RailItem({ item, slideFrom = 0 }) {
+function RailItem({ item }) {
   const { href, label, Icon, active, dot, onClick } = item;
   const cls = `rail-item no-press ${active ? "rail-item-active" : ""}`;
   const inner = (
     <>
       {active && (
-        // the white marker: it slides in from the button the person came from
-        <motion.span
-          aria-hidden="true"
-          className="rail-pill"
-          initial={slideFrom ? { y: slideFrom } : false}
-          animate={{ y: 0 }}
-          transition={{ type: "spring", stiffness: 460, damping: 36, mass: 0.9 }}
-        />
+        // The white marker. Every active button renders one with the same layoutId, so when the active button changes the
+        // marker glides from the old place to the new one instead of appearing.
+        <motion.span aria-hidden="true" layoutId="rail-marker" className="rail-pill" transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.8 }} />
       )}
       <Icon size={19} strokeWidth={active ? 2.4 : 2} aria-hidden="true" className="relative z-10" />
-      {dot && <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#E4002B] border-2 border-[#111111]" />}
+      {dot && <span aria-hidden="true" className="absolute top-1.5 right-1.5 z-10 w-2.5 h-2.5 rounded-full bg-[#E4002B] border-2 border-[#111111]" />}
       <span className="rail-tip" role="tooltip">
         {label}
       </span>
-      <span className="sr-only">{label}{dot ? " (needs your action)" : ""}</span>
+      <span className="sr-only">
+        {label}
+        {dot ? " (needs your action)" : ""}
+      </span>
     </>
   );
   return (
