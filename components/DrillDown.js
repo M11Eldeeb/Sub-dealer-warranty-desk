@@ -1,11 +1,22 @@
 "use client";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { STATUS } from "@/components/ui";
 
 const num = (n, digits = 2) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const uniq = (xs) => [...new Set(xs.filter(Boolean))];
+
+/** A matcher for a search box: every word typed must appear somewhere in the row's texts (any case; "-" and spaces ignored). */
+const textMatcher = (query) => {
+  const norm = (t) => String(t ?? "").toLowerCase().replace(/[\s-]+/g, "");
+  const words = query.toLowerCase().split(/\s+/).map(norm).filter(Boolean);
+  return (texts) => {
+    if (!words.length) return true;
+    const hay = texts.map(norm).join("|");
+    return words.every((w) => hay.includes(w));
+  };
+};
 
 const statusPill = (s) => {
   const spec = STATUS[s];
@@ -30,13 +41,22 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const [q, setQ] = useState("");
+  const searchRef = useRef(null);
+  useEffect(() => {
+    // put the cursor in the search box on a computer (not on a phone, where it would pop the keyboard up)
+    if (window.matchMedia?.("(hover: hover)").matches) searchRef.current?.focus();
+  }, []);
+
   const claimById = useMemo(() => new Map((data?.claimList || []).map((c) => [c.id, c])), [data]);
   const byKey = useMemo(() => new Map((workOrders?.rows || []).map((r) => [r.key, r])), [workOrders]);
 
   const content = useMemo(() => {
     if (spec.kind === "parts") {
       const rows = (data?.partList || []).map((p) => ({ p, c: claimById.get(p.c) })).filter((x) => x.c && spec.partFilter(x.p, x.c));
-      return { parts: rows.sort((a, b) => (a.c.dwo || "").localeCompare(b.c.dwo || "") || a.p.name.localeCompare(b.p.name)) };
+      rows.sort((a, b) => (a.c.dwo || "").localeCompare(b.c.dwo || "") || a.p.name.localeCompare(b.p.name));
+      const hit = textMatcher(q);
+      return { all: rows.length, parts: rows.filter(({ p, c }) => hit([c.dwo, c.wo, c.n, c.vin, p.name])) };
     }
     const groups = new Map();
     for (const c of (data?.claimList || []).filter(spec.claimFilter)) {
@@ -49,8 +69,9 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
       return { ...g, paid: la.length ? la.reduce((s, c) => s + c.la, 0) : null, dealer: byKey.get(g.key)?.dealerRevenue ?? null };
     });
     rows.sort((a, b) => (a.claims[0].dwo || "~").localeCompare(b.claims[0].dwo || "~") || a.claims[0].n.localeCompare(b.claims[0].n));
-    return { groups: rows };
-  }, [spec, data, claimById, byKey]);
+    const hit = textMatcher(q);
+    return { all: rows.length, groups: rows.filter((g) => hit(g.claims.flatMap((c) => [c.dwo, c.wo, c.n, c.vin, STATUS[c.st]?.label, c.st]))) };
+  }, [spec, data, claimById, byKey, q]);
 
   const loadingMoney = spec.revenue && workOrders === undefined;
   const count = content.parts ? content.parts.length : content.groups.length;
@@ -68,7 +89,7 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
           <div className="min-w-0">
             <h2 className="text-base font-black text-[#111111]">{spec.title}</h2>
             <p className="mt-0.5 text-xs text-[#6E6E6E]">
-              {count} {noun}
+              {q.trim() ? `${count} of ${content.all}` : count} {noun}
               {spec.subtitle ? ` · ${spec.subtitle}` : ""}
             </p>
           </div>
@@ -77,9 +98,29 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
           </button>
         </div>
 
+        <div className="px-5 sm:px-6 pb-3">
+          <label className="flex items-center gap-2 rounded-full border border-[#E4E4E8] bg-[#FAFAFB] px-3.5 py-2 focus-within:border-[#111111] transition-colors">
+            <Search size={15} className="shrink-0 text-[#6E6E6E]" aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={content.parts ? "Search work order, claim, part or VIN" : "Search work order, claim, VIN or status"}
+              aria-label="Search this list"
+              className="w-full bg-transparent text-sm text-[#111111] placeholder:text-[#ADADAD] focus:outline-none"
+            />
+            {q && (
+              <button type="button" onClick={() => setQ("")} aria-label="Clear the search" className="shrink-0 text-[#6E6E6E] hover:text-[#111111]">
+                <X size={14} />
+              </button>
+            )}
+          </label>
+        </div>
+
         <div className="overflow-auto px-5 sm:px-6 pb-5">
           {count === 0 ? (
-            <p className="py-10 text-center text-sm text-[#6E6E6E]">Nothing here.</p>
+            <p className="py-10 text-center text-sm text-[#6E6E6E]">{q.trim() ? "Nothing matches that search." : "Nothing here."}</p>
           ) : content.parts ? (
             <table className="w-full min-w-[40rem] text-left text-[13px]">
               <thead>
