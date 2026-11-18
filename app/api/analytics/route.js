@@ -80,13 +80,16 @@ export async function GET(request) {
 
   // what waits for you
   const count = async (q) => (await q).count || 0;
-  const [decide, review, returns, freeService, notInvoiced] = await Promise.all([
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const [decide, review, returns, freeService, notInvoiced, closedWeek] = await Promise.all([
     count(admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "claim").in("status", ["submitted", "waiting_pa"])),
     count(admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "claim").eq("status", "repair_submitted")),
     count(admin.from("defect_returns").select("id", { count: "exact", head: true }).eq("status", "submitted")),
     count(admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "free_service").in("status", ["submitted", "invoice_submitted"])),
     count(admin.from("claims").select("id", { count: "exact", head: true }).eq("status", "closed").is("sub_invoiced_at", null)),
+    count(admin.from("claims").select("id", { count: "exact", head: true }).eq("kind", "claim").eq("status", "closed").gte("closed_at", weekAgo)),
   ]);
+  analytics.closedThisWeek = closedWeek;
   analytics.actions = [
     { key: "decide", label: "Waiting for your decision", count: decide, href: "/dashboard/dealer" },
     { key: "review", label: "After-repair evidence to review", count: review, href: "/dashboard/dealer" },

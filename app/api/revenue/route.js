@@ -18,7 +18,7 @@ const round2 = (n) => Math.round(n * 100) / 100;
  *    until the I1855 invoice is in, the approved amount - which includes VAT - divided by 1.15).
  * If the self-audit system can not be reached, those extra figures come back as null and the rest still shows.
  */
-export async function GET() {
+export async function GET(request) {
   const supabase = createClient();
   const {
     data: { user },
@@ -26,6 +26,13 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (!["dealer", "admin", "manager"].includes(profile?.role)) return NextResponse.json({ error: "Not allowed." }, { status: 403 });
+
+  // ?cached=1: the answer worked out last time, at once (the self-audit part below takes a few seconds). The home dashboard shows
+  // this first so its cards appear together, then asks again for the fresh figures.
+  if (new URL(request.url).searchParams.get("cached") === "1") {
+    const { data } = await createAdminClient().from("app_settings").select("value").eq("key", "revenue_cache").maybeSingle();
+    return NextResponse.json({ rows: data?.value?.rows ?? null, at: data?.value?.at ?? null });
+  }
 
   const { data: rows, error } = await supabase.rpc("closed_revenue");
   if (error) return NextResponse.json({ error: "Could not add up the revenue." }, { status: 500 });
@@ -106,5 +113,7 @@ export async function GET() {
     return row;
   });
 
-  return NextResponse.json({ rows: out });
+  const at = new Date().toISOString();
+  await admin.from("app_settings").upsert({ key: "revenue_cache", value: { at, rows: out }, updated_at: at });
+  return NextResponse.json({ rows: out, at });
 }

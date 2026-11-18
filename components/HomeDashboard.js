@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Receipt } from "lucide-react";
 import { ColumnChart, Donut, Ring, HBars, CountUp, monthLabel } from "@/components/charts";
 import { STATUS } from "@/components/ui";
+import { MessageCard, WeatherCard, CalendarCard } from "@/components/DailyWidgets";
 
 const RANGES = [
   ["3", "3 months"],
@@ -82,12 +83,24 @@ export default function HomeDashboard({ profile }) {
   }, [range]);
 
   // The money comes from the self-audit system too, so it takes a few seconds: it fills in on its own.
+  // The last answer comes first (instantly), so these cards appear together with the rest; the fresh figures follow and the
+  // numbers settle on them if anything changed.
   useEffect(() => {
     let alive = true;
+    let gotFresh = false;
+    fetch("/api/revenue?cached=1", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && !gotFresh && d?.rows) setRevenue(d.rows);
+      })
+      .catch(() => {});
     fetch("/api/revenue", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => alive && setRevenue(d.rows || []))
-      .catch(() => alive && setRevenue(null));
+      .then((d) => {
+        gotFresh = true;
+        if (alive) setRevenue(d.rows || []);
+      })
+      .catch(() => alive && setRevenue((cur) => (cur === undefined ? null : cur)));
     return () => {
       alive = false;
     };
@@ -111,7 +124,7 @@ export default function HomeDashboard({ profile }) {
 }
 
 /** The page itself, from the numbers it is given (so it can be drawn from sample data too). */
-export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders }) {
+export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders, weatherSample = null }) {
   const first = (profile?.full_name || "").split(/\s+/)[0];
   const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Riyadh", hour: "numeric", hour12: false }).format(new Date()));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -288,7 +301,10 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
         </div>
 
         {/* the side panel: what waits for you */}
-        <aside className="xl:sticky xl:top-5 space-y-5">
+        <aside className="space-y-5">
+          <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.filter((a) => a.key !== "bill").reduce((s, a) => s + a.count, 0) : null} />
+          <WeatherCard index={2} sample={weatherSample} />
+          <CalendarCard index={3} />
           <motion.section {...rise(2)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-5">
             <h2 className="text-sm font-bold text-[#111111]">Needs your action</h2>
             <p className="mt-0.5 text-xs text-[#6E6E6E]">Right now</p>
