@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { LayoutDashboard, ClipboardList, PackageOpen, BadgeCheck, Receipt, Wallet, Users, Settings, Wrench, Package, Stethoscope } from "lucide-react";
+import { LayoutDashboard, ClipboardList, PackageOpen, BadgeCheck, Receipt, Wallet, Users, Settings, Package, Stethoscope } from "lucide-react";
 import { useFreeService } from "@/lib/use-free-service";
 import RevenueDialog from "@/components/RevenueDialog";
+import { homeHref } from "@/lib/home-href";
 
 // Each page draws its own rail, so the rail starts afresh on every click. To still show the white marker travelling from the
 // button you left to the one you pressed, the last active button is remembered here (this module stays loaded between pages).
@@ -70,8 +71,8 @@ export default function Sidebar({ profile, menu }) {
   return (
     <>
       <nav aria-label="Main" className="rail hidden lg:flex" style={{ boxShadow: "0 18px 40px -16px rgba(0,0,0,0.45)" }}>
-        <Link href="/" title="Home" className="rail-logo no-press" aria-label="WarrantyDesk home">
-          <Wrench size={18} className="text-white" />
+        <Link href={homeHref(role)} title="Dashboard" className="rail-logo no-press" aria-label="Dashboard">
+          <img src="/mg-logo.png" alt="MG" width="30" height="30" draggable="false" />
         </Link>
         <ul className="flex flex-col items-center gap-1.5 mt-5">
           {top.map((item, i) => (

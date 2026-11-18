@@ -9,8 +9,9 @@ import Sidebar from "@/components/Sidebar";
 import { useFreeService } from "@/lib/use-free-service";
 import { useTheme } from "@/lib/theme";
 import { useLook } from "@/lib/look";
+import { homeHref } from "@/lib/home-href";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet, Receipt } from "lucide-react";
+import { Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet, Receipt } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -171,12 +172,9 @@ export function Header({ profile, onSignOut }) {
       style={{ boxShadow: "0 1px 0 rgba(228,0,43,0.35), 0 8px 24px -12px rgba(0,0,0,0.55)" }}
     >
       <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <Link href="/" title="Back to the main page" className="flex items-center gap-2.5 py-1.5 sm:py-0 hover:opacity-90 transition-opacity">
-          <div
-            className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2447] to-[#B8001F] flex items-center justify-center"
-            style={{ boxShadow: "0 4px 12px -2px rgba(228,0,43,0.6)" }}
-          >
-            <Wrench size={16} className="text-white" />
+        <Link href={homeHref(profile?.role)} title="Back to the dashboard" className="flex items-center gap-2.5 py-1.5 sm:py-0 hover:opacity-90 transition-opacity">
+          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center" style={{ boxShadow: "0 4px 12px -2px rgba(0,0,0,0.5)" }}>
+            <img src="/mg-logo.png" alt="MG" width="26" height="26" draggable="false" />
           </div>
           <div>
             <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
@@ -540,14 +538,14 @@ export function LoadingShell({ cards = 4 }) {
     <div className="min-h-screen bg-[#F4F4F4]" role="status" aria-label="Loading">
       <div className="rail hidden lg:flex" aria-hidden="true">
         <div className="rail-logo">
-          <Wrench size={18} className="text-white" />
+          <img src="/mg-logo.png" alt="" width="30" height="30" draggable="false" />
         </div>
       </div>
       <header className="app-header bg-[#111111] text-white px-4 sm:px-6 pb-3 sm:pb-4 sm:pt-4 border-b border-white/5">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2447] to-[#B8001F] flex items-center justify-center">
-              <Wrench size={16} className="text-white" />
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
+              <img src="/mg-logo.png" alt="" width="26" height="26" draggable="false" />
             </div>
             <div className="font-black uppercase tracking-wide text-sm leading-none">WarrantyDesk</div>
           </div>

@@ -821,14 +821,24 @@ label {
   background: #111111;
 }
 .rail-logo {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.9rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #ff2447, #b8001f);
-  box-shadow: 0 6px 16px -4px rgba(228, 0, 43, 0.6);
+  background: #ffffff;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.6);
+  transition: transform 160ms var(--ease-out);
+}
+.rail-logo:hover {
+  transform: scale(1.05);
+}
+.rail-logo img {
+  width: 1.875rem;
+  height: 1.875rem;
+  object-fit: contain;
+  user-select: none;
 }
 .rail-item {
   position: relative;
