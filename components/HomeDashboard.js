@@ -327,7 +327,7 @@ function LeadTime({ lead }) {
                 <b className="text-[#111111]">{span(s.avgHours)}</b> average · {span(s.medianHours)} median{s.n ? ` · ${s.n}` : ""}
               </span>
             </div>
-            <div className="mt-1.5 h-2 rounded-full bg-[#EEEEEE] overflow-hidden">
+            <div className="mt-1.5 h-2 rounded-full bg-[#E0E0E0] overflow-hidden">
               <div className="h-full rounded-full bg-[#E4002B] transition-[width] duration-500" style={{ width: `${s.avgHours ? Math.max(3, (s.avgHours / max) * 100) : 0}%`, opacity: 1 - i * 0.12 }} />
             </div>
           </li>

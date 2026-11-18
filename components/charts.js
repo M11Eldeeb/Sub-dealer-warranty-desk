@@ -91,7 +91,7 @@ export function HBars({ rows, color = "#E4002B", format = (v) => v, emptyText = 
             </span>
             <span className="font-bold text-[#111111] tabular-nums shrink-0">{format(r.value)}</span>
           </div>
-          <div className="mt-1 h-2 rounded-full bg-[#EEEEEE] overflow-hidden">
+          <div className="mt-1 h-2 rounded-full bg-[#E0E0E0] overflow-hidden">
             <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(3, (r.value / max) * 100)}%`, background: r.color || color }} />
           </div>
         </li>
