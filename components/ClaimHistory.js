@@ -51,19 +51,38 @@ export function CommentBox({ claimId, status, profile, onPosted }) {
     if (!body || busy) return;
     setBusy(true);
     setError("");
-    const { error: err } = await supabase.from("claim_status_log").insert({
-      claim_id: claimId,
-      from_status: status,
-      to_status: status,
-      actor_name: profile.full_name,
-      actor_role: profile.role,
-      kind: "comment",
-      note: body,
-    });
-    setBusy(false);
-    if (err) return setError("The comment could not be saved. Please try again.");
+    const { data: saved, error: err } = await supabase
+      .from("claim_status_log")
+      .insert({
+        claim_id: claimId,
+        from_status: status,
+        to_status: status,
+        actor_name: profile.full_name,
+        actor_role: profile.role,
+        kind: "comment",
+        note: body,
+      })
+      .select("id")
+      .single();
+    if (err) {
+      setBusy(false);
+      return setError("The comment could not be saved. Please try again.");
+    }
     setText("");
     await onPosted?.();
+
+    // The other side gets it by e-mail too (dealer -> the sub-dealer, sub-dealer -> the dealer). The comment is already saved,
+    // so a mail problem is only reported, never undoes it.
+    if (["dealer", "admin", "sub_dealer"].includes(profile.role) && saved?.id) {
+      try {
+        const res = await fetch("/api/notify-claim-comment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logId: saved.id }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) setError(`Comment saved, but the e-mail could not be sent: ${data.error || "unknown error"}`);
+      } catch {
+        setError("Comment saved, but the e-mail could not be sent (network error).");
+      }
+    }
+    setBusy(false);
   };
 
   return (
@@ -80,7 +99,13 @@ export function CommentBox({ claimId, status, profile, onPosted }) {
         }}
         rows={2}
         maxLength={2000}
-        placeholder="Add a comment to the history… (anyone on this claim will see it)"
+        placeholder={
+          profile.role === "sub_dealer"
+            ? "Add a comment to the history… the dealer is e-mailed it too"
+            : ["dealer", "admin"].includes(profile.role)
+              ? "Add a comment to the history… the sub-dealer is e-mailed it too"
+              : "Add a comment to the history…"
+        }
         className="input resize-none"
         disabled={busy}
       />
