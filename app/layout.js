@@ -1,6 +1,7 @@
 import "./globals.css";
 import MotionProvider from "@/components/MotionProvider";
 import { Barlow } from "next/font/google";
+import { DEFAULT_LOOK } from "@/lib/look-config";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -25,11 +26,11 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-look={DEFAULT_LOOK} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}",
+            __html: "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);var l=localStorage.getItem('look');if(l==='new'||l==='classic')document.documentElement.setAttribute('data-look',l)}catch(e){}",
           }}
         />
       </head>
