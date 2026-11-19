@@ -39,7 +39,7 @@ export default function NewDefectReturnPage() {
       if (!prof || prof.role !== "sub_dealer") return router.push("/dashboard/defect-returns");
       setProfile(prof);
 
-      const [{ data: c }, { data: open }] = await Promise.all([
+      const [{ data: c }, { data: open }, { data: missed }] = await Promise.all([
         supabase
           .from("claims")
           .select("id, claim_number, vin, work_order_number, dealer_work_order_number, status, parts_received_at, created_at, claim_parts(id, name, part_number, qty, status, defected_arrived_at)")
@@ -47,7 +47,10 @@ export default function NewDefectReturnPage() {
           .in("status", ELIGIBLE)
           .order("created_at", { ascending: false }),
         supabase.from("defect_return_items").select("part_id, defect_returns(status)").eq("decision", "pending"),
+        // parts an earlier request listed but the officers marked "not received": they can be sent again here
+        supabase.from("defect_return_items").select("part_id, defect_returns(return_number)").eq("decision", "not_received"),
       ]);
+      const missedBefore = new Map((missed || []).map((i) => [i.part_id, i.defect_returns?.return_number]));
       const reserved = new Set((open || []).filter((i) => i.defect_returns?.status === "submitted").map((i) => i.part_id));
       const list = (c || [])
         .map((claim) => ({ ...claim, claim_parts: owed(claim) }))
@@ -55,7 +58,7 @@ export default function NewDefectReturnPage() {
           ...claim,
           total: claim.claim_parts.length,
           arrivedCount: claim.claim_parts.filter((p) => p.defected_arrived_at).length,
-          parts: claim.claim_parts.filter((p) => !p.defected_arrived_at && !reserved.has(p.id)),
+          parts: claim.claim_parts.filter((p) => !p.defected_arrived_at && !reserved.has(p.id)).map((p) => ({ ...p, missedIn: missedBefore.get(p.id) || null })),
           // already handled: shown faded, cannot be picked again
           locked: claim.claim_parts.filter((p) => p.defected_arrived_at || reserved.has(p.id)).map((p) => ({ ...p, state: p.defected_arrived_at ? "arrived" : "sent" })),
         }))
@@ -144,7 +147,16 @@ export default function NewDefectReturnPage() {
     { key: "claim", label: "Claim", render: (r) => <span className="font-mono text-xs">{r.claim.claim_number}</span> },
     { key: "wo", label: "Sub-dealer WO", render: (r) => <span className="font-mono text-xs">{r.claim.work_order_number || "—"}</span> },
     { key: "dwo", label: "Dealer WO", render: (r) => <span className="font-mono text-xs">{r.claim.dealer_work_order_number || "—"}</span> },
-    { key: "part", label: "Part", render: (r) => <span className="font-semibold text-[#111111]">{r.name}</span> },
+    {
+      key: "part",
+      label: "Part",
+      render: (r) => (
+        <span className="font-semibold text-[#111111]">
+          {r.name}
+          {r.missedIn && <span className="ml-2 px-1.5 py-0.5 rounded bg-[#FAE4E2] text-[0.6875rem] font-bold text-[#B23A32] whitespace-nowrap">Not received in {r.missedIn}</span>}
+        </span>
+      ),
+    },
     { key: "pn", label: "Part number", render: (r) => <span className="font-mono text-xs">{r.part_number || "—"}</span> },
     { key: "qty", label: "Qty", render: (r) => r.qty },
   ];
@@ -210,6 +222,11 @@ export default function NewDefectReturnPage() {
                               WO# {[c.work_order_number, c.dealer_work_order_number].filter(Boolean).join(" / ")}
                             </div>
                             <div className="text-xs text-[#4D4D4D] font-mono mt-0.5">{c.vin}</div>
+                            {c.parts.some((p) => p.missedIn) && (
+                              <div className="text-xs font-semibold text-[#B23A32] mt-1.5">
+                                {c.parts.filter((p) => p.missedIn).length} not received last time: {c.parts.filter((p) => p.missedIn).map((p) => p.name).join(", ")}
+                              </div>
+                            )}
                             <div className="text-sm text-[#262626] mt-1.5 break-words">
                               {done ? `All ${c.total} part${c.total === 1 ? "" : "s"} already sent: ${c.locked.map((p) => p.name).join(", ")}` : `${c.parts.length} part${c.parts.length === 1 ? "" : "s"}: ${c.parts.map((p) => p.name).join(", ")}`}
                             </div>
@@ -238,6 +255,7 @@ export default function NewDefectReturnPage() {
             <p className="mt-3 text-sm text-[#4D4D4D]" role="status">
               <CheckCircle2 size={14} className="inline -mt-0.5 mr-1 text-[#2E7D46]" />
               {partIds.length} part{partIds.length === 1 ? "" : "s"} from {claimCount} claim{claimCount === 1 ? "" : "s"} will be sent. Untick a part you are not sending this time.
+              {rows.some((r) => r.missedIn && pickedParts.has(r.id)) && " A part marked not received in an earlier request moves into this one."}
             </p>
 
             <label className="block mt-5">

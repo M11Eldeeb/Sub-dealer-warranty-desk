@@ -1,0 +1,3 @@
+-- Applied as migration "defect_return_resend_moves_not_received": create_defect_return(p_part_ids, p_note) now also moves a part
+-- that an earlier request marked "not received" out of that request (item deleted, claim history line and a comment on the earlier
+-- request written) when the sub-dealer sends it again in the new request. See the live function for the full body.
