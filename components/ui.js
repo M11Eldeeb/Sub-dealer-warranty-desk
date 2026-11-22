@@ -2,7 +2,7 @@
 import { Children, cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ExportDataButton from "@/components/ExportDataButton";
+import ExportDashboardDialog from "@/components/ExportDashboardDialog";
 import LiveSheetButton from "@/components/LiveSheetButton";
 import RevenueDialog from "@/components/RevenueDialog";
 import { useFreeService } from "@/lib/use-free-service";
@@ -10,7 +10,7 @@ import { useTheme } from "@/lib/theme";
 import { useLook } from "@/lib/look";
 import { homeHref } from "@/lib/home-href";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet, Receipt } from "lucide-react";
+import { Clock, RefreshCw, AlertTriangle, XCircle, CheckCircle2, RotateCcw, Menu, X, Users, Settings, LogOut, BadgeCheck, ClipboardList, Sun, Moon, Monitor, PackageOpen, Wallet, Receipt, FileText } from "lucide-react";
 
 export const PART_STATUS = {
   "Waiting Action": { label: "Waiting Action", color: "#8A8F98", icon: Clock },
@@ -218,6 +218,7 @@ function ActionDot({ show }) {
 export function HeaderMenu({ profile, onSignOut, rail = false }) {
   const [open, setOpen] = useState(false);
   const [revenueOpen, setRevenueOpen] = useState(false); // the Revenue window (dealer, admin, manager)
+  const [exportOpen, setExportOpen] = useState(false); // the Export dashboard window (dealer, admin, manager)
   const ref = useRef(null);
   const staff = profile?.role === "dealer" || profile?.role === "admin";
   const viewer = profile?.role === "manager"; // managers can look at everything and change nothing
@@ -316,7 +317,9 @@ export function HeaderMenu({ profile, onSignOut, rail = false }) {
                     <Wallet size={16} className="text-[#6E6E6E]" /> Revenue
                   </button>
                 )}
-                <ExportDataButton variant="menu" className={item} />
+                <button onClick={() => { setOpen(false); setExportOpen(true); }} className={item}>
+                  <FileText size={16} className="text-[#6E6E6E]" /> Export dashboard
+                </button>
                 <LiveSheetButton className={item} canRefresh={false} />
                 <div className="border-t border-[#EEEEEE]" />
               </>
@@ -339,7 +342,9 @@ export function HeaderMenu({ profile, onSignOut, rail = false }) {
                     </button>
                   </>
                 )}
-                <ExportDataButton variant="menu" className={item} />
+                <button onClick={() => { setOpen(false); setExportOpen(true); }} className={item}>
+                  <FileText size={16} className="text-[#6E6E6E]" /> Export dashboard
+                </button>
                 <LiveSheetButton className={item} canRefresh={true} />
                 <div className="border-t border-[#EEEEEE]" />
               </>
@@ -399,6 +404,7 @@ export function HeaderMenu({ profile, onSignOut, rail = false }) {
         )}
       </AnimatePresence>
       {revenueOpen && <RevenueDialog onClose={() => setRevenueOpen(false)} />}
+      {exportOpen && <ExportDashboardDialog onClose={() => setExportOpen(false)} />}
     </div>
   );
 }

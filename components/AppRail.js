@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Sidebar from "@/components/Sidebar";
 import { HeaderMenu } from "@/components/ui";
 
-const NO_RAIL = ["/login", "/complete-profile"];
+const NO_RAIL = ["/login", "/complete-profile", "/dashboard/report"];
 
 /**
  * The desktop navigation rail, mounted once in the root layout so it is never rebuilt when a page changes: it stays on screen

@@ -77,9 +77,16 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
   const count = content.parts ? content.parts.length : content.groups.length;
   const noun = content.parts ? (count === 1 ? "part" : "parts") : count === 1 ? "work order" : "work orders";
   const paidTotal = content.groups ? content.groups.reduce((s, g) => s + (g.paid || 0), 0) : 0;
-  const dealerTotal = content.groups ? content.groups.reduce((s, g) => s + (g.dealer || 0), 0) : 0;
+  const withDealer = content.groups ? content.groups.filter((g) => g.dealer != null) : [];
+  const dealerTotal = withDealer.reduce((s, g) => s + g.dealer, 0);
+  const noBatch = content.groups ? content.groups.length - withDealer.length : 0; // work orders with no dealer revenue (yet)
 
   const empty = <span className="text-[#6E6E6E]">—</span>;
+  // No revenue figure is shown as 0: it says why it is missing (no dealer work order yet, or the claims batch has nothing on it yet).
+  const missing = (g) => {
+    const why = !g.claims.some((c) => c.dwo) ? "No dealer WO yet" : workOrders === null || workOrders?.batchAvailable === false ? "Batch not available" : "Batch not updated yet";
+    return <span className="text-[0.6875rem] font-semibold text-[#8F5500] bg-[#FCF1DA] rounded-full px-2 py-0.5 whitespace-nowrap">{why}</span>;
+  };
   const woCell = (c) => c || <span className="font-sans font-normal text-[#6E6E6E]">not yet</span>;
 
   return (
@@ -181,7 +188,7 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
                     {spec.revenue && <td className="py-2.5 pr-3 text-right tabular-nums">{g.paid != null ? num(g.paid) : empty}</td>}
                     {spec.revenue && (
                       <td className={`py-2.5 text-right font-bold tabular-nums ${g.dealer != null && g.dealer < 0 ? "text-[#B23A32]" : "text-[#111111]"}`}>
-                        {loadingMoney ? <span className="font-normal text-[#6E6E6E]">…</span> : g.dealer != null ? num(g.dealer) : empty}
+                        {loadingMoney ? <span className="font-normal text-[#6E6E6E]">…</span> : g.dealer != null ? num(g.dealer) : missing(g)}
                       </td>
                     )}
                   </tr>
@@ -194,7 +201,14 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
                       Total
                     </td>
                     <td className="pt-3 pr-3 text-right tabular-nums">{num(paidTotal)}</td>
-                    <td className="pt-3 text-right tabular-nums">{loadingMoney ? "…" : num(dealerTotal)}</td>
+                    <td className="pt-3 text-right tabular-nums">
+                      {loadingMoney ? "…" : withDealer.length ? num(dealerTotal) : <span className="text-xs font-semibold text-[#6E6E6E]">Not available yet</span>}
+                      {!loadingMoney && withDealer.length > 0 && noBatch > 0 && (
+                        <div className="text-[0.6875rem] font-normal text-[#6E6E6E]">
+                          {noBatch} work order{noBatch === 1 ? "" : "s"} not counted yet
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 </tfoot>
               )}
@@ -202,7 +216,7 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
           )}
           {spec.revenue && (
             <p className="mt-3 text-[0.6875rem] text-[#6E6E6E] leading-relaxed">
-              Amounts in SAR. Sub-dealer revenue = the labor approved to the sub-dealer (VAT incl.). Dealer revenue = what the claims batch pays for the work order minus that labor, and only where the work order is on the batch.
+              Amounts in SAR. Sub-dealer revenue = the labor approved to the sub-dealer (VAT incl.). Dealer revenue = what the claims batch pays for the work order minus that labor. Where the batch has nothing on the work order yet, no figure is shown (and none is added to the total).
             </p>
           )}
         </div>

@@ -1023,3 +1023,26 @@ html[data-look="new"] .dialog-in {
   scrollbar-color: rgba(128, 128, 134, 0.55) transparent;
   transition-duration: 150ms;
 }
+
+/* ---- The printed dashboard report (Export dashboard): A4 landscape, light, colours kept, no page cut through a card ------------ */
+.report-page {
+  page: report;
+}
+@page report {
+  size: A4 landscape;
+  margin: 10mm;
+}
+@media print {
+  .report-page,
+  .report-page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  body.has-sidebar {
+    padding-left: 0 !important;
+  }
+}

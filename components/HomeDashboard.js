@@ -3,12 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Receipt } from "lucide-react";
-import { ColumnChart, Donut, Ring, HBars, CountUp, monthLabel } from "@/components/charts";
+import { ColumnChart, Donut, Ring, HBars, CountUp, StaticProvider, useStatic, monthLabel } from "@/components/charts";
 import { STATUS } from "@/components/ui";
 import { MessageCard, WeatherCard, CalendarCard } from "@/components/DailyWidgets";
 import DrillDown from "@/components/DrillDown";
 
 const RANGES = [
+  ["1", "1 month"],
   ["3", "3 months"],
   ["6", "6 months"],
   ["12", "12 months"],
@@ -39,8 +40,9 @@ const rise = (i = 0) => ({ initial: { opacity: 0, y: 56 }, animate: { opacity: 1
 
 /** A white card with a title, used for every widget. */
 function Card({ title, subtitle, action, className = "", children, index = 0 }) {
+  const stat = useStatic();
   return (
-    <motion.section {...rise(index)} className={`bg-white border border-[#ECECEC] rounded-[1.25rem] p-5 ${className}`}>
+    <motion.section {...(stat ? {} : rise(index))} className={`break-inside-avoid bg-white border border-[#ECECEC] rounded-[1.25rem] p-5 ${className}`}>
       {(title || action) && (
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
@@ -57,8 +59,9 @@ function Card({ title, subtitle, action, className = "", children, index = 0 }) 
 
 /** A big number on a softly tinted card. */
 function StatCard({ label, value, note, tint, Icon, index }) {
+  const stat = useStatic();
   return (
-    <motion.div {...rise(index)} className="tint rounded-[1.25rem] p-5" style={{ "--tint": tint }}>
+    <motion.div {...(stat ? {} : rise(index))} className="break-inside-avoid tint rounded-[1.25rem] p-5" style={{ "--tint": tint }}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-[#4D4D4D]">{label}</span>
         <span className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ color: tint, background: `color-mix(in srgb, ${tint} 16%, transparent)` }}>
@@ -75,11 +78,12 @@ function Skeleton({ className = "" }) {
   return <div className={`skeleton rounded-[1.25rem] ${className}`} />;
 }
 
-export default function HomeDashboard({ profile }) {
-  const [range, setRange] = useState("6");
+/** The three requests behind the dashboard for a period: the analytics, the revenue (cached figures first) and the work orders. */
+function useDashboardData(range) {
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
   const [revenue, setRevenue] = useState(undefined); // undefined = loading, null = could not be read, otherwise the branch rows
+  const [revenueFresh, setRevenueFresh] = useState(false); // the figures are the freshly worked-out ones (not only last time's)
 
   useEffect(() => {
     let alive = true;
@@ -106,9 +110,17 @@ export default function HomeDashboard({ profile }) {
     fetch("/api/revenue", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => {
-        if (alive) setRevenue(d.rows || []);
+        if (alive) {
+          setRevenue(d.rows || []);
+          setRevenueFresh(true);
+        }
       })
-      .catch(() => alive && setRevenue((cur) => (cur === undefined ? null : cur)));
+      .catch(() => {
+        if (alive) {
+          setRevenue((cur) => (cur === undefined ? null : cur));
+          setRevenueFresh(true);
+        }
+      });
     return () => {
       alive = false;
     };
@@ -128,7 +140,65 @@ export default function HomeDashboard({ profile }) {
     };
   }, [range]);
 
+  return { data, failed, revenue, revenueFresh, workOrders };
+}
+
+export default function HomeDashboard({ profile }) {
+  const [range, setRange] = useState("6");
+  const { data, failed, revenue, workOrders } = useDashboardData(range);
   return <HomeView profile={profile} range={range} setRange={setRange} data={data} failed={failed} revenue={revenue} workOrders={workOrders} />;
+}
+
+const RANGE_NAMES = { 1: "This month", 3: "Last 3 months", 6: "Last 6 months", 12: "Last 12 months", all: "All time" };
+const fullMonth = (m) => new Date(`${m}-01T12:00:00`).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+
+/**
+ * The dashboard as a printable report (Export dashboard): the same cards without the navigation, the side widgets and the
+ * click-through, finished and still, headed with the period and the export date. Opens the print window by itself once
+ * everything is loaded; "Save as PDF" there gives the file.
+ */
+export function ReportDashboard({ range = "6" }) {
+  const { data, failed, revenue, revenueFresh, workOrders } = useDashboardData(range);
+  const ready = !!data && revenueFresh && workOrders !== undefined;
+  const months = data?.months || [];
+  const period = RANGE_NAMES[range] || RANGE_NAMES[6];
+  const span = months.length ? (months.length === 1 ? fullMonth(months[0]) : `${fullMonth(months[0])} to ${fullMonth(months[months.length - 1])}`) : "";
+  const exported = new Date().toLocaleString("en-GB", { timeZone: "Asia/Riyadh", weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  // light colours whatever the person's appearance, and the file name the print window suggests
+  useEffect(() => {
+    const root = document.documentElement;
+    const before = { theme: root.getAttribute("data-theme"), look: root.getAttribute("data-look") };
+    root.setAttribute("data-theme", "light");
+    root.setAttribute("data-look", "new");
+    return () => {
+      before.theme ? root.setAttribute("data-theme", before.theme) : root.removeAttribute("data-theme");
+      before.look ? root.setAttribute("data-look", before.look) : root.removeAttribute("data-look");
+    };
+  }, []);
+  useEffect(() => {
+    document.title = `Sub-dealer dashboard - ${period} - ${new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" })}`;
+  }, [period]);
+
+  const printed = useRef(false);
+  useEffect(() => {
+    if (!ready || printed.current) return;
+    printed.current = true;
+    const t = setTimeout(() => window.print(), 900); // a moment for the charts and fonts to settle
+    return () => clearTimeout(t);
+  }, [ready]);
+
+  return (
+    <HomeView
+      report={{ period, span, exported, ready, print: () => window.print() }}
+      range={range}
+      setRange={() => {}}
+      data={ready ? data : null}
+      failed={failed}
+      revenue={ready ? revenue : undefined}
+      workOrders={ready ? workOrders : undefined}
+    />
+  );
 }
 
 /**
@@ -161,7 +231,9 @@ function useFitHeight(outer, inner) {
 }
 
 /** The page itself, from the numbers it is given (so it can be drawn from sample data too). */
-export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders, weatherSample = null }) {
+export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders, weatherSample = null, report = null }) {
+  // in the printed report nothing is clickable
+  const pick = (fn) => (report ? undefined : fn);
   // the list behind a chart (a bar, a slice or a part that was clicked), or null
   const [drill, setDrill] = useState(null);
   const longMonth = (m) => new Date(`${m}-01T12:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -188,10 +260,31 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
   const free = known("fs_revenue") ? sum("fs_revenue") : null;
   const dealerTotal = labor + (parts || 0) + (free || 0);
 
-  return (
+  const page = (
     // On a wide screen the page itself does not scroll: the middle cards and the side widgets are two columns that scroll apart.
-    <div className="max-w-[88rem] mx-auto px-4 sm:px-6 py-5 sm:py-7 xl:h-[100dvh] xl:flex xl:flex-col xl:pt-4 xl:pb-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap mb-6 xl:mb-4 xl:shrink-0">
+    <div className={report ? "report-page w-full px-4 py-4" : "max-w-[88rem] mx-auto px-4 sm:px-6 py-5 sm:py-7 xl:h-[100dvh] xl:flex xl:flex-col xl:pt-4 xl:pb-4"}>
+      {report && (
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-5 pb-4 border-b border-[#E4E4E8]">
+          <div className="flex items-center gap-3">
+            <img src="/mg-logo.png" alt="" width="40" height="40" className="w-10 h-10 rounded-xl bg-white border border-[#ECECEC] p-1" />
+            <div>
+              <h1 className="text-xl font-black text-[#111111] leading-tight">Sub-dealer dashboard</h1>
+              <p className="text-xs text-[#6E6E6E]">How the claims, the money and the time are going</p>
+            </div>
+          </div>
+          <div className="text-right text-xs text-[#4D4D4D]">
+            <div className="text-sm font-black text-[#111111]">
+              {report.period}
+              {report.span ? ` · ${report.span}` : ""}
+            </div>
+            <div className="mt-0.5">Exported {report.exported}</div>
+            <button type="button" onClick={report.print} disabled={!report.ready} className="print:hidden mt-2 px-4 py-2 rounded-full bg-[#111111] text-white text-xs font-bold disabled:opacity-40">
+              {report.ready ? "Save as PDF / Print" : "Preparing the report…"}
+            </button>
+          </div>
+        </div>
+      )}
+      <div className={`flex items-start justify-between gap-4 flex-wrap mb-6 xl:mb-4 xl:shrink-0 ${report ? "hidden" : ""}`}>
         <div>
           <h1 className="text-2xl sm:text-[1.7rem] font-black text-[#111111] leading-tight">
             {greeting}
@@ -214,8 +307,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem] xl:grid-rows-[minmax(0,1fr)] gap-5 items-start xl:items-stretch xl:flex-1 xl:min-h-0">
-        <div onScroll={flashScrollbar} className={`min-w-0 space-y-5 ${SCROLL}`}>
+      <div className={report ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem] xl:grid-rows-[minmax(0,1fr)] gap-5 items-start xl:items-stretch xl:flex-1 xl:min-h-0"}>
+        <div onScroll={report ? undefined : flashScrollbar} className={`min-w-0 space-y-5 ${report ? "" : SCROLL}`}>
           {/* the four big numbers */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {revenue === undefined ? (
@@ -273,17 +366,17 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              <Card index={4} className="lg:col-span-7" title="Claims over time" subtitle="Claims the sub-dealer opened each month · click a month to see them">
-                <ColumnChart onSelect={(i) => openMonth(data.claimsPerMonth, i, "Claims opened in", "cm", true)} data={data.claimsPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Claims opened per month" />
+              <Card index={4} className="lg:col-span-7" title="Claims over time" subtitle={`Claims the sub-dealer opened each month${report ? "" : " · click a month to see them"}`}>
+                <ColumnChart onSelect={pick((i) => openMonth(data.claimsPerMonth, i, "Claims opened in", "cm", true))} data={data.claimsPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Claims opened per month" />
               </Card>
 
               <Card index={5} className="lg:col-span-5" title="Where the claims stand" subtitle="Every claim by its stage">
                 <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
-                  <Donut size={148} thickness={17} slices={data.board} onSelect={(s) => openStage(s)} center={{ value: data.totals.claims, label: "claims" }} ariaLabel="Claims by stage" />
+                  <Donut size={148} thickness={17} slices={data.board} onSelect={pick((s) => openStage(s))} center={{ value: data.totals.claims, label: "claims" }} ariaLabel="Claims by stage" />
                   <ul className="min-w-0 flex-1 space-y-1.5 text-xs">
                     {data.board.map((b) => (
                       <li key={b.key}>
-                        <button type="button" onClick={() => openStage(b)} title="Click to see the work orders" className="w-full flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-black/[0.04] transition-colors">
+                        <button type="button" onClick={pick(() => openStage(b))} title={report ? undefined : "Click to see the work orders"} className="w-full flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-black/[0.04] transition-colors">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: b.color }} />
                           <span className="text-[#4D4D4D] truncate">{b.label}</span>
                           <span className="ml-auto font-bold text-[#111111] tabular-nums">{b.value}</span>
@@ -296,7 +389,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
 
               <Card index={6} className="lg:col-span-5" title="First time right & rejection" subtitle="Of the claims the dealer has decided on">
                 <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
-                  <Ring value={data.quality.firstTimeRightRate} color="#2E9E5B" restColor="#F29D38" label="first time right" onSelect={(key) => setDrill(key === "share" ? { title: "First time right", subtitle: "approved with no sending back or rejection", kind: "claims", revenue: false, claimFilter: (c) => c.q === "right" } : { title: "Not first time right", subtitle: "sent back or rejected at least once", kind: "claims", revenue: false, claimFilter: (c) => c.q === "other" })} />
+                  <Ring value={data.quality.firstTimeRightRate} color="#2E9E5B" restColor="#F29D38" label="first time right" onSelect={pick((key) => setDrill(key === "share" ? { title: "First time right", subtitle: "approved with no sending back or rejection", kind: "claims", revenue: false, claimFilter: (c) => c.q === "right" } : { title: "Not first time right", subtitle: "sent back or rejected at least once", kind: "claims", revenue: false, claimFilter: (c) => c.q === "other" }))} />
                   <dl className="flex-1 min-w-0 space-y-3 text-sm">
                     <Fact label="Decided on" value={<CountUp value={data.quality.decided} />} />
                     <Fact label="Sent back at least once" value={`${data.quality.returned} · ${pct(data.quality.returnedRate)}`} />
@@ -309,8 +402,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 <LeadTime lead={data.leadTimes} />
               </Card>
 
-              <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle="Approved to the sub-dealer each month (SAR, VAT incl.) · click a month">
-                <ColumnChart onSelect={(i) => openMonth(data.laborPerMonth, i, "Labor approved in", "dm", true)} format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
+              <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle={`Approved to the sub-dealer each month (SAR, VAT incl.)${report ? "" : " · click a month"}`}>
+                <ColumnChart onSelect={pick((i) => openMonth(data.laborPerMonth, i, "Labor approved in", "dm", true))} format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
               </Card>
 
               <Card index={9} className="lg:col-span-7" title="Dealer revenue" subtitle="What the dealer earns on closed claims (all time)">
@@ -339,8 +432,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 )}
               </Card>
 
-              <Card index={10} className="lg:col-span-6" title="Most replaced parts" subtitle="By quantity on the claims · click a part">
-                <HBars onSelect={(row) => { const ids = partClaimIds(row.label); setDrill({ title: row.label, subtitle: "claims that replaced it", kind: "claims", revenue: true, claimFilter: (c) => ids.has(c.id) }); }} rows={data.topParts.map((p) => ({ label: p.name, value: p.qty }))} format={(v) => `${v}×`} emptyText="No parts on these claims yet." />
+              <Card index={10} className="lg:col-span-6" title="Most replaced parts" subtitle={`By quantity on the claims${report ? "" : " · click a part"}`}>
+                <HBars onSelect={pick((row) => { const ids = partClaimIds(row.label); setDrill({ title: row.label, subtitle: "claims that replaced it", kind: "claims", revenue: true, claimFilter: (c) => ids.has(c.id) }); })} rows={data.topParts.map((p) => ({ label: p.name, value: p.qty }))} format={(v) => `${v}×`} emptyText="No parts on these claims yet." />
               </Card>
 
               <Card index={11} className="lg:col-span-6" title="Defective parts returned" subtitle="Closed claims: parts sent back to the dealer">
@@ -352,7 +445,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                       { key: "returned", label: "Returned", value: data.defected.returned, color: "#2E9E5B" },
                       { key: "pending", label: "Still at the sub-dealer", value: data.defected.pending, color: "#F29D38" },
                     ]}
-                    onSelect={(s) => setDrill({ title: s.key === "returned" ? "Parts returned to the dealer" : "Parts still at the sub-dealer", subtitle: "on closed claims", kind: "parts", partFilter: (p, c) => c.st === "closed" && p.back === (s.key === "returned") })}
+                    onSelect={pick((s) => setDrill({ title: s.key === "returned" ? "Parts returned to the dealer" : "Parts still at the sub-dealer", subtitle: "on closed claims", kind: "parts", partFilter: (p, c) => c.st === "closed" && p.back === (s.key === "returned") }))}
                     center={{ value: data.defected.total ? (data.defected.returned / data.defected.total) * 100 : "—", format: (v) => `${Math.round(v)}%`, label: "returned" }}
                     ariaLabel="Defective parts returned"
                   />
@@ -374,12 +467,12 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             </div>
           )}
           <p className="px-2 pb-2 text-[0.6875rem] text-[#6E6E6E] leading-relaxed">
-            Figures count the claims opened in the period chosen above. Revenue is for all closed claims. Parts and Free Service figures come from the claims batch and the invoicing in the Self-Audit system.
+            Figures count the claims opened in the period shown. Revenue is for all closed claims. Parts and Free Service figures come from the claims batch and the invoicing in the Self-Audit system.
           </p>
         </div>
 
         {/* the side panel: today's reminder, the weather and the calendar, all in view */}
-        <aside ref={asideRef} onScroll={flashScrollbar} className={SCROLL}>
+        <aside ref={asideRef} onScroll={flashScrollbar} className={`${SCROLL} ${report ? "hidden" : ""}`}>
           <div ref={asideInner} className="space-y-2.5">
           <MessageCard index={1} closedThisWeek={data?.closedThisWeek ?? null} waiting={data ? data.actions.reduce((s, a) => s + a.count, 0) : null} />
           <WeatherCard index={2} sample={weatherSample} />
@@ -387,9 +480,10 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
           </div>
         </aside>
       </div>
-      {drill && data && <DrillDown spec={drill} data={data} workOrders={workOrders} onClose={() => setDrill(null)} />}
+      {drill && data && !report && <DrillDown spec={drill} data={data} workOrders={workOrders} onClose={() => setDrill(null)} />}
     </div>
   );
+  return report ? <StaticProvider value={true}>{page}</StaticProvider> : page;
 }
 
 function Fact({ label, value, tone }) {
@@ -405,6 +499,7 @@ function Fact({ label, value, tone }) {
 
 /** Each step as a bar sized by its average, with the median beside it. */
 function LeadTime({ lead }) {
+  const stat = useStatic();
   const max = Math.max(1, ...lead.steps.map((s) => s.avgHours || 0));
   return (
     <div>
@@ -421,7 +516,7 @@ function LeadTime({ lead }) {
               </span>
             </div>
             <div className="mt-1.5 h-2 rounded-full bg-[#E0E0E0] overflow-hidden">
-              <motion.div className="h-full rounded-full bg-[#E4002B]" initial={{ width: 0 }} animate={{ width: `${s.avgHours ? Math.max(3, (s.avgHours / max) * 100) : 0}%` }} transition={{ duration: 0.85, delay: 0.25 + i * 0.09, ease }} style={{ opacity: 1 - i * 0.12 }} />
+              <motion.div className="h-full rounded-full bg-[#E4002B]" initial={stat ? false : { width: 0 }} animate={{ width: `${s.avgHours ? Math.max(3, (s.avgHours / max) * 100) : 0}%` }} transition={{ duration: 0.85, delay: 0.25 + i * 0.09, ease }} style={{ opacity: 1 - i * 0.12 }} />
             </div>
           </li>
         ))}
@@ -447,7 +542,9 @@ const statusPill = (s) => {
 
 /** One row per dealer work order and VIN: the sub-dealer's side, the batch's side, and what the dealer is left with. */
 function WorkOrders({ data }) {
-  const [all, setAll] = useState(false);
+  const stat = useStatic();
+  const [showAll, setAll] = useState(false);
+  const all = showAll || stat;
   const { rows, batchAvailable } = data;
   if (!rows.length) return <p className="text-sm text-[#6E6E6E]">No claims in this period.</p>;
   const shown = all ? rows : rows.slice(0, 12);
@@ -515,7 +612,7 @@ function WorkOrders({ data }) {
         </table>
       </div>
       <p className="mt-3 text-[0.6875rem] text-[#6E6E6E]">Amounts in SAR (batch dollars × 3.75). Revenue to dealer = paid on the batch minus the labor approved to the sub-dealer. A work order with several claims (-1, -2) is one row.</p>
-      {rows.length > 12 && (
+      {rows.length > 12 && !stat && (
         <button type="button" onClick={() => setAll((v) => !v)} className="mt-2 text-xs font-bold text-[#E4002B] hover:underline">
           {all ? "Show fewer" : `Show all ${rows.length}`}
         </button>

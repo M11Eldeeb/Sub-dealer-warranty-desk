@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 // Small chart pieces for the home dashboard, drawn with plain HTML and SVG (no chart library). Everything animates in when it
@@ -14,14 +14,20 @@ export const monthLabel = (key, withYear = false) => {
   return withYear ? `${MONTHS[m - 1]} ${String(y).slice(2)}` : MONTHS[m - 1];
 };
 
+/** true inside the printed report: everything is drawn finished, with no entrance animation. */
+const StaticContext = createContext(false);
+export const StaticProvider = StaticContext.Provider;
+export const useStatic = () => useContext(StaticContext);
+
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** A number that counts up from zero to `value` (instantly when the person asked for less motion). `format` draws it. */
 export function CountUp({ value, format = (v) => Math.round(v).toLocaleString("en-US"), duration = 1000, delay = 0 }) {
   const target = Number(value) || 0;
-  const [shown, setShown] = useState(() => (typeof window === "undefined" ? target : 0));
+  const stat = useStatic();
+  const [shown, setShown] = useState(() => (typeof window === "undefined" || stat ? target : 0));
   useEffect(() => {
-    if (reducedMotion()) return setShown(target);
+    if (stat || reducedMotion()) return setShown(target);
     let raf;
     const t0 = performance.now() + delay * 1000;
     const tick = (now) => {
@@ -35,13 +41,14 @@ export function CountUp({ value, format = (v) => Math.round(v).toLocaleString("e
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, duration, delay]);
+  }, [target, duration, delay, stat]);
   return <span className="tabular-nums">{format(Number.isInteger(target) ? Math.round(shown) : shown)}</span>; // whole numbers stay whole while counting
 }
 
 /** Vertical bars, one per month. The newest bar is the strong colour. `onSelect(index)` makes every bar clickable. */
 export function ColumnChart({ data, color = "#E4002B", format = (v) => v, height = 150, ariaLabel, onSelect }) {
   const max = Math.max(1, ...data.map((d) => d.value));
+  const stat = useStatic();
   return (
     <div role={onSelect ? "group" : "img"} aria-label={ariaLabel || "Bar chart"} className="flex items-end gap-1.5 sm:gap-2" style={{ height: height + 34 }}>
       {data.map((d, i) => {
@@ -61,7 +68,7 @@ export function ColumnChart({ data, color = "#E4002B", format = (v) => v, height
             </span>
             <motion.div
               className="w-full rounded-t-lg rounded-b-sm"
-              initial={{ height: 0 }}
+              initial={stat ? false : { height: 0 }}
               animate={{ height: h }}
               transition={{ duration: 0.85, delay, ease: EASE }}
               style={{ background: last ? color : `color-mix(in srgb, ${color} 38%, transparent)` }}
@@ -76,6 +83,7 @@ export function ColumnChart({ data, color = "#E4002B", format = (v) => v, height
 
 /** A ring split into slices. `center` is the big text in the middle: { value, label, format? } (a number counts up). */
 export function Donut({ slices, size = 150, thickness = 16, center, ariaLabel, onSelect }) {
+  const stat = useStatic();
   const total = slices.reduce((s, x) => s + x.value, 0);
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
@@ -101,7 +109,7 @@ export function Donut({ slices, size = 150, thickness = 16, center, ariaLabel, o
                 strokeWidth={thickness}
                 strokeLinecap="butt"
                 strokeDashoffset={-offset}
-                initial={{ strokeDasharray: `0 ${c}` }}
+                initial={stat ? false : { strokeDasharray: `0 ${c}` }}
                 animate={{ strokeDasharray: `${Math.max(len - gap, 0.5)} ${c}` }}
                 transition={{ duration: 0.9, delay: 0.2 + i * 0.12, ease: EASE }}
               >
@@ -143,6 +151,7 @@ export function Ring({ value, color = "#E4002B", restColor = "transparent", size
 export function HBars({ rows, color = "#E4002B", format = (v) => v, emptyText = "Nothing yet.", onSelect }) {
   if (!rows.length) return <p className="text-sm text-[#6E6E6E]">{emptyText}</p>;
   const max = Math.max(1, ...rows.map((r) => r.value));
+  const stat = useStatic();
   return (
     <ul className="space-y-2.5">
       {rows.map((r, i) => {
@@ -159,7 +168,7 @@ export function HBars({ rows, color = "#E4002B", format = (v) => v, emptyText = 
             </span>
           </div>
           <div className="mt-1 h-2 rounded-full bg-[#E0E0E0] overflow-hidden">
-            <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${Math.max(3, (r.value / max) * 100)}%` }} transition={{ duration: 0.8, delay: 0.2 + i * 0.07, ease: EASE }} style={{ background: r.color || color }} />
+            <motion.div className="h-full rounded-full" initial={stat ? false : { width: 0 }} animate={{ width: `${Math.max(3, (r.value / max) * 100)}%` }} transition={{ duration: 0.8, delay: 0.2 + i * 0.07, ease: EASE }} style={{ background: r.color || color }} />
           </div>
           </Row>
         </li>
