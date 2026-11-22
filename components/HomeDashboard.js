@@ -336,7 +336,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
           </div>
 
           {/* what waits for you */}
-          <motion.section {...rise(4)} className="bg-white border border-[#ECECEC] rounded-[1.25rem] p-5">
+          {/* (not in the printed report: it is analytics only) */}
+          <motion.section {...rise(4)} className={`bg-white border border-[#ECECEC] rounded-[1.25rem] p-5 ${report ? "hidden" : ""}`}>
             <h2 className="text-sm font-bold text-[#111111]">Needs your action</h2>
             <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               {(data?.actions || [null, null, null, null]).map((a, i) =>
