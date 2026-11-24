@@ -1,28 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildAnalytics, claimBrief, dealerTurns, monthKey, monthRange, partBriefs } from "@/lib/analytics";
+import { loadAnalytics } from "@/lib/dashboard-data";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const CLAIM_COLUMNS =
-  "id, claim_number, status, created_at, dealer_decision_at, parts_replied_at, parts_received_at, repair_completed_at, closed_at, labor_amount, times_returned, times_rejected, work_order_number, dealer_work_order_number, vin, sub_invoiced_at";
-
-/** The first day of the month `n - 1` months before this one, as "YYYY-MM". */
-function monthsAgo(n) {
-  const now = monthKey(new Date().toISOString());
-  let [y, m] = now.split("-").map(Number);
-  m -= n - 1;
-  while (m < 1) {
-    m += 12;
-    y -= 1;
-  }
-  return `${y}-${String(m).padStart(2, "0")}`;
-}
-
 /**
- * The home dashboard's numbers from our own database (dealer, admin, manager). ?range=3 | 6 | 12 | all (months back).
+ * The home dashboard's numbers from our own database (dealer, admin, manager). ?range=1 | 3 | 6 | 12 | all (months back).
  * The money figures come from /api/revenue, which also asks the self-audit system and is slower, so the page loads them apart.
  */
 export async function GET(request) {
@@ -36,67 +21,13 @@ export async function GET(request) {
 
   const range = new URL(request.url).searchParams.get("range") || "6";
   const admin = createAdminClient();
-  const nowMonth = monthKey(new Date().toISOString());
 
-  // all the claims in the range (a thousand at a time)
-  const sinceMonth = range === "all" ? null : monthsAgo(Math.min(Math.max(parseInt(range, 10) || 6, 1), 60));
-  const claims = [];
-  for (let from = 0; ; from += 1000) {
-    let q = admin.from("claims").select(CLAIM_COLUMNS).eq("kind", "claim").order("created_at", { ascending: true }).range(from, from + 999);
-    if (sinceMonth) q = q.gte("created_at", `${sinceMonth}-01T00:00:00+03:00`);
-    const { data, error } = await q;
-    if (error) return NextResponse.json({ error: "Could not read the claims." }, { status: 500 });
-    claims.push(...data);
-    if (data.length < 1000) break;
+  let analytics;
+  try {
+    analytics = await loadAnalytics(admin, range);
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
-
-  const first = sinceMonth || (claims[0] ? monthKey(claims[0].created_at) : nowMonth);
-  const months = monthRange(first, nowMonth);
-
-  // the parts on those claims
-  const parts = [];
-  const ids = claims.map((c) => c.id);
-  for (let i = 0; i < ids.length; i += 150) {
-    const { data } = await admin.from("claim_parts").select("claim_id, name, qty, status, defected_arrived_at").in("claim_id", ids.slice(i, i + 150));
-    parts.push(...(data || []));
-  }
-
-  // The dealer's own steps (decision, closing) are timed turn by turn from the status log, in working hours.
-  const logs = new Map();
-  for (let i = 0; i < ids.length; i += 60) {
-    for (let from = 0; ; from += 1000) {
-      const { data } = await admin
-        .from("claim_status_log")
-        .select("claim_id, from_status, to_status, at")
-        .in("claim_id", ids.slice(i, i + 60))
-        .or("kind.is.null,kind.neq.comment")
-        .order("at", { ascending: true })
-        .range(from, from + 999);
-      for (const r of data || []) (logs.get(r.claim_id) || logs.set(r.claim_id, []).get(r.claim_id)).push(r);
-      if ((data || []).length < 1000) break;
-    }
-  }
-  for (const c of claims) c.turns = dealerTurns(logs.get(c.id) || []);
-
-  const analytics = buildAnalytics(claims, parts, months);
-  // what the lists behind the charts (click a bar, a slice or a part) are drawn from
-  analytics.claimList = claims.map(claimBrief);
-  analytics.partList = partBriefs(parts);
-  // the latest closed work orders, each with what was approved to the sub-dealer and whether it is invoiced yet
-  analytics.recent = claims
-    .filter((c) => c.status === "closed" && c.closed_at)
-    .sort((a, b) => Date.parse(b.closed_at) - Date.parse(a.closed_at))
-    .slice(0, 8)
-    .map((c) => ({
-      id: c.id,
-      claim_number: c.claim_number,
-      work_order: c.work_order_number,
-      dealer_work_order: c.dealer_work_order_number,
-      vin: c.vin,
-      labor_amount: c.labor_amount,
-      closed_at: c.closed_at,
-      invoiced: !!c.sub_invoiced_at,
-    }));
 
   // what waits for you
   const count = async (q) => (await q).count || 0;

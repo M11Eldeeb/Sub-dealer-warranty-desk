@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { FileText, X } from "lucide-react";
+import { Download, FileText, X } from "lucide-react";
 import DialogFocus from "@/components/DialogFocus";
 
 const OPTIONS = [
@@ -57,6 +57,15 @@ export default function ExportDashboardDialog({ onClose }) {
           <FileText size={15} /> Create PDF
         </button>
         <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">It opens in a new tab. In the print window choose Save as PDF.</p>
+        <a
+          href={`/api/dashboard-file?range=${range}`}
+          download
+          onClick={() => setTimeout(onClose, 300)}
+          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-[#111111] text-[#111111] hover:bg-[#F1F2F4] text-sm font-bold transition-colors"
+        >
+          <Download size={15} /> Interactive file
+        </a>
+        <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">One file to open in any browser, no sign-in. Click a chart to see its work orders. Good for sending to others.</p>
       </div>
     </div>,
     document.body

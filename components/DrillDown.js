@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
-import { STATUS } from "@/components/ui";
+import { STATUS } from "@/lib/status-meta";
 
 const num = (n, digits = 2) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const uniq = (xs) => [...new Set(xs.filter(Boolean))];
@@ -90,7 +90,7 @@ export default function DrillDown({ spec, data, workOrders, onClose }) {
   const woCell = (c) => c || <span className="font-sans font-normal text-[#6E6E6E]">not yet</span>;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/45" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="print:hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/45" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-label={spec.title} className="bg-white w-full sm:max-w-4xl max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl">
         <div className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3">
           <div className="min-w-0">

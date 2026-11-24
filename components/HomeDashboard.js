@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Timer, Wallet, Landmark, AlertCircle, Receipt } from "lucide-react";
 import { ColumnChart, Donut, Ring, HBars, CountUp, StaticProvider, useStatic, monthLabel } from "@/components/charts";
-import { STATUS } from "@/components/ui";
+import { STATUS } from "@/lib/status-meta";
 import { MessageCard, WeatherCard, CalendarCard } from "@/components/DailyWidgets";
 import DrillDown from "@/components/DrillDown";
 
@@ -232,8 +232,9 @@ function useFitHeight(outer, inner) {
 
 /** The page itself, from the numbers it is given (so it can be drawn from sample data too). */
 export function HomeView({ profile, range, setRange, data, failed, revenue, workOrders, weatherSample = null, report = null }) {
-  // in the printed report nothing is clickable
-  const pick = (fn) => (report ? undefined : fn);
+  // in the printed report nothing is clickable; in the interactive file (sent by e-mail) the charts open their lists like on the site
+  const still = !!report && !report.interactive;
+  const pick = (fn) => (still ? undefined : fn);
   // the list behind a chart (a bar, a slice or a part that was clicked), or null
   const [drill, setDrill] = useState(null);
   const longMonth = (m) => new Date(`${m}-01T12:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -266,7 +267,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
       {report && (
         <div className="flex items-start justify-between gap-4 flex-wrap mb-5 pb-4 border-b border-[#E4E4E8]">
           <div className="flex items-center gap-3">
-            <img src="/mg-logo.png" alt="" width="40" height="40" className="w-10 h-10 rounded-xl bg-white border border-[#ECECEC] p-1" />
+            <img src={report.logo || "/mg-logo.png"} alt="" width="40" height="40" className="w-10 h-10 rounded-xl bg-white border border-[#ECECEC] p-1" />
             <div>
               <h1 className="text-xl font-black text-[#111111] leading-tight">Sub-dealer dashboard</h1>
               <p className="text-xs text-[#6E6E6E]">How the claims, the money and the time are going</p>
@@ -278,6 +279,8 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
               {report.span ? ` · ${report.span}` : ""}
             </div>
             <div className="mt-0.5">Exported {report.exported}</div>
+            {report.revenueAt && <div className="mt-0.5">Revenue figures as of {report.revenueAt}</div>}
+            {report.interactive && <div className="print:hidden mt-1 text-[#6E6E6E]">Click a bar, a slice or a part to see its work orders.</div>}
             <button type="button" onClick={report.print} disabled={!report.ready} className="print:hidden mt-2 px-4 py-2 rounded-full bg-[#111111] text-white text-xs font-bold disabled:opacity-40">
               {report.ready ? "Save as PDF / Print" : "Preparing the report…"}
             </button>
@@ -367,7 +370,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              <Card index={4} className="lg:col-span-7" title="Claims over time" subtitle={`Claims the sub-dealer opened each month${report ? "" : " · click a month to see them"}`}>
+              <Card index={4} className="lg:col-span-7" title="Claims over time" subtitle={`Claims the sub-dealer opened each month${still ? "" : " · click a month to see them"}`}>
                 <ColumnChart onSelect={pick((i) => openMonth(data.claimsPerMonth, i, "Claims opened in", "cm", true))} data={data.claimsPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Claims opened per month" />
               </Card>
 
@@ -377,7 +380,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                   <ul className="min-w-0 flex-1 space-y-1.5 text-xs">
                     {data.board.map((b) => (
                       <li key={b.key}>
-                        <button type="button" onClick={pick(() => openStage(b))} title={report ? undefined : "Click to see the work orders"} className="w-full flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-black/[0.04] transition-colors">
+                        <button type="button" onClick={pick(() => openStage(b))} title={still ? undefined : "Click to see the work orders"} className="w-full flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-black/[0.04] transition-colors">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: b.color }} />
                           <span className="text-[#4D4D4D] truncate">{b.label}</span>
                           <span className="ml-auto font-bold text-[#111111] tabular-nums">{b.value}</span>
@@ -403,7 +406,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 <LeadTime lead={data.leadTimes} />
               </Card>
 
-              <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle={`Approved to the sub-dealer each month (SAR, VAT incl.)${report ? "" : " · click a month"}`}>
+              <Card index={8} className="lg:col-span-5" title="Labor approved over time" subtitle={`Approved to the sub-dealer each month (SAR, VAT incl.)${still ? "" : " · click a month"}`}>
                 <ColumnChart onSelect={pick((i) => openMonth(data.laborPerMonth, i, "Labor approved in", "dm", true))} format={(v) => num(v)} data={data.laborPerMonth.map((m, i) => ({ label: monthLabel(m.month, i === 0 || m.month.endsWith("-01")), value: m.value }))} ariaLabel="Labor approved per month" />
               </Card>
 
@@ -433,7 +436,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
                 )}
               </Card>
 
-              <Card index={10} className="lg:col-span-6" title="Most replaced parts" subtitle={`By quantity on the claims${report ? "" : " · click a part"}`}>
+              <Card index={10} className="lg:col-span-6" title="Most replaced parts" subtitle={`By quantity on the claims${still ? "" : " · click a part"}`}>
                 <HBars onSelect={pick((row) => { const ids = partClaimIds(row.label); setDrill({ title: row.label, subtitle: "claims that replaced it", kind: "claims", revenue: true, claimFilter: (c) => ids.has(c.id) }); })} rows={data.topParts.map((p) => ({ label: p.name, value: p.qty }))} format={(v) => `${v}×`} emptyText="No parts on these claims yet." />
               </Card>
 
@@ -481,7 +484,7 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
           </div>
         </aside>
       </div>
-      {drill && data && !report && <DrillDown spec={drill} data={data} workOrders={workOrders} onClose={() => setDrill(null)} />}
+      {drill && data && !still && <DrillDown spec={drill} data={data} workOrders={workOrders} onClose={() => setDrill(null)} />}
     </div>
   );
   return report ? <StaticProvider value={true}>{page}</StaticProvider> : page;

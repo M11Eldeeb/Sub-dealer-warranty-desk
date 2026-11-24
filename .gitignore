@@ -4,3 +4,4 @@ node_modules
 .DS_Store
 .agents/
 skills-lock.json
+lib/generated/

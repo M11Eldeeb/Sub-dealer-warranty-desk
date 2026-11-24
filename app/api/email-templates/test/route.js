@@ -3,8 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireManager } from "@/lib/require-manager";
 import { getMailStatus, sendMail } from "@/lib/gmail";
 import { TEMPLATE_DEFAULTS, renderTemplate, validateTemplateInput } from "@/lib/email-templates";
+import { buildWeeklyDashboard } from "@/lib/weekly-dashboard";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /** Sends the email as currently typed (saved or not) to the signed-in person only, filled with sample claim data. */
 export async function POST(request) {
@@ -17,8 +19,23 @@ export async function POST(request) {
   const checked = validateTemplateInput(input?.key, input);
   if (checked.error) return NextResponse.json({ error: checked.error }, { status: 400 });
 
-  // A real claim is the sample when there is one, so the test looks like the real thing.
   const admin = createAdminClient();
+
+  // The weekly dashboard test is the real thing: today's file attached, sent to the signed-in person only.
+  if (input.key === "weekly_dashboard") {
+    try {
+      const weekly = await buildWeeklyDashboard(admin);
+      const template = { ...TEMPLATE_DEFAULTS.weekly_dashboard, ...checked.value };
+      const { subject, html } = renderTemplate(template, {}, { custom: weekly.custom });
+      const result = await sendMail({ kind: "test", to: [who.user.email], subject: `[TEST] ${subject}`, html, sentBy: who.user.id, attachments: weekly.attachments });
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 502 });
+      return NextResponse.json({ sentTo: who.user.email });
+    } catch (e) {
+      return NextResponse.json({ error: e.message || "The test could not be made." }, { status: 500 });
+    }
+  }
+
+  // A real claim is the sample when there is one, so the test looks like the real thing.
   const { data: sample } = await admin
     .from("claims")
     .select("id, claim_number, work_order_number, dealer_work_order_number, vin, branches(name), claim_parts(name, part_number, qty)")
