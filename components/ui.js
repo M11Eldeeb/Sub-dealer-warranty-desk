@@ -103,12 +103,13 @@ export function getPartsSummary(parts) {
   const total = parts.length;
   const supplied = parts.filter((p) => p.status === "Supplied to Sub-Dealer").length;
   const cancelled = parts.filter((p) => p.status === "Cancelled").length;
-  const resolved = supplied + cancelled;
+  // a cancelled part is not coming, so it is left out: only parts that are really supplied count as supplied
+  const expected = total - cancelled;
 
-  if (cancelled === total) return { label: "Parts Cancelled", color: "#B23A32", bg: "#FAE4E2" };
-  if (resolved === total) return { label: "All Parts Supplied", color: "#1D7466", bg: "#E1F2EE" };
-  if (resolved === 0) return { label: "Waiting Shipment", color: "#9A5C00", bg: "#FCF1DA" };
-  return { label: `Partially Supplied (${resolved}/${total})`, color: "#5B4FB0", bg: "#EAE7FA" };
+  if (expected === 0) return { label: "Parts Cancelled", color: "#B23A32", bg: "#FAE4E2" };
+  if (supplied === expected) return { label: "All Parts Supplied", color: "#1D7466", bg: "#E1F2EE" };
+  if (supplied === 0) return { label: "Waiting Shipment", color: "#9A5C00", bg: "#FCF1DA" };
+  return { label: `Partially Supplied (${supplied}/${expected})`, color: "#5B4FB0", bg: "#EAE7FA" };
 }
 
 /** How many of a claim's defective parts have arrived back at the dealer. null = nothing to show. */

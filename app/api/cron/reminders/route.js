@@ -10,6 +10,9 @@ const DAY_MS = 24 * HOUR_MS;
 const SLACK_MS = HOUR_MS;
 const due = (sinceIso, waitMs, now) => now - new Date(sinceIso).getTime() >= waitMs - SLACK_MS;
 
+/** The calendar day (YYYY-MM-DD) in Saudi time (UTC+3) of a timestamp. */
+const saudiDay = (t) => new Date(new Date(t).getTime() + 3 * HOUR_MS).toISOString().slice(0, 10);
+
 export const dynamic = "force-dynamic";
 
 /** Every run (and every refused call) is written down so Settings can show whether the daily job really ran. */
@@ -67,8 +70,11 @@ export async function GET(request) {
     if (outstanding.length === 0) continue;
 
     const since = claim.parts_reminder_sent_at || claim.awaiting_parts_since;
-    const waitMs = outstanding.some((p) => p.status === "Waiting Action") ? DAY_MS : 5 * DAY_MS;
-    if (!due(since, waitMs, now)) continue;
+    if (outstanding.some((p) => p.status === "Waiting Action")) {
+      // every day: due when the last mail (or the approval) was on an earlier day than today, Saudi time.
+      // (A fixed 24 hours would skip a claim approved after 9:00 until the day after tomorrow.)
+      if (saudiDay(since) >= saudiDay(now)) continue;
+    } else if (!due(since, 5 * DAY_MS, now)) continue;
 
     try {
       // The email lists only what is still outstanding, with its current status.
