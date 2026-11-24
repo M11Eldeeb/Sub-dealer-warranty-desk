@@ -65,7 +65,7 @@ export default function ExportDashboardDialog({ onClose }) {
         >
           <Download size={15} /> Interactive file
         </a>
-        <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">One file to open in any browser, no sign-in. Click a chart to see its work orders. Good for sending to others.</p>
+        <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">One file to open in any browser, no sign-in. It holds every period (1 week to all time, switch at the top) and a click on a chart shows its work orders. Opens on the period chosen above.</p>
       </div>
     </div>,
     document.body

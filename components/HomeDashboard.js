@@ -281,6 +281,15 @@ export function HomeView({ profile, range, setRange, data, failed, revenue, work
             <div className="mt-0.5">Exported {report.exported}</div>
             {report.revenueAt && <div className="mt-0.5">Revenue figures as of {report.revenueAt}</div>}
             {report.interactive && <div className="print:hidden mt-1 text-[#6E6E6E]">Click a bar, a slice or a part to see its work orders.</div>}
+            {report.ranges && (
+              <div role="group" aria-label="Period" className="print:hidden mt-2.5 inline-flex flex-wrap justify-end items-center gap-1 bg-white border border-[#ECECEC] rounded-full p-1 text-xs">
+                {report.ranges.map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => report.onRange(key)} aria-pressed={range === key} className={`px-3 py-1.5 rounded-full font-bold transition-colors ${range === key ? "bg-[#111111] text-white" : "text-[#4D4D4D] hover:text-[#111111]"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <button type="button" onClick={report.print} disabled={!report.ready} className="print:hidden mt-2 px-4 py-2 rounded-full bg-[#111111] text-white text-xs font-bold disabled:opacity-40">
               {report.ready ? "Save as PDF / Print" : "Preparing the report…"}
             </button>
