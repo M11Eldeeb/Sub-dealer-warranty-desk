@@ -22,7 +22,7 @@ export async function GET(request) {
   if (!["dealer", "admin", "manager"].includes(profile?.role)) return NextResponse.json({ error: "Not allowed." }, { status: 403 });
 
   const asked = new URL(request.url).searchParams.get("range");
-  const initial = ["w", "1", "3", "6", "12", "all"].includes(asked) ? asked : "6";
+  const initial = ["w", "1", "3", "6", "12", "all"].includes(asked) ? asked : "all";
   const admin = createAdminClient();
 
   try {

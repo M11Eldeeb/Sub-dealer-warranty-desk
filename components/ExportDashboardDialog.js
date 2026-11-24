@@ -58,14 +58,14 @@ export default function ExportDashboardDialog({ onClose }) {
         </button>
         <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">It opens in a new tab. In the print window choose Save as PDF.</p>
         <a
-          href={`/api/dashboard-file?range=${range}`}
+          href="/api/dashboard-file"
           download
           onClick={() => setTimeout(onClose, 300)}
           className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-[#111111] text-[#111111] hover:bg-[#F1F2F4] text-sm font-bold transition-colors"
         >
           <Download size={15} /> Interactive file
         </a>
-        <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">One file to open in any browser, no sign-in. It holds every period (1 week to all time, switch at the top) and a click on a chart shows its work orders. Opens on the period chosen above.</p>
+        <p className="mt-2 text-[0.6875rem] text-[#6E6E6E] text-center">One file to open in any browser, no sign-in. It holds every period (1 week to all time, switch at the top) and a click on a chart shows its work orders. Opens on All time.</p>
       </div>
     </div>,
     document.body
