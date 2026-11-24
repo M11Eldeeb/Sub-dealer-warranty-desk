@@ -21,7 +21,7 @@ async function authorized(request) {
 }
 
 /**
- * Called every Sunday at 06:00 UTC (9:00 AM Saudi time) by the database scheduler (pg_cron, job "weekly-dashboard"). Makes the
+ * Called every Wednesday at 07:00 UTC (10:00 AM Saudi time) by the database scheduler (pg_cron, job "weekly-dashboard"). Makes the
  * interactive dashboard file and e-mails it to the "Weekly dashboard" recipients in Settings. Sends at most once a day. (Every send, or failure, is in the e-mail log; this job does not write to cron_run_log, which Settings reads as the daily reminders' last run.)
  */
 export async function GET(request) {

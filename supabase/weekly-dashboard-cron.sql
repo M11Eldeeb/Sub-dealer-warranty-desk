@@ -1,4 +1,4 @@
--- The weekly dashboard e-mail: every Sunday at 06:00 UTC (9:00 AM Saudi time) the database scheduler calls the site,
+-- The weekly dashboard e-mail: every Wednesday at 07:00 UTC (10:00 AM Saudi time) the database scheduler calls the site,
 -- which makes the interactive dashboard file and e-mails it to the "Weekly dashboard" recipients in Settings.
 -- Same shape as run_daily_reminders(): the shared secret in cron_secret authorizes the call.
 create or replace function public.run_weekly_dashboard()
@@ -21,4 +21,4 @@ begin
 end;
 $$;
 
-select cron.schedule('weekly-dashboard', '0 6 * * 0', 'select public.run_weekly_dashboard()');
+select cron.schedule('weekly-dashboard', '0 7 * * 3', 'select public.run_weekly_dashboard()');
