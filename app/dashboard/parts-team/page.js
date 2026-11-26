@@ -34,6 +34,11 @@ export default function PartsTeamDashboard() {
   const [claimsWithRequisition, setClaimsWithRequisition] = useState(new Set());
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
   const [requisitionFiles, setRequisitionFiles] = useState([]);
+  const [fileBoxKey, setFileBoxKey] = useState(0); // bumped to empty the file box when the chosen files are cleared
+  const clearRequisitionFiles = () => {
+    setRequisitionFiles([]);
+    setFileBoxKey((k) => k + 1);
+  };
   const [requisitionUploading, setRequisitionUploading] = useState(false);
   const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
@@ -132,9 +137,16 @@ export default function PartsTeamDashboard() {
 
   const requestPartStatusChange = (part, newStatus) => {
     if (newStatus === "Supplied to Sub-Dealer" && !claimsWithRequisition.has(part.claim_id)) {
+      // choosing "Supplied" again while it waits for the files keeps the files already chosen
+      if (pendingPartStatus?.partId === part.id && pendingPartStatus.newStatus === newStatus) return;
       setPendingPartStatus({ partId: part.id, part, newStatus });
-      setRequisitionFiles([]);
+      clearRequisitionFiles();
     } else {
+      // any other status for a part that was waiting for its requisition files: drop the pending "Supplied"
+      if (pendingPartStatus?.partId === part.id) {
+        setPendingPartStatus(null);
+        clearRequisitionFiles();
+      }
       handlePartStatusChange(part, newStatus);
     }
   };
@@ -157,7 +169,7 @@ export default function PartsTeamDashboard() {
       }
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
       setPendingPartStatus(null);
-      setRequisitionFiles([]);
+      clearRequisitionFiles();
     } finally {
       setRequisitionUploading(false);
     }
@@ -311,7 +323,7 @@ export default function PartsTeamDashboard() {
 
                 <div className="flex gap-2 mt-3">
                   <select
-                    value={p.status}
+                    value={pendingPartStatus?.partId === p.id ? pendingPartStatus.newStatus : p.status}
                     onChange={(e) => requestPartStatusChange(p, e.target.value)}
                     className="input text-xs flex-1 min-w-0"
                   >
@@ -327,8 +339,8 @@ export default function PartsTeamDashboard() {
                     <div className="text-xs font-bold text-[#111111]">
                       Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence.
                     </div>
-                    <input type="file" multiple onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))} className="text-xs" />
-                    {requisitionFiles.length > 0 && <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>}
+                    <input type="file" multiple key={fileBoxKey} onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))} className="text-xs" />
+                    {requisitionFiles.length > 0 && <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) ready: {requisitionFiles.map((f) => f.name).join(", ")}</div>}
                     <div className="flex gap-2">
                       <button
                         onClick={confirmPartStatusWithRequisition}
@@ -341,7 +353,7 @@ export default function PartsTeamDashboard() {
                       <button
                         onClick={() => {
                           setPendingPartStatus(null);
-                          setRequisitionFiles([]);
+                          clearRequisitionFiles();
                         }}
                         disabled={requisitionUploading}
                         className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-[#6E6E6E] hover:bg-[#E0E0E0]"

@@ -65,6 +65,11 @@ export default function ClaimDetailPage() {
   const [techEmailNote, setTechEmailNote] = useState("");
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
   const [requisitionFiles, setRequisitionFiles] = useState([]);
+  const [fileBoxKey, setFileBoxKey] = useState(0); // bumped to empty the file box when the chosen files are cleared
+  const clearRequisitionFiles = () => {
+    setRequisitionFiles([]);
+    setFileBoxKey((k) => k + 1);
+  };
   const [partsEmailNote, setPartsEmailNote] = useState("");
   const [returnEmailNote, setReturnEmailNote] = useState("");
   const [uploadError, setUploadError] = useState("");
@@ -642,9 +647,16 @@ export default function ClaimDetailPage() {
   const requestPartStatusChange = (part, newStatus) => {
     const claimHasRequisition = attachments.some((a) => a.stage === "part_requisition");
     if (role === "parts_team" && newStatus === "Supplied to Sub-Dealer" && !claimHasRequisition) {
+      // choosing "Supplied" again while it waits for the files keeps the files already chosen
+      if (pendingPartStatus?.partId === part.id && pendingPartStatus.newStatus === newStatus) return;
       setPendingPartStatus({ partId: part.id, newStatus });
-      setRequisitionFiles([]);
+      clearRequisitionFiles();
     } else {
+      // any other status for a part that was waiting for its requisition files: drop the pending "Supplied"
+      if (pendingPartStatus?.partId === part.id) {
+        setPendingPartStatus(null);
+        clearRequisitionFiles();
+      }
       handlePartStatusChange(part, newStatus);
     }
   };
@@ -666,7 +678,7 @@ export default function ClaimDetailPage() {
       }
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
       setPendingPartStatus(null);
-      setRequisitionFiles([]);
+      clearRequisitionFiles();
     } finally {
       setActionLoading(null);
     }
@@ -1513,7 +1525,7 @@ export default function ClaimDetailPage() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <select
-                        value={p.status}
+                        value={pendingPartStatus?.partId === p.id ? pendingPartStatus.newStatus : p.status}
                         onChange={(e) => requestPartStatusChange(p, e.target.value)}
                         className="input text-xs flex-1"
                       >
@@ -1573,11 +1585,12 @@ export default function ClaimDetailPage() {
                         <input
                           type="file"
                           multiple
+                          key={fileBoxKey}
                           onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))}
                           className="text-xs"
                         />
                         {requisitionFiles.length > 0 && (
-                          <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) selected</div>
+                          <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) ready: {requisitionFiles.map((f) => f.name).join(", ")}</div>
                         )}
                         <div className="flex gap-2">
                           <button
@@ -1591,7 +1604,7 @@ export default function ClaimDetailPage() {
                           <button
                             onClick={() => {
                               setPendingPartStatus(null);
-                              setRequisitionFiles([]);
+                              clearRequisitionFiles();
                             }}
                             disabled={actionLoading !== null}
                             className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-[#6E6E6E] hover:bg-[#E0E0E0]"
