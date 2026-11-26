@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingShell, Header, Tabs, ClaimGrid, ClaimCard, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS } from "@/components/ui";
-import { uploadEvidence } from "@/lib/evidence-upload";
+import SupplyFilesPanel, { EMPTY_SUPPLY_FILES, supplyNeeds, uploadSupplyFiles } from "@/components/SupplyFilesPanel";
 import ClaimsToolbar, { DEFAULT_FILTER_STATE, applyPartsFilterSort } from "@/components/ClaimsToolbar";
-import { Search, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
+import { Search, AlertCircle, ExternalLink } from "lucide-react";
 
 const SORT_OPTIONS = [
   { value: "created_at", label: "Creation Date" },
@@ -32,13 +32,15 @@ export default function PartsTeamDashboard() {
   const [rowError, setRowError] = useState("");
   const [returnRequests, setReturnRequests] = useState([]);
   const [claimsWithRequisition, setClaimsWithRequisition] = useState(new Set());
+  const [claimsWithWaybill, setClaimsWithWaybill] = useState(new Set());
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
-  const [requisitionFiles, setRequisitionFiles] = useState([]);
-  const [fileBoxKey, setFileBoxKey] = useState(0); // bumped to empty the file box when the chosen files are cleared
+  const [supplyFiles, setSupplyFiles] = useState(EMPTY_SUPPLY_FILES);
+  const [fileBoxKey, setFileBoxKey] = useState(0); // bumped to empty the file boxes when the chosen files are cleared
   const clearRequisitionFiles = () => {
-    setRequisitionFiles([]);
+    setSupplyFiles(EMPTY_SUPPLY_FILES);
     setFileBoxKey((k) => k + 1);
   };
+  const needsFor = (claimId, done) => supplyNeeds({ requisition: claimsWithRequisition.has(claimId), waybill: claimsWithWaybill.has(claimId) }, done);
   const [requisitionUploading, setRequisitionUploading] = useState(false);
   const [toolbar, setToolbar] = useState(DEFAULT_FILTER_STATE);
 
@@ -65,8 +67,9 @@ export default function PartsTeamDashboard() {
     const { data: returnData } = await supabase.from("part_return_requests").select("*");
     setReturnRequests(returnData || []);
 
-    const { data: requisitionData } = await supabase.from("claim_attachments").select("claim_id").eq("stage", "part_requisition");
-    setClaimsWithRequisition(new Set((requisitionData || []).map((a) => a.claim_id)));
+    const { data: supplyData } = await supabase.from("claim_attachments").select("claim_id, stage").in("stage", ["part_requisition", "part_waybill"]);
+    setClaimsWithRequisition(new Set((supplyData || []).filter((a) => a.stage === "part_requisition").map((a) => a.claim_id)));
+    setClaimsWithWaybill(new Set((supplyData || []).filter((a) => a.stage === "part_waybill").map((a) => a.claim_id)));
 
     const tracking = {};
     const eta = {};
@@ -136,13 +139,13 @@ export default function PartsTeamDashboard() {
   };
 
   const requestPartStatusChange = (part, newStatus) => {
-    if (newStatus === "Supplied to Sub-Dealer" && !claimsWithRequisition.has(part.claim_id)) {
+    if (newStatus === "Supplied to Sub-Dealer" && needsFor(part.claim_id).length > 0) {
       // choosing "Supplied" again while it waits for the files keeps the files already chosen
       if (pendingPartStatus?.partId === part.id && pendingPartStatus.newStatus === newStatus) return;
-      setPendingPartStatus({ partId: part.id, part, newStatus });
+      setPendingPartStatus({ partId: part.id, part, newStatus, done: {} });
       clearRequisitionFiles();
     } else {
-      // any other status for a part that was waiting for its requisition files: drop the pending "Supplied"
+      // any other status for a part that was waiting for its requisition / waybill files: drop the pending "Supplied"
       if (pendingPartStatus?.partId === part.id) {
         setPendingPartStatus(null);
         clearRequisitionFiles();
@@ -152,19 +155,24 @@ export default function PartsTeamDashboard() {
   };
 
   const confirmPartStatusWithRequisition = async () => {
-    if (!requisitionFiles.length || !pendingPartStatus || requisitionUploading) return;
+    if (!pendingPartStatus || requisitionUploading) return;
+    const part = pendingPartStatus.part;
+    const needs = needsFor(part.claim_id, pendingPartStatus.done);
+    if (needs.some((f) => !supplyFiles[f.kind].length)) return;
     setRequisitionUploading(true);
     try {
-      const part = pendingPartStatus.part;
-      const { failed } = await uploadEvidence({
+      const { done, error } = await uploadSupplyFiles({
         supabase,
         claimId: part.claim_id,
+        claimNumber: part.claims?.claim_number || part.claim_id,
         uploadedBy: profile.id,
-        stage: "part_requisition",
-        items: requisitionFiles.map((file) => ({ file, name: `Requisition - ${part.claims?.claim_number || part.claim_id} - ${file.name}` })),
+        needs,
+        files: supplyFiles,
       });
-      if (failed.length > 0) {
-        setRowError(failed.map((x) => `${x.name}: ${x.message}`).join("; "));
+      if (error) {
+        // what did go up stays; the next Confirm asks only for the rest
+        setPendingPartStatus((prev) => (prev ? { ...prev, done: { ...prev.done, ...done } } : prev));
+        setRowError(error);
         return;
       }
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
@@ -335,33 +343,18 @@ export default function PartsTeamDashboard() {
                   </select>
                 </div>
                 {pendingPartStatus?.partId === p.id && (
-                  <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 mt-2 space-y-2">
-                    <div className="text-xs font-bold text-[#111111]">
-                      Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence.
-                    </div>
-                    <input type="file" multiple key={fileBoxKey} onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))} className="text-xs" />
-                    {requisitionFiles.length > 0 && <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) ready: {requisitionFiles.map((f) => f.name).join(", ")}</div>}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={confirmPartStatusWithRequisition}
-                        disabled={!requisitionFiles.length || requisitionUploading}
-                        className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                      >
-                        {requisitionUploading && <Loader2 size={11} className="animate-spin" />}
-                        {requisitionUploading ? "Uploading…" : "Confirm"}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setPendingPartStatus(null);
-                          clearRequisitionFiles();
-                        }}
-                        disabled={requisitionUploading}
-                        className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-[#6E6E6E] hover:bg-[#E0E0E0]"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+                  <SupplyFilesPanel
+                    needs={needsFor(p.claim_id, pendingPartStatus.done)}
+                    files={supplyFiles}
+                    onFiles={(kind, list) => setSupplyFiles((prev) => ({ ...prev, [kind]: list }))}
+                    boxKey={fileBoxKey}
+                    busy={requisitionUploading}
+                    onConfirm={confirmPartStatusWithRequisition}
+                    onCancel={() => {
+                      setPendingPartStatus(null);
+                      clearRequisitionFiles();
+                    }}
+                  />
                 )}
                 <div className="flex gap-2 mt-2">
                   <input

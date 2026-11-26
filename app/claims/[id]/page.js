@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Header, defectedSummary, StatusTag, STATUS, fmt, PART_STATUS, PART_STATUS_OPTIONS, SUPPLYING_LOCATIONS, combinedWorkOrder, isAgeing, AgeingBadge, ReturnedDaysBadge, daysSinceReturned } from "@/components/ui";
 import { uploadEvidence, removeAttachment, attachmentUrl, syncClaimFolder } from "@/lib/evidence-upload";
+import SupplyFilesPanel, { EMPTY_SUPPLY_FILES, supplyNeeds, uploadSupplyFiles } from "@/components/SupplyFilesPanel";
 import DownloadAttachmentsButton from "@/components/DownloadAttachmentsButton";
 import DialogFocus from "@/components/DialogFocus";
 import ExportPartsLaborButton from "@/components/ExportPartsLaborButton";
@@ -64,12 +65,15 @@ export default function ClaimDetailPage() {
   const [returnPartError, setReturnPartError] = useState("");
   const [techEmailNote, setTechEmailNote] = useState("");
   const [pendingPartStatus, setPendingPartStatus] = useState(null);
-  const [requisitionFiles, setRequisitionFiles] = useState([]);
-  const [fileBoxKey, setFileBoxKey] = useState(0); // bumped to empty the file box when the chosen files are cleared
+  const [supplyFiles, setSupplyFiles] = useState(EMPTY_SUPPLY_FILES);
+  const [fileBoxKey, setFileBoxKey] = useState(0); // bumped to empty the file boxes when the chosen files are cleared
   const clearRequisitionFiles = () => {
-    setRequisitionFiles([]);
+    setSupplyFiles(EMPTY_SUPPLY_FILES);
     setFileBoxKey((k) => k + 1);
   };
+  // the requisition / waybill files still missing before a part can be marked "Supplied to Sub-Dealer"
+  const supplyNeedsNow = (done) =>
+    supplyNeeds({ requisition: attachments.some((a) => a.stage === "part_requisition"), waybill: attachments.some((a) => a.stage === "part_waybill") }, done);
   const [partsEmailNote, setPartsEmailNote] = useState("");
   const [returnEmailNote, setReturnEmailNote] = useState("");
   const [uploadError, setUploadError] = useState("");
@@ -645,14 +649,13 @@ export default function ClaimDetailPage() {
   };
 
   const requestPartStatusChange = (part, newStatus) => {
-    const claimHasRequisition = attachments.some((a) => a.stage === "part_requisition");
-    if (role === "parts_team" && newStatus === "Supplied to Sub-Dealer" && !claimHasRequisition) {
+    if (role === "parts_team" && newStatus === "Supplied to Sub-Dealer" && supplyNeedsNow().length > 0) {
       // choosing "Supplied" again while it waits for the files keeps the files already chosen
       if (pendingPartStatus?.partId === part.id && pendingPartStatus.newStatus === newStatus) return;
-      setPendingPartStatus({ partId: part.id, newStatus });
+      setPendingPartStatus({ partId: part.id, newStatus, done: {} });
       clearRequisitionFiles();
     } else {
-      // any other status for a part that was waiting for its requisition files: drop the pending "Supplied"
+      // any other status for a part that was waiting for its requisition / waybill files: drop the pending "Supplied"
       if (pendingPartStatus?.partId === part.id) {
         setPendingPartStatus(null);
         clearRequisitionFiles();
@@ -662,18 +665,23 @@ export default function ClaimDetailPage() {
   };
 
   const confirmPartStatusWithRequisition = async (part) => {
-    if (!requisitionFiles.length || !pendingPartStatus || actionLoading) return;
+    if (!pendingPartStatus || actionLoading) return;
+    const needs = supplyNeedsNow(pendingPartStatus.done);
+    if (needs.some((f) => !supplyFiles[f.kind].length)) return;
     setActionLoading("partReq");
     try {
-      const { failed } = await uploadEvidence({
+      const { done, error } = await uploadSupplyFiles({
         supabase,
         claimId: claim.id,
+        claimNumber: claim.claim_number,
         uploadedBy: profile.id,
-        stage: "part_requisition",
-        items: requisitionFiles.map((file) => ({ file, name: `Requisition - ${claim.claim_number} - ${file.name}` })),
+        needs,
+        files: supplyFiles,
       });
-      if (failed.length > 0) {
-        setPartsError(failed.map((f) => `${f.name}: ${f.message}`).join("; "));
+      if (error) {
+        // what did go up stays; the next Confirm asks only for the rest
+        setPendingPartStatus((prev) => (prev ? { ...prev, done: { ...prev.done, ...done } } : prev));
+        setPartsError(error);
         return;
       }
       await handlePartStatusChange(part, pendingPartStatus.newStatus);
@@ -1578,41 +1586,19 @@ export default function ClaimDetailPage() {
                       )}
                     </div>
                     {pendingPartStatus?.partId === p.id && (
-                      <div className="bg-[#F4F4F4] border border-[#E0E0E0] rounded p-2 space-y-2">
-                        <div className="text-xs font-bold text-[#111111]">
-                          Attach part requisition file(s) to confirm marking this part "Supplied to Sub-Dealer" — covers every part on this claim, and joins the sub-dealer's evidence below.
-                        </div>
-                        <input
-                          type="file"
-                          multiple
-                          key={fileBoxKey}
-                          onChange={(e) => setRequisitionFiles(Array.from(e.target.files || []))}
-                          className="text-xs"
-                        />
-                        {requisitionFiles.length > 0 && (
-                          <div className="text-[0.6875rem] text-[#6E6E6E]">{requisitionFiles.length} file(s) ready: {requisitionFiles.map((f) => f.name).join(", ")}</div>
-                        )}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => confirmPartStatusWithRequisition(p)}
-                            disabled={!requisitionFiles.length || actionLoading !== null}
-                            className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-white bg-[#5B4FB0] hover:bg-[#4A3F9A] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                          >
-                            {actionLoading === "partReq" && <Loader2 size={11} className="animate-spin" />}
-                            {actionLoading === "partReq" ? "Uploading…" : "Confirm"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setPendingPartStatus(null);
-                              clearRequisitionFiles();
-                            }}
-                            disabled={actionLoading !== null}
-                            className="px-3 py-1.5 rounded font-bold text-[0.6875rem] text-[#6E6E6E] hover:bg-[#E0E0E0]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
+                      <SupplyFilesPanel
+                        needs={supplyNeedsNow(pendingPartStatus.done)}
+                        files={supplyFiles}
+                        onFiles={(kind, list) => setSupplyFiles((prev) => ({ ...prev, [kind]: list }))}
+                        boxKey={fileBoxKey}
+                        busy={actionLoading !== null}
+                        onConfirm={() => confirmPartStatusWithRequisition(p)}
+                        onCancel={() => {
+                          setPendingPartStatus(null);
+                          clearRequisitionFiles();
+                        }}
+                        where=" below"
+                      />
                     )}
                   </div>
                 ))}

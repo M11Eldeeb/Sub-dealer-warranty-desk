@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const STAGES = ["evidence_before", "after_repair", "part_requisition"];
+const STAGES = ["evidence_before", "after_repair", "part_requisition", "part_waybill"];
 
 /**
  * Step 3 of attaching files: after the browser has sent the bytes to Google, re-checks every file against
